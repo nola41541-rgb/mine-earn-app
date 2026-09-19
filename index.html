@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MineEarn</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{--bg:#0a0f23;--card:#131a35;--gold:#ffd23c;--text:#fff;--muted:#9aa4c7;}
   *{box-sizing:border-box;}
   body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);padding:16px;}
   h1{text-align:center;margin:8px 0 4px;font-size:24px;}
+  .loading{text-align:center;padding:60px 20px;color:var(--muted);}
   .balance{text-align:center;background:var(--card);border-radius:14px;padding:16px;margin-bottom:16px;}
   .balance .coins{font-size:28px;font-weight:bold;color:var(--gold);}
   .balance .usd{color:var(--muted);font-size:13px;margin-top:4px;}
@@ -31,11 +33,7 @@
 </head>
 <body>
 <h1>⛏️ MineEarn</h1>
-<div class="balance">
-  <div class="coins" id="balanceCoins">0 coins</div>
-  <div class="usd" id="balanceUsd">≈ $0.00</div>
-</div>
-<div id="slots"></div>
+<div id="app"><div class="loading" id="loadingMsg">Loading your data...</div></div>
 
 <div class="modal" id="adModal" style="display:none;">
   <div class="modal-box">
@@ -44,6 +42,10 @@
 </div>
 
 <script>
+const SUPABASE_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0YXFyYWhpcWpma2RmY3JiZXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4NDgwMjMsImV4cCI6MjEwNTQyNDAyM30.2DcbBtWcrbWYOAgyanz9-CsFdoK6Ynwu-CMn9w9bZcc';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const RATE = 0.16/16000;
 const SLOT_CONFIG = [
   {name:"Slot 1", coins:140, ads:1},
@@ -56,21 +58,41 @@ const SLOT_CONFIG = [
 const MAX_SESSIONS = 10;
 const SESSION_MS = 30*60*1000;
 
-function loadState(){
-  const raw = localStorage.getItem('mineEarnState');
-  if(raw){
-    const s = JSON.parse(raw);
-    s.slots.forEach(sl=>{ if(sl.state==='watching') sl.state='ready'; });
-    return s;
+function getTelegramId(){
+  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user){
+    return String(window.Telegram.WebApp.initDataUnsafe.user.id);
   }
-  return {
-    balance:0,
-    slots: SLOT_CONFIG.map(()=>({sessions:0, state:'idle', endTime:null, adsWatched:0}))
-  };
+  let testId = localStorage.getItem('testTelegramId');
+  if(!testId){
+    testId = 'test_' + Math.random().toString(36).slice(2,10);
+    localStorage.setItem('testTelegramId', testId);
+  }
+  return testId;
 }
-function saveState(){ localStorage.setItem('mineEarnState', JSON.stringify(state)); }
+const TG_ID = getTelegramId();
+let state = null;
 
-let state = loadState();
+function defaultSlots(){
+  return SLOT_CONFIG.map(()=>({sessions:0, state:'idle', endTime:null, adsWatched:0}));
+}
+
+async function loadState(){
+  const { data, error } = await sb.from('users').select('*').eq('telegram_id', TG_ID).maybeSingle();
+  if(data){
+    let slots;
+    try{ slots = JSON.parse(data.slots); }catch(e){ slots = defaultSlots(); }
+    slots.forEach(sl=>{ if(sl.state==='watching') sl.state='ready'; });
+    return { balance: data.balance, slots };
+  } else {
+    const initial = { telegram_id: TG_ID, balance:0, slots: JSON.stringify(defaultSlots()), referral_count:0 };
+    await sb.from('users').insert(initial);
+    return { balance:0, slots: defaultSlots() };
+  }
+}
+
+async function saveState(){
+  await sb.from('users').update({ balance: state.balance, slots: JSON.stringify(state.slots) }).eq('telegram_id', TG_ID);
+}
 
 function fmtTime(ms){
   if(ms<0) ms=0;
@@ -110,7 +132,7 @@ async function handleCollect(i){
   for(let a=slot.adsWatched; a<cfg.ads; a++){
     await watchAd();
     slot.adsWatched++;
-    saveState();
+    await saveState();
     render();
   }
   state.balance += cfg.coins;
@@ -123,16 +145,16 @@ async function handleCollect(i){
     slot.state='mining';
     slot.endTime = Date.now()+SESSION_MS;
   }
-  saveState();
+  await saveState();
   render();
 }
 
-function handleStart(i){
+async function handleStart(i){
   const slot = state.slots[i];
   if(slot.state!=='idle') return;
   slot.state='mining';
   slot.endTime = Date.now()+SESSION_MS;
-  saveState();
+  await saveState();
   render();
 }
 
@@ -178,8 +200,19 @@ function render(){
   });
 }
 
-setInterval(render, 1000);
-render();
+async function init(){
+  state = await loadState();
+  document.getElementById('app').innerHTML = `
+    <div class="balance">
+      <div class="coins" id="balanceCoins"></div>
+      <div class="usd" id="balanceUsd"></div>
+    </div>
+    <div id="slots"></div>
+  `;
+  setInterval(render, 1000);
+  render();
+}
+init();
 
 if(window.Telegram && window.Telegram.WebApp){
   window.Telegram.WebApp.ready();
@@ -187,4 +220,4 @@ if(window.Telegram && window.Telegram.WebApp){
 }
 </script>
 </body>
-  </html>
+</html>
