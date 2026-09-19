@@ -127,7 +127,7 @@ async function handleCollect(i){
   render();
 }
 
-function of{
+function handleStart(i){
   const slot = state.slots[i];
   if(slot.state!=='idle') return;
   slot.state='mining';
