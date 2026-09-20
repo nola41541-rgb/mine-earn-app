@@ -30,7 +30,7 @@
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:50;}
   .modal-box{background:var(--card);padding:24px;border-radius:14px;text-align:center;max-width:280px;}
   .tabbar{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid #222b4d;z-index:40;}
-  .tab-btn{flex:1;background:none;border:none;color:var(--muted);padding:10px 0;font-size:12px;}
+  .tab-btn{flex:1;background:none;border:none;color:var(--muted);padding:10px 0;font-size:11px;}
   .tab-btn.active{color:var(--gold);}
   .tab-content{display:none;}
   .tab-content.active{display:block;}
@@ -54,7 +54,21 @@
   .badge-pending{color:#f0a500;font-size:12px;}
   .badge-approved{color:#7ecb7e;font-size:12px;}
   .error-msg{color:#ff6b6b;font-size:13px;margin-bottom:8px;min-height:16px;}
+  .success-msg{color:#7ecb7e;font-size:13px;margin-bottom:8px;min-height:16px;}
   .section-title{font-size:15px;font-weight:bold;margin:18px 0 10px;}
+  .task-item{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;}
+  .task-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .task-title{font-weight:bold;font-size:15px;}
+  .task-reward{color:var(--gold);font-size:13px;}
+  .task-sub{color:var(--muted);font-size:12px;margin-bottom:10px;}
+  .task-btn-row{display:flex;gap:8px;}
+  .task-btn{flex:1;padding:10px;border-radius:8px;border:none;font-size:13px;font-weight:bold;}
+  .btn-open{background:#3b82f6;color:#fff;}
+  .btn-claim{background:var(--gold);color:#1a1500;}
+  .btn-full{background:#333c5e;color:var(--muted);}
+  .wallet-box{background:#0f1730;border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--muted);word-break:break-all;}
+  .wallet-box b{color:#fff;}
+  .support-btn{display:block;text-align:center;background:#0f1730;color:var(--gold);padding:12px;border-radius:10px;text-decoration:none;font-weight:bold;margin-top:10px;}
 </style>
 </head>
 <body>
@@ -62,6 +76,7 @@
 
 <nav class="tabbar" id="tabbar" style="display:none;">
   <button class="tab-btn active" id="btn-mine" onclick="showTab('mine')">⛏️<br>Mine</button>
+  <button class="tab-btn" id="btn-tasks" onclick="showTab('tasks')">📋<br>Tasks</button>
   <button class="tab-btn" id="btn-profile" onclick="showTab('profile')">👤<br>Profile</button>
   <button class="tab-btn" id="btn-withdraw" onclick="showTab('withdraw')">💸<br>Withdraw</button>
 </nav>
@@ -76,6 +91,11 @@
 const SUPABASE_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0YXFyYWhpcWpma2RmY3JiZXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4NDgwMjMsImV4cCI6MjEwNTQyNDAyM30.2DcbBtWcrbWYOAgyanz9-CsFdoK6Ynwu-CMn9w9bZcc';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const OWNER_TG_ID = '8756903037';
+const SUPPORT_LINK = 'https://t.me/mineearnsupport';
+const WALLET_USDT = '0xc57a0B59CC0Fad7Fc8a12fCB83F1Fc1B8E7eC951';
+const WALLET_TON = 'UQDcm7tz1hnpaVus3UzLIkeV-scuOOLbgskgm3qG2SGmj4ai';
 
 const RATE = 0.16/16000;
 const MIN_WITHDRAW = 65000;
@@ -109,6 +129,7 @@ function getTelegramId(){
 }
 const TG_ID = getTelegramId();
 const TG_USER = getTelegramUser();
+const IS_OWNER = TG_ID === OWNER_TG_ID;
 let state = null;
 
 function defaultSlots(){
@@ -118,19 +139,20 @@ function defaultSlots(){
 async function loadState(){
   const { data } = await sb.from('users').select('*').eq('telegram_id', TG_ID).maybeSingle();
   if(data){
-    let slots;
+    let slots, tasksCompleted;
     try{ slots = JSON.parse(data.slots); }catch(e){ slots = defaultSlots(); }
+    try{ tasksCompleted = JSON.parse(data.tasks_completed || '[]'); }catch(e){ tasksCompleted = []; }
     slots.forEach(sl=>{ if(sl.state==='watching') sl.state='ready'; });
-    return { balance: data.balance, slots, referralCount: data.referral_count||0 };
+    return { balance: data.balance, slots, referralCount: data.referral_count||0, tasksCompleted };
   } else {
-    const initial = { telegram_id: TG_ID, balance:0, slots: JSON.stringify(defaultSlots()), referral_count:0 };
+    const initial = { telegram_id: TG_ID, balance:0, slots: JSON.stringify(defaultSlots()), referral_count:0, tasks_completed: '[]' };
     await sb.from('users').insert(initial);
-    return { balance:0, slots: defaultSlots(), referralCount:0 };
+    return { balance:0, slots: defaultSlots(), referralCount:0, tasksCompleted: [] };
   }
 }
 
 async function saveState(){
-  await sb.from('users').update({ balance: state.balance, slots: JSON.stringify(state.slots) }).eq('telegram_id', TG_ID);
+  await sb.from('users').update({ balance: state.balance, slots: JSON.stringify(state.slots), tasks_completed: JSON.stringify(state.tasksCompleted) }).eq('telegram_id', TG_ID);
 }
 
 function fmtTime(ms){
@@ -244,12 +266,87 @@ async function handleWithdraw(){
   renderHistory();
 }
 
+async function loadTasks(){
+  const { data } = await sb.from('tasks').select('*').eq('status','active').order('created_at', { ascending:false });
+  return data || [];
+}
+
+async function renderTasks(){
+  const container = document.getElementById('taskList');
+  if(!container) return;
+  const rows = await loadTasks();
+  if(rows.length===0){
+    container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px;">No tasks available right now.</div>';
+    return;
+  }
+  container.innerHTML = rows.map(t=>{
+    const done = state.tasksCompleted.includes(t.id);
+    const full = t.completions_count >= t.max_completions;
+    let btns;
+    if(done){
+      btns = '<button class="task-btn btn-full" disabled>✅ Completed</button>';
+    } else if(full){
+      btns = '<button class="task-btn btn-full" disabled>Full</button>';
+    } else {
+      btns = '<button class="task-btn btn-open" onclick="window.open(\''+t.link+'\',\'_blank\')">🔗 Open</button><button class="task-btn btn-claim" onclick="handleClaimTask('+t.id+','+t.reward+')">🎁 Claim</button>';
+    }
+    const typeLabel = t.type==='telegram' ? 'Telegram' : 'Social Media';
+    return '<div class="task-item"><div class="task-top"><span class="task-title">'+t.title+'</span><span class="task-reward">+'+t.reward+' coins</span></div><div class="task-sub">'+typeLabel+' • '+t.completions_count+'/'+t.max_completions+' claimed</div><div class="task-btn-row">'+btns+'</div></div>';
+  }).join('');
+}
+
+async function handleClaimTask(taskId, reward){
+  if(state.tasksCompleted.includes(taskId)) return;
+  state.balance += reward;
+  state.tasksCompleted.push(taskId);
+  await saveState();
+  const { data } = await sb.from('tasks').select('completions_count').eq('id', taskId).maybeSingle();
+  const newCount = (data ? data.completions_count : 0) + 1;
+  await sb.from('tasks').update({ completions_count: newCount }).eq('id', taskId);
+  render();
+  renderTasks();
+}
+
+function updateFeePreview(){
+  const max = parseInt(document.getElementById('taskMax').value) || 0;
+  const feeBox = document.getElementById('taskFeePreview');
+  if(!feeBox) return;
+  const fee = (0.10*(max/100)).toFixed(2);
+  feeBox.textContent = 'Fee for '+max+' completions: $'+fee;
+}
+
+async function handleCreateTask(){
+  const title = document.getElementById('taskTitle').value.trim();
+  const link = document.getElementById('taskLink').value.trim();
+  const type = document.getElementById('taskType').value;
+  const max = parseInt(document.getElementById('taskMax').value);
+  const msg = document.getElementById('taskMsg');
+  msg.textContent='';
+  msg.className='error-msg';
+  if(!title || !link || !max || max<100){ msg.textContent = 'Fill all fields (minimum 100 completions).'; return; }
+  const reward = type==='telegram' ? 250 : 300;
+  const status = IS_OWNER ? 'active' : 'pending_payment';
+  await sb.from('tasks').insert({ creator_id:TG_ID, title, link, type, reward, max_completions:max, completions_count:0, status });
+  document.getElementById('taskTitle').value='';
+  document.getElementById('taskLink').value='';
+  document.getElementById('taskMax').value='';
+  msg.className='success-msg';
+  if(IS_OWNER){
+    msg.textContent = '✅ Task created and is now live!';
+  } else {
+    const fee = (0.10*(max/100)).toFixed(2);
+    msg.textContent = '✅ Submitted! Send $'+fee+' to a wallet below, then message support to activate it.';
+  }
+  renderTasks();
+}
+
 function showTab(tab){
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
   document.getElementById('btn-'+tab).classList.add('active');
   if(tab==='withdraw'){ renderHistory(); }
+  if(tab==='tasks'){ renderTasks(); }
 }
 
 function render(){
@@ -305,6 +402,15 @@ async function init(){
   const username = TG_USER && TG_USER.username ? '@'+TG_USER.username : '';
   const photo = TG_USER && TG_USER.photo_url ? '<img src="'+TG_USER.photo_url+'">' : '⛏️';
 
+  const paymentBox = IS_OWNER ? '' : `
+    <div class="wallet-box">
+      Non-owner task fee: $0.10 per 100 completions.<br>
+      <b>USDT (BEP20):</b> ${WALLET_USDT}<br>
+      <b>TON:</b> ${WALLET_TON}<br>
+      After sending payment, message <a href="${SUPPORT_LINK}" style="color:var(--gold);" target="_blank">support</a> to activate your task.
+    </div>
+  `;
+
   document.getElementById('app').innerHTML = `
     <div class="tab-content active" id="tab-mine">
       <h1>⛏️ MineEarn</h1>
@@ -313,6 +419,28 @@ async function init(){
         <div class="usd" id="balanceUsd"></div>
       </div>
       <div id="slots"></div>
+    </div>
+    <div class="tab-content" id="tab-tasks">
+      <h1>📋 Tasks</h1>
+      <div class="section-title">Available Tasks</div>
+      <div id="taskList"></div>
+      <div class="section-title">Create a Task</div>
+      ${paymentBox}
+      <div class="form-group">
+        <label class="form-label">Task title</label>
+        <input type="text" id="taskTitle" class="form-input" placeholder="e.g. Join our channel">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link</label>
+        <input type="text" id="taskLink" class="form-input" placeholder="https://t.me/yourchannel">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <<input type="number" id="taskMax" class="form-input" placeholder="e.g. 100" oninput="updateFeePreview()">
+        ${IS_OWNER ? '' : '<div class="task-sub" id="taskFeePreview" style="margin-top:6px;"></div>'}
+      </div>
+      <div class="error-msg" id="taskMsg"></div>
+      <button class="action btn-start" onclick="handleCreateTask()">Create Task</button>
     </div>
     <div class="tab-content" id="tab-profile">
       <h1>👤 Profile</h1>
@@ -323,6 +451,7 @@ async function init(){
         <div class="stat-row"><span class="stat-label">Balance</span><span class="stat-value" id="profileCoins"></span></div>
         <div class="stat-row"><span class="stat-label">USD Value</span><span class="stat-value" id="profileUsd"></span></div>
         <div class="stat-row"><span class="stat-label">Referrals</span><span class="stat-value" id="profileReferrals"></span></div>
+        <a class="support-btn" href="${SUPPORT_LINK}" target="_blank">🆘 Contact Support</a>
       </div>
     </div>
     <div class="tab-content" id="tab-withdraw">
@@ -355,6 +484,7 @@ async function init(){
   document.getElementById('tabbar').style.display='flex';
   setInterval(render, 1000);
   render();
+  renderTasks();
 }
 init();
 
@@ -364,4 +494,4 @@ if(window.Telegram && window.Telegram.WebApp){
 }
 </script>
 </body>
-  </html>
+</html>
