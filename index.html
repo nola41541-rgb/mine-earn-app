@@ -42,6 +42,19 @@
   .stat-row{display:flex;justify-content:space-between;background:#0f1730;border-radius:10px;padding:12px 16px;margin-bottom:8px;}
   .stat-label{color:var(--muted);font-size:13px;}
   .stat-value{font-weight:bold;color:var(--gold);}
+  .form-group{margin-bottom:12px;}
+  .form-label{font-size:13px;color:var(--muted);margin-bottom:6px;display:block;}
+  .form-input{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3358;background:#0f1730;color:#fff;font-size:15px;}
+  .method-row{display:flex;gap:8px;margin-bottom:12px;}
+  .method-btn{flex:1;padding:10px;border-radius:10px;border:1px solid #2a3358;background:#0f1730;color:var(--muted);font-size:13px;text-align:center;}
+  .method-btn.active{border-color:var(--gold);color:var(--gold);}
+  .wd-item{background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;}
+  .wd-top{display:flex;justify-content:space-between;font-weight:bold;}
+  .wd-sub{color:var(--muted);font-size:12px;margin-top:4px;}
+  .badge-pending{color:#f0a500;font-size:12px;}
+  .badge-approved{color:#7ecb7e;font-size:12px;}
+  .error-msg{color:#ff6b6b;font-size:13px;margin-bottom:8px;min-height:16px;}
+  .section-title{font-size:15px;font-weight:bold;margin:18px 0 10px;}
 </style>
 </head>
 <body>
@@ -50,6 +63,7 @@
 <nav class="tabbar" id="tabbar" style="display:none;">
   <button class="tab-btn active" id="btn-mine" onclick="showTab('mine')">⛏️<br>Mine</button>
   <button class="tab-btn" id="btn-profile" onclick="showTab('profile')">👤<br>Profile</button>
+  <button class="tab-btn" id="btn-withdraw" onclick="showTab('withdraw')">💸<br>Withdraw</button>
 </nav>
 
 <div class="modal" id="adModal" style="display:none;">
@@ -64,6 +78,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const RATE = 0.16/16000;
+const MIN_WITHDRAW = 65000;
 const SLOT_CONFIG = [
   {name:"Slot 1", coins:140, ads:1},
   {name:"Slot 2", coins:185, ads:1},
@@ -74,6 +89,7 @@ const SLOT_CONFIG = [
 ];
 const MAX_SESSIONS = 10;
 const SESSION_MS = 30*60*1000;
+let selectedMethod = 'USDT_BEP20';
 
 function getTelegramUser(){
   if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user){
@@ -181,11 +197,59 @@ async function handleStart(i){
   render();
 }
 
+function selectMethod(m){
+  selectedMethod = m;
+  document.getElementById('methodUSDT').classList.toggle('active', m==='USDT_BEP20');
+  document.getElementById('methodTON').classList.toggle('active', m==='TON');
+}
+
+async function loadHistory(){
+  const { data } = await sb.from('withdrawals').select('*').eq('telegram_id', TG_ID).order('created_at', { ascending:false });
+  return data || [];
+}
+
+async function renderHistory(){
+  const rows = await loadHistory();
+  const container = document.getElementById('wdHistory');
+  if(!container) return;
+  if(rows.length===0){
+    container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px;">No withdrawal history yet.</div>';
+    return;
+  }
+  container.innerHTML = rows.map(r=>{
+    const approved = r.status==='approved';
+    const badgeClass = approved ? 'badge-approved' : 'badge-pending';
+    const badgeText = approved ? '✅ Approved' : '⏳ Pending';
+    const methodLabel = r.method==='TON' ? 'TON' : 'USDT (BEP20)';
+    const date = new Date(r.created_at).toLocaleDateString();
+    return '<div class="wd-item"><div class="wd-top"><span>'+r.amount.toLocaleString()+' coins</span><span class="'+badgeClass+'">'+badgeText+'</span></div><div class="wd-sub">'+methodLabel+' • '+date+'</div></div>';
+  }).join('');
+}
+
+async function handleWithdraw(){
+  const amtInput = document.getElementById('wdAmount');
+  const walletInput = document.getElementById('wdWallet');
+  const msg = document.getElementById('wdMessage');
+  const amt = parseInt(amtInput.value);
+  const wallet = walletInput.value.trim();
+  msg.textContent='';
+  if(!amt || amt < MIN_WITHDRAW){ msg.textContent = 'Minimum withdrawal is '+MIN_WITHDRAW.toLocaleString()+' coins.'; return; }
+  if(amt > state.balance){ msg.textContent = 'Insufficient balance.'; return; }
+  if(!wallet){ msg.textContent = 'Please enter your wallet address.'; return; }
+  await sb.from('withdrawals').insert({ telegram_id:TG_ID, amount:amt, method:selectedMethod, wallet_address:wallet, status:'pending' });
+  state.balance -= amt;
+  await saveState();
+  amtInput.value=''; walletInput.value='';
+  render();
+  renderHistory();
+}
+
 function showTab(tab){
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
   document.getElementById('btn-'+tab).classList.add('active');
+  if(tab==='withdraw'){ renderHistory(); }
 }
 
 function render(){
@@ -194,6 +258,7 @@ function render(){
   document.getElementById('profileCoins').textContent = state.balance.toLocaleString()+" coins";
   document.getElementById('profileUsd').textContent = "≈ $"+(state.balance*RATE).toFixed(5);
   document.getElementById('profileReferrals').textContent = state.referralCount;
+  document.getElementById('wdBalance').textContent = state.balance.toLocaleString()+" coins";
 
   const container = document.getElementById('slots');
   container.innerHTML='';
@@ -259,6 +324,32 @@ async function init(){
         <div class="stat-row"><span class="stat-label">USD Value</span><span class="stat-value" id="profileUsd"></span></div>
         <div class="stat-row"><span class="stat-label">Referrals</span><span class="stat-value" id="profileReferrals"></span></div>
       </div>
+    </div>
+    <div class="tab-content" id="tab-withdraw">
+      <h1>💸 Withdraw</h1>
+      <div class="balance">
+        <div class="coins" id="wdBalance"></div>
+        <div class="usd">Available balance</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amount (min ${MIN_WITHDRAW.toLocaleString()} coins)</label>
+        <input type="number" id="wdAmount" class="form-input" placeholder="e.g. 65000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Payout method</label>
+        <div class="method-row">
+          <div class="method-btn active" id="methodUSDT" onclick="selectMethod('USDT_BEP20')">USDT (BEP20)</div>
+          <div class="method-btn" id="methodTON" onclick="selectMethod('TON')">TON</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Wallet address</label>
+        <input type="text" id="wdWallet" class="form-input" placeholder="Paste your wallet address">
+      </div>
+      <div class="error-msg" id="wdMessage"></div>
+      <button class="action btn-start" onclick="handleWithdraw()">Request Withdrawal</button>
+      <div class="section-title">History</div>
+      <div id="wdHistory"></div>
     </div>
   `;
   document.getElementById('tabbar').style.display='flex';
