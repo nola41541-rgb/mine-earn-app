@@ -9,7 +9,7 @@
 <style>
   :root{--bg:#0a0f23;--card:#131a35;--gold:#ffd23c;--text:#fff;--muted:#9aa4c7;}
   *{box-sizing:border-box;}
-  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);padding:16px;}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);padding:16px 16px 90px 16px;}
   h1{text-align:center;margin:8px 0 4px;font-size:24px;}
   .loading{text-align:center;padding:60px 20px;color:var(--muted);}
   .balance{text-align:center;background:var(--card);border-radius:14px;padding:16px;margin-bottom:16px;}
@@ -27,13 +27,30 @@
   .btn-wait{background:#333c5e;color:var(--muted);}
   .btn-collect{background:var(--gold);color:#1a1500;}
   .btn-done{background:#2f3a2f;color:#7ecb7e;}
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:50;}
   .modal-box{background:var(--card);padding:24px;border-radius:14px;text-align:center;max-width:280px;}
+  .tabbar{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid #222b4d;z-index:40;}
+  .tab-btn{flex:1;background:none;border:none;color:var(--muted);padding:10px 0;font-size:12px;}
+  .tab-btn.active{color:var(--gold);}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+  .profile-card{background:var(--card);border-radius:14px;padding:20px;text-align:center;margin-bottom:16px;}
+  .profile-avatar{width:72px;height:72px;border-radius:50%;background:#222b4d;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 10px;overflow:hidden;}
+  .profile-avatar img{width:100%;height:100%;object-fit:cover;}
+  .profile-name{font-size:18px;font-weight:bold;}
+  .profile-username{color:var(--muted);font-size:13px;margin-bottom:14px;}
+  .stat-row{display:flex;justify-content:space-between;background:#0f1730;border-radius:10px;padding:12px 16px;margin-bottom:8px;}
+  .stat-label{color:var(--muted);font-size:13px;}
+  .stat-value{font-weight:bold;color:var(--gold);}
 </style>
 </head>
 <body>
-<h1>⛏️ MineEarn</h1>
 <div id="app"><div class="loading" id="loadingMsg">Loading your data...</div></div>
+
+<nav class="tabbar" id="tabbar" style="display:none;">
+  <button class="tab-btn active" id="btn-mine" onclick="showTab('mine')">⛏️<br>Mine</button>
+  <button class="tab-btn" id="btn-profile" onclick="showTab('profile')">👤<br>Profile</button>
+</nav>
 
 <div class="modal" id="adModal" style="display:none;">
   <div class="modal-box">
@@ -58,10 +75,15 @@ const SLOT_CONFIG = [
 const MAX_SESSIONS = 10;
 const SESSION_MS = 30*60*1000;
 
-function getTelegramId(){
+function getTelegramUser(){
   if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user){
-    return String(window.Telegram.WebApp.initDataUnsafe.user.id);
+    return window.Telegram.WebApp.initDataUnsafe.user;
   }
+  return null;
+}
+function getTelegramId(){
+  const u = getTelegramUser();
+  if(u) return String(u.id);
   let testId = localStorage.getItem('testTelegramId');
   if(!testId){
     testId = 'test_' + Math.random().toString(36).slice(2,10);
@@ -70,6 +92,7 @@ function getTelegramId(){
   return testId;
 }
 const TG_ID = getTelegramId();
+const TG_USER = getTelegramUser();
 let state = null;
 
 function defaultSlots(){
@@ -77,16 +100,16 @@ function defaultSlots(){
 }
 
 async function loadState(){
-  const { data, error } = await sb.from('users').select('*').eq('telegram_id', TG_ID).maybeSingle();
+  const { data } = await sb.from('users').select('*').eq('telegram_id', TG_ID).maybeSingle();
   if(data){
     let slots;
     try{ slots = JSON.parse(data.slots); }catch(e){ slots = defaultSlots(); }
     slots.forEach(sl=>{ if(sl.state==='watching') sl.state='ready'; });
-    return { balance: data.balance, slots };
+    return { balance: data.balance, slots, referralCount: data.referral_count||0 };
   } else {
     const initial = { telegram_id: TG_ID, balance:0, slots: JSON.stringify(defaultSlots()), referral_count:0 };
     await sb.from('users').insert(initial);
-    return { balance:0, slots: defaultSlots() };
+    return { balance:0, slots: defaultSlots(), referralCount:0 };
   }
 }
 
@@ -158,9 +181,20 @@ async function handleStart(i){
   render();
 }
 
+function showTab(tab){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('btn-'+tab).classList.add('active');
+}
+
 function render(){
   document.getElementById('balanceCoins').textContent = state.balance.toLocaleString()+" coins";
   document.getElementById('balanceUsd').textContent = "≈ $"+(state.balance*RATE).toFixed(5);
+  document.getElementById('profileCoins').textContent = state.balance.toLocaleString()+" coins";
+  document.getElementById('profileUsd').textContent = "≈ $"+(state.balance*RATE).toFixed(5);
+  document.getElementById('profileReferrals').textContent = state.referralCount;
+
   const container = document.getElementById('slots');
   container.innerHTML='';
   SLOT_CONFIG.forEach((cfg,i)=>{
@@ -202,13 +236,32 @@ function render(){
 
 async function init(){
   state = await loadState();
+  const name = TG_USER ? (TG_USER.first_name||'') + (TG_USER.last_name?(' '+TG_USER.last_name):'') : 'Guest';
+  const username = TG_USER && TG_USER.username ? '@'+TG_USER.username : '';
+  const photo = TG_USER && TG_USER.photo_url ? '<img src="'+TG_USER.photo_url+'">' : '⛏️';
+
   document.getElementById('app').innerHTML = `
-    <div class="balance">
-      <div class="coins" id="balanceCoins"></div>
-      <div class="usd" id="balanceUsd"></div>
+    <div class="tab-content active" id="tab-mine">
+      <h1>⛏️ MineEarn</h1>
+      <div class="balance">
+        <div class="coins" id="balanceCoins"></div>
+        <div class="usd" id="balanceUsd"></div>
+      </div>
+      <div id="slots"></div>
     </div>
-    <div id="slots"></div>
+    <div class="tab-content" id="tab-profile">
+      <h1>👤 Profile</h1>
+      <div class="profile-card">
+        <div class="profile-avatar">${photo}</div>
+        <div class="profile-name">${name}</div>
+        <div class="profile-username">${username}</div>
+        <div class="stat-row"><span class="stat-label">Balance</span><span class="stat-value" id="profileCoins"></span></div>
+        <div class="stat-row"><span class="stat-label">USD Value</span><span class="stat-value" id="profileUsd"></span></div>
+        <div class="stat-row"><span class="stat-label">Referrals</span><span class="stat-value" id="profileReferrals"></span></div>
+      </div>
+    </div>
   `;
+  document.getElementById('tabbar').style.display='flex';
   setInterval(render, 1000);
   render();
 }
@@ -220,4 +273,4 @@ if(window.Telegram && window.Telegram.WebApp){
 }
 </script>
 </body>
-</html>
+  </html>
