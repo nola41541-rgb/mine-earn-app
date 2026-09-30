@@ -69,10 +69,17 @@
   .wallet-box{background:#0f1730;border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--muted);word-break:break-all;}
   .wallet-box b{color:#fff;}
   .support-btn{display:block;text-align:center;background:#0f1730;color:var(--gold);padding:12px;border-radius:10px;text-decoration:none;font-weight:bold;margin-top:10px;}
+  .gate-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:20px;}
+  .gate-icon{font-size:48px;margin-bottom:16px;}
+  .gate-title{font-size:20px;font-weight:bold;margin-bottom:8px;}
+  .gate-sub{color:var(--muted);font-size:14px;margin-bottom:24px;}
+  .gate-channel-btn{display:block;width:100%;max-width:320px;background:var(--card);color:#fff;padding:14px;border-radius:10px;text-decoration:none;font-weight:bold;margin-bottom:10px;}
+  .gate-verify-btn{width:100%;max-width:320px;background:var(--gold);color:#1a1500;padding:14px;border:none;border-radius:10px;font-weight:bold;font-size:15px;margin-top:10px;}
+  .gate-error{color:#ff6b6b;font-size:13px;margin-top:12px;min-height:16px;}
 </style>
 </head>
 <body>
-<div id="app"><div class="loading" id="loadingMsg">Loading your data...</div></div>
+<div id="app"><div class="loading" id="loadingMsg">Loading...</div></div>
 
 <nav class="tabbar" id="tabbar" style="display:none;">
   <button class="tab-btn active" id="btn-mine" onclick="showTab('mine')">⛏️<br>Mine</button>
@@ -91,6 +98,12 @@
 const SUPABASE_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0YXFyYWhpcWpma2RmY3JiZXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4NDgwMjMsImV4cCI6MjEwNTQyNDAyM30.2DcbBtWcrbWYOAgyanz9-CsFdoK6Ynwu-CMn9w9bZcc';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CHECK_MEMBERSHIP_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/clever-worker';
+const CHANNELS_TO_JOIN = [
+  { name: 'Boss Crypto Hub', link: 'https://t.me/bosscryptohub' },
+  { name: 'MineEarn Announcement', link: 'https://t.me/mineearnhub' },
+];
 
 const OWNER_TG_ID = '8756903037';
 const SUPPORT_LINK = 'https://t.me/mineearnsupport';
@@ -134,6 +147,49 @@ let state = null;
 
 function defaultSlots(){
   return SLOT_CONFIG.map(()=>({sessions:0, state:'idle', endTime:null, adsWatched:0}));
+}
+
+async function checkMembership(){
+  if(IS_OWNER) return true;
+  try{
+    const res = await fetch(CHECK_MEMBERSHIP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telegram_id: TG_ID })
+    });
+    const data = await res.json();
+    return !!data.joined;
+  }catch(e){
+    console.error('Membership check failed', e);
+    return false;
+  }
+}
+
+function renderGate(){
+  const channelsHtml = CHANNELS_TO_JOIN.map(c=>
+    '<a class="gate-channel-btn" href="'+c.link+'" target="_blank">🔗 Join '+c.name+'</a>'
+  ).join('');
+  document.getElementById('app').innerHTML = `
+    <div class="gate-screen">
+      <div class="gate-icon">🔒</div>
+      <div class="gate-title">Join our channels to continue</div>
+      <div class="gate-sub">You must be a member of both channels below to use MineEarn.</div>
+      ${channelsHtml}
+      <button class="gate-verify-btn" onclick="handleVerify()">✅ I've Joined - Verify</button>
+      <div class="gate-error" id="gateError"></div>
+    </div>
+  `;
+}
+
+async function handleVerify(){
+  const errBox = document.getElementById('gateError');
+  errBox.textContent = 'Checking...';
+  const ok = await checkMembership();
+  if(ok){
+    startApp();
+  } else {
+    errBox.textContent = 'You have not joined both channels yet. Please join, then tap verify again.';
+  }
 }
 
 async function loadState(){
@@ -396,7 +452,7 @@ function render(){
   });
 }
 
-async function init(){
+async function startApp(){
   state = await loadState();
   const name = TG_USER ? (TG_USER.first_name||'') + (TG_USER.last_name?(' '+TG_USER.last_name):'') : 'Guest';
   const username = TG_USER && TG_USER.username ? '@'+TG_USER.username : '';
@@ -492,6 +548,15 @@ async function init(){
   setInterval(render, 1000);
   render();
   renderTasks();
+}
+
+async function init(){
+  const joined = await checkMembership();
+  if(joined){
+    startApp();
+  } else {
+    renderGate();
+  }
 }
 init();
 
