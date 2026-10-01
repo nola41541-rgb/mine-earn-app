@@ -154,7 +154,11 @@ async function checkMembership(){
   try{
     const res = await fetch(CHECK_MEMBERSHIP_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'apikey': SUPABASE_KEY
+      },
       body: JSON.stringify({ telegram_id: TG_ID })
     });
     const data = await res.json();
