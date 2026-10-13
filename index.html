@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MineEarn</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{--bg:#0a0f23;--card:#131a35;--gold:#ffd23c;--text:#fff;--muted:#9aa4c7;}
@@ -154,11 +155,7 @@ async function checkMembership(){
   try{
     const res = await fetch(CHECK_MEMBERSHIP_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'apikey': SUPABASE_KEY
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ telegram_id: TG_ID })
     });
     const data = await res.json();
@@ -224,24 +221,27 @@ function fmtTime(ms){
   return String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
 }
 
-function watchAd(){
-  return new Promise((resolve)=>{
-    const modal = document.getElementById('adModal');
-    const text = document.getElementById('adText');
-    modal.style.display='flex';
-    let count=3;
-    text.textContent = "Ad playing... "+count;
-    const iv = setInterval(()=>{
-      count--;
-      if(count<=0){
-        clearInterval(iv);
-        modal.style.display='none';
-        resolve();
-      } else {
-        text.textContent = "Ad playing... "+count;
-      }
-    },1000);
-  });
+const ADSGRAM_BLOCK_ID = '53776';
+let adController = null;
+function getAdController(){
+  if(!adController && window.Adsgram){
+    try{ adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID }); }catch(e){ console.error('Adsgram init failed', e); }
+  }
+  return adController;
+}
+
+// Resolves true only if the user watched the whole ad
+async function watchAd(){
+  const ctrl = getAdController();
+  if(!ctrl){ alert('Ads are not available right now. Please try again in a moment.'); return false; }
+  try{
+    const result = await ctrl.show();
+    return !!(result && result.done);
+  }catch(e){
+    console.error('Ad error', e);
+    alert('Ad was skipped or no ad is available. Watch the full ad to collect.');
+    return false;
+  }
 }
 
 async function handleCollect(i){
@@ -251,7 +251,13 @@ async function handleCollect(i){
   slot.state='watching';
   render();
   for(let a=slot.adsWatched; a<cfg.ads; a++){
-    await watchAd();
+    const watched = await watchAd();
+    if(!watched){
+      slot.state='ready';
+      await saveState();
+      render();
+      return;
+    }
     slot.adsWatched++;
     await saveState();
     render();
