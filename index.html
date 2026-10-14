@@ -195,24 +195,32 @@ async function handleVerify(){
   }
 }
 
+const API_URL = SUPABASE_URL + '/functions/v1/dynamic-endpoint';
+async function api(action, payload){
+  const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY },
+    body: JSON.stringify(Object.assign({ action, initData }, payload || {}))
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+function applyServerState(s){
+  state.balance = s.balance;
+  state.slots = s.slots;
+  state.referralCount = s.referralCount;
+  state.tasksCompleted = s.tasksCompleted;
+}
 async function loadState(){
-  const { data } = await sb.from('users').select('*').eq('telegram_id', TG_ID).maybeSingle();
-  if(data){
-    let slots, tasksCompleted;
-    try{ slots = JSON.parse(data.slots); }catch(e){ slots = defaultSlots(); }
-    try{ tasksCompleted = JSON.parse(data.tasks_completed || '[]'); }catch(e){ tasksCompleted = []; }
-    slots.forEach(sl=>{ if(sl.state==='watching') sl.state='ready'; });
-    return { balance: data.balance, slots, referralCount: data.referral_count||0, tasksCompleted };
-  } else {
-    const initial = { telegram_id: TG_ID, balance:0, slots: JSON.stringify(defaultSlots()), referral_count:0, tasks_completed: '[]' };
-    await sb.from('users').insert(initial);
-    return { balance:0, slots: defaultSlots(), referralCount:0, tasksCompleted: [] };
-  }
+  const r = await api('load');
+  const s = r.state;
+  s.slots.forEach(sl=>{ if(sl.state==='watching') sl.state='mining'; });
+  return s;
 }
-
-async function saveState(){
-  await sb.from('users').update({ balance: state.balance, slots: JSON.stringify(state.slots), tasks_completed: JSON.stringify(state.tasksCompleted) }).eq('telegram_id', TG_ID);
-}
+// All saving now happens on the server; kept as a no-op so old calls are harmless
+async function saveState(){}
 
 function fmtTime(ms){
   if(ms<0) ms=0;
@@ -255,39 +263,36 @@ async function handleCollect(i){
   const slot = state.slots[i];
   if(slot.state!=='ready') return;
   slot.state='watching';
+  slot.adsWatched=0;
   render();
-  for(let a=slot.adsWatched; a<cfg.ads; a++){
+  for(let a=0; a<cfg.ads; a++){
     const watched = await watchAd();
     if(!watched){
       slot.state='ready';
-      await saveState();
+      slot.adsWatched=0;
       render();
       return;
     }
     slot.adsWatched++;
-    await saveState();
     render();
   }
-  state.balance += cfg.coins;
-  slot.sessions++;
-  slot.adsWatched=0;
-  if(slot.sessions>=MAX_SESSIONS){
-    slot.state='completed';
-    slot.endTime=null;
-  } else {
-    slot.state='mining';
-    slot.endTime = Date.now()+SESSION_MS;
+  try{
+    const r = await api('collect', { i });
+    applyServerState(r.state);
+  }catch(e){
+    alert(e.message);
+    slot.state='ready';
   }
-  await saveState();
   render();
 }
 
 async function handleStart(i){
   const slot = state.slots[i];
   if(slot.state!=='idle') return;
-  slot.state='mining';
-  slot.endTime = Date.now()+SESSION_MS;
-  await saveState();
+  try{
+    const r = await api('start', { i });
+    applyServerState(r.state);
+  }catch(e){ alert(e.message); }
   render();
 }
 
@@ -298,8 +303,7 @@ function selectMethod(m){
 }
 
 async function loadHistory(){
-  const { data } = await sb.from('withdrawals').select('*').eq('telegram_id', TG_ID).order('created_at', { ascending:false });
-  return data || [];
+  try{ const r = await api('history'); return r.rows || []; }catch(e){ return []; }
 }
 
 async function renderHistory(){
@@ -330,17 +334,20 @@ async function handleWithdraw(){
   if(!amt || amt < MIN_WITHDRAW){ msg.textContent = 'Minimum withdrawal is '+MIN_WITHDRAW.toLocaleString()+' coins.'; return; }
   if(amt > state.balance){ msg.textContent = 'Insufficient balance.'; return; }
   if(!wallet){ msg.textContent = 'Please enter your wallet address.'; return; }
-  await sb.from('withdrawals').insert({ telegram_id:TG_ID, amount:amt, method:selectedMethod, wallet_address:wallet, status:'pending' });
-  state.balance -= amt;
-  await saveState();
-  amtInput.value=''; walletInput.value='';
+  try{
+    const r = await api('withdraw', { amount: amt, method: selectedMethod, wallet });
+    applyServerState(r.state);
+    amtInput.value=''; walletInput.value='';
+  }catch(e){
+    msg.textContent = e.message;
+    return;
+  }
   render();
   renderHistory();
 }
 
 async function loadTasks(){
-  const { data } = await sb.from('tasks').select('*').eq('status','active').order('created_at', { ascending:false });
-  return data || [];
+  try{ const r = await api('tasks'); return r.rows || []; }catch(e){ return []; }
 }
 
 async function renderTasks(){
@@ -369,12 +376,10 @@ async function renderTasks(){
 
 async function handleClaimTask(taskId, reward){
   if(state.tasksCompleted.includes(taskId)) return;
-  state.balance += reward;
-  state.tasksCompleted.push(taskId);
-  await saveState();
-  const { data } = await sb.from('tasks').select('completions_count').eq('id', taskId).maybeSingle();
-  const newCount = (data ? data.completions_count : 0) + 1;
-  await sb.from('tasks').update({ completions_count: newCount }).eq('id', taskId);
+  try{
+    const r = await api('claimTask', { taskId });
+    applyServerState(r.state);
+  }catch(e){ alert(e.message); }
   render();
   renderTasks();
 }
@@ -396,14 +401,18 @@ async function handleCreateTask(){
   msg.textContent='';
   msg.className='error-msg';
   if(!title || !link || !max || max<100){ msg.textContent = 'Fill all fields (minimum 100 completions).'; return; }
-  const reward = type==='telegram' ? 250 : 300;
-  const status = IS_OWNER ? 'active' : 'pending_payment';
-  await sb.from('tasks').insert({ creator_id:TG_ID, title, link, type, reward, max_completions:max, completions_count:0, status });
+  let result;
+  try{
+    result = await api('createTask', { title, link, type, max });
+  }catch(e){
+    msg.textContent = e.message;
+    return;
+  }
   document.getElementById('taskTitle').value='';
   document.getElementById('taskLink').value='';
   document.getElementById('taskMax').value='';
   msg.className='success-msg';
-  if(IS_OWNER){
+  if(result.active){
     msg.textContent = '✅ Task created and is now live!';
   } else {
     const fee = (0.10*(max/100)).toFixed(2);
@@ -469,7 +478,12 @@ function render(){
 }
 
 async function startApp(){
-  state = await loadState();
+  try{
+    state = await loadState();
+  }catch(e){
+    document.getElementById('app').innerHTML = '<div style="text-align:center;padding:40px 16px;color:#ff6b6b;">Could not load your data: '+(e && e.message ? e.message : 'unknown error')+'<br><br>Please close and reopen the app from Telegram.</div>';
+    return;
+  }
   const name = TG_USER ? (TG_USER.first_name||'') + (TG_USER.last_name?(' '+TG_USER.last_name):'') : 'Guest';
   const username = TG_USER && TG_USER.username ? '@'+TG_USER.username : '';
   const photo = TG_USER && TG_USER.photo_url ? '<img src="'+TG_USER.photo_url+'">' : '⛏️';
