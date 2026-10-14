@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MineEarn</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<script src='//libtl.com/sdk.js' data-zone='12030270' data-sdk='show_12030270'></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{--bg:#0a0f23;--card:#131a35;--gold:#ffd23c;--text:#fff;--muted:#9aa4c7;}
@@ -221,25 +221,29 @@ function fmtTime(ms){
   return String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
 }
 
-const ADSGRAM_BLOCK_ID = '53776';
-let adController = null;
-function getAdController(){
-  if(!adController && window.Adsgram){
-    try{ adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID }); }catch(e){ console.error('Adsgram init failed', e); }
-  }
-  return adController;
-}
-
-// Resolves true only if the user watched the whole ad
-async function watchAd(){
-  const ctrl = getAdController();
-  if(!ctrl){ alert('Ads are not available right now. Please try again in a moment.'); return false; }
+// Monetag rewarded interstitial (zone 12030270)
+function preloadAd(){
   try{
-    const result = await ctrl.show();
-    return !!(result && result.done);
+    if(typeof show_12030270==='function'){
+      show_12030270({ type:'preload', ymid:String(TG_ID) }).catch(()=>{});
+    }
+  }catch(e){}
+}
+window.addEventListener('load', ()=>setTimeout(preloadAd, 1500));
+
+// Resolves true only if the ad finished without error
+async function watchAd(){
+  if(typeof show_12030270!=='function'){
+    alert('Ads are not available right now. Please try again in a moment.');
+    return false;
+  }
+  try{
+    await show_12030270({ ymid:String(TG_ID) });
+    preloadAd();
+    return true;
   }catch(e){
     console.error('Ad error', e);
-    alert('Ad was skipped or no ad is available. Watch the full ad to collect.');
+    alert('Ad failed or none is available right now. Please try again.');
     return false;
   }
 }
