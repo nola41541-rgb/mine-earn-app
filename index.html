@@ -115,14 +115,13 @@ const RATE = 0.16/16000;
 const MIN_WITHDRAW = 20000;
 const FEE_PERCENT = 5;
 const SLOT_CONFIG = [
-  {name:"Slot 1", coins:140, ads:1},
-  {name:"Slot 2", coins:185, ads:1},
-  {name:"Slot 3", coins:250, ads:1},
-  {name:"Slot 4", coins:300, ads:2},
-  {name:"Slot 5", coins:325, ads:2},
-  {name:"Slot 6", coins:400, ads:3},
+  {name:"Slot 1", coins:200, ads:2},
+  {name:"Slot 2", coins:200, ads:2},
+  {name:"Slot 3", coins:200, ads:2},
+  {name:"Slot 4", coins:200, ads:2},
+  {name:"Slot 5", coins:200, ads:2},
 ];
-const MAX_SESSIONS = 10;
+const MAX_SESSIONS = 5;
 const SESSION_MS = 30*60*1000;
 let selectedMethod = 'USDT_BEP20';
 
@@ -196,8 +195,7 @@ async function handleVerify(){
   }
 }
 
-const API_URL = SUPABASE_URL + '/functions/v1/dynamic-action';
-const AD_URL = SUPABASE_URL + '/functions/v1/dynamic-api';
+const API_URL = SUPABASE_URL + '/functions/v1/smooth-handler';
 const WD_URL = SUPABASE_URL + '/functions/v1/smart-worker';
 // Phone clocks can be wrong, so timers use Telegram's server time (auth_date) as the reference
 let CLOCK_OFFSET = 0;
@@ -329,52 +327,6 @@ async function handleCollect(i){
     slot.state='ready';
   }
   render();
-}
-
-let adBusy = false, adUsed = 0, adMax = 50;
-function setAdCard(used, max){
-  if(used!=null){ adUsed = used; adMax = max; }
-  used = adUsed; max = adMax;
-  const c = document.getElementById('adCount');
-  const b = document.getElementById('adBtn');
-  if(!c || !b) return;
-  c.textContent = used+'/'+max+' ads watched today';
-  const full = used >= max;
-  b.disabled = full || adBusy;
-  b.textContent = full ? '✅ Daily limit reached' : (adBusy ? 'Please wait...' : '🎬 Watch Ad & Earn');
-}
-async function refreshAdCard(){
-  try{ const r = await api('adStatus', {}, AD_URL); setAdCard(r.used, r.max); }
-  catch(e){ const c = document.getElementById('adCount'); if(c) c.textContent = 'Could not load ad status.'; }
-}
-async function handleWatchAd(){
-  if(adBusy) return;
-  adBusy = true;
-  setAdCard();
-  try{
-    const r0 = await api('adStart');
-    const watched = await watchAd(r0.ymid);
-    if(watched){
-      let done = false, lastErr = '';
-      for(let t=0; t<8 && !done; t++){
-        try{
-          const r = await api('adClaim', { ymid: r0.ymid }, AD_URL);
-          state.balance = r.balance;
-          adBusy = false;
-          setAdCard(r.used, r.max);
-          done = true;
-        }catch(e){
-          lastErr = e.message;
-          if(lastErr.indexOf('not confirmed yet')===-1) break;
-          await new Promise(res=>setTimeout(res, 2500));
-        }
-      }
-      if(!done) alert(lastErr);
-    }
-  }catch(e){ alert(e.message); }
-  adBusy = false;
-  render();
-  refreshAdCard();
 }
 
 async function handleStart(i){
@@ -576,6 +528,9 @@ function render(){
   document.getElementById('profileReferrals').textContent = state.referralCount;
   document.getElementById('wdBalance').textContent = state.balance.toLocaleString()+" coins";
 
+  const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
+  const dEl = document.getElementById('dailyAds');
+  if(dEl) dEl.textContent = 'Ads today: '+adsDone+'/50 • +100 coins per ad';
   const container = document.getElementById('slots');
   container.innerHTML='';
   SLOT_CONFIG.forEach((cfg,i)=>{
@@ -585,7 +540,7 @@ function render(){
     const pct = Math.min(100, (slot.sessions/MAX_SESSIONS)*100);
     let btnHtml='';
     if(slot.state==='completed'){
-      btnHtml = '<button class="action btn-done" disabled>✅ Completed</button>';
+      btnHtml = '<button class="action btn-done" disabled>✅ Done for today (resets 00:00 UTC)</button>';
     } else if(slot.state==='idle'){
       btnHtml = '<button class="action btn-start" onclick="handleStart('+i+')">▶️ Start Mining</button>';
     } else if(slot.state==='mining'){
@@ -605,9 +560,9 @@ function render(){
     div.innerHTML = `
       <div class="slot-top">
         <div class="slot-name">${cfg.name}</div>
-        <div class="slot-rate">+${cfg.coins} coins/hr</div>
+        <div class="slot-rate">+${cfg.coins} coins / ${cfg.ads} ads</div>
       </div>
-      <div class="slot-progress">${slot.sessions}/${MAX_SESSIONS} sessions completed</div>
+      <div class="slot-progress">${slot.sessions}/${MAX_SESSIONS} collects today</div>
       <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
       ${btnHtml}
     `;
@@ -642,11 +597,7 @@ async function startApp(){
         <div class="coins" id="balanceCoins"></div>
         <div class="usd" id="balanceUsd"></div>
       </div>
-      <div class="slot" id="adCard">
-        <div class="slot-top"><div class="slot-name">🎬 Watch Ad</div><div class="slot-rate">+100 coins</div></div>
-        <div class="slot-progress" id="adCount">Loading...</div>
-        <button class="action btn-collect" id="adBtn" onclick="handleWatchAd()">🎬 Watch Ad &amp; Earn</button>
-      </div>
+      <div class="task-sub" id="dailyAds" style="text-align:center;margin-bottom:10px;"></div>
       <div id="slots"></div>
     </div>
     <div class="tab-content" id="tab-tasks">
@@ -720,7 +671,6 @@ async function startApp(){
     </div>
   `;
   document.getElementById('tabbar').style.display='flex';
-  refreshAdCard();
   setInterval(render, 1000);
   render();
   renderTasks();
