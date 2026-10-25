@@ -112,7 +112,8 @@ const WALLET_USDT = '0xc57a0B59CC0Fad7Fc8a12fCB83F1Fc1B8E7eC951';
 const WALLET_TON = 'UQDcm7tz1hnpaVus3UzLIkeV-scuOOLbgskgm3qG2SGmj4ai';
 
 const RATE = 0.16/16000;
-const MIN_WITHDRAW = 65000;
+const MIN_WITHDRAW = 20000;
+const FEE_PERCENT = 5;
 const SLOT_CONFIG = [
   {name:"Slot 1", coins:140, ads:1},
   {name:"Slot 2", coins:185, ads:1},
@@ -196,9 +197,10 @@ async function handleVerify(){
 }
 
 const API_URL = SUPABASE_URL + '/functions/v1/dynamic-action';
-async function api(action, payload){
+const WD_URL = SUPABASE_URL + '/functions/v1/clever-function';
+async function api(action, payload, url){
   const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
-  const res = await fetch(API_URL, {
+  const res = await fetch(url || API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY },
     body: JSON.stringify(Object.assign({ action, initData }, payload || {}))
@@ -325,7 +327,7 @@ function selectMethod(m){
 }
 
 async function loadHistory(){
-  try{ const r = await api('history'); return r.rows || []; }catch(e){ return []; }
+  try{ const r = await api('history', {}, WD_URL); return r.rows || []; }catch(e){ return []; }
 }
 
 async function renderHistory(){
@@ -336,14 +338,29 @@ async function renderHistory(){
     container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px;">No withdrawal history yet.</div>';
     return;
   }
+  const BADGES = {
+    pending:['⏳ Pending','#f0b429'], approved:['✅ Approved','#4cc38a'], paid:['💸 Paid','#4cc38a'],
+    rejected:['❌ Rejected','#ef6461'], cancelled:['⚠️ Cancelled','#9aa3b2']
+  };
   container.innerHTML = rows.map(r=>{
-    const approved = r.status==='approved';
-    const badgeClass = approved ? 'badge-approved' : 'badge-pending';
-    const badgeText = approved ? '✅ Approved' : '⏳ Pending';
+    const b = BADGES[r.status] || [r.status,'#9aa3b2'];
     const methodLabel = r.method==='TON' ? 'TON' : 'USDT (BEP20)';
     const date = new Date(r.created_at).toLocaleDateString();
-    return '<div class="wd-item"><div class="wd-top"><span>'+r.amount.toLocaleString()+' coins</span><span class="'+badgeClass+'">'+badgeText+'</span></div><div class="wd-sub">'+methodLabel+' • '+date+'</div></div>';
+    const net = r.net!=null ? ' • you get $'+(r.net*RATE).toFixed(4) : '';
+    const tx = r.txid ? '<div class="wd-sub" style="word-break:break-all;">TXID: '+esc(r.txid)+'</div>' : '';
+    return '<div class="wd-item"><div class="wd-top"><span>'+Number(r.amount).toLocaleString()+' coins</span><span style="color:'+b[1]+'">'+b[0]+'</span></div><div class="wd-sub">'+methodLabel+' • '+date+net+'</div>'+tx+'</div>';
   }).join('');
+}
+
+function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function wdPreview(){
+  const el = document.getElementById('wdPreview');
+  const amt = parseInt(document.getElementById('wdAmount').value);
+  if(!el) return;
+  if(!amt || amt<MIN_WITHDRAW){ el.textContent = 'Fee: '+FEE_PERCENT+'% (network fees may apply)'; return; }
+  const fee = Math.ceil(amt*FEE_PERCENT/100);
+  el.textContent = 'Fee: '+fee.toLocaleString()+' coins • You receive about $'+((amt-fee)*RATE).toFixed(4);
 }
 
 async function handleWithdraw(){
@@ -357,8 +374,8 @@ async function handleWithdraw(){
   if(amt > state.balance){ msg.textContent = 'Insufficient balance.'; return; }
   if(!wallet){ msg.textContent = 'Please enter your wallet address.'; return; }
   try{
-    const r = await api('withdraw', { amount: amt, method: selectedMethod, wallet });
-    applyServerState(r.state);
+    const r = await api('withdraw', { amount: amt, method: selectedMethod, wallet }, WD_URL);
+    state.balance = r.balance;
     amtInput.value=''; walletInput.value='';
   }catch(e){
     msg.textContent = e.message;
@@ -366,6 +383,37 @@ async function handleWithdraw(){
   }
   render();
   renderHistory();
+}
+
+async function renderAdminWd(){
+  const box = document.getElementById('adminWd');
+  if(!box) return;
+  let rows = [];
+  try{ const r = await api('adminList', {}, WD_URL); rows = r.rows || []; }catch(e){ box.textContent = e.message; return; }
+  const open = rows.filter(r=>r.status==='pending'||r.status==='approved');
+  if(!open.length){ box.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px;">No open requests.</div>'; return; }
+  box.innerHTML = open.map(r=>{
+    const btns = r.status==='pending'
+      ? '<button class="action btn-start" onclick="adminSet('+r.id+',\'approved\')">Approve</button>'
+      : '<button class="action btn-start" onclick="adminSet('+r.id+',\'paid\')">Mark Paid</button>';
+    return '<div class="wd-item"><div class="wd-top"><span>#'+r.id+' • '+Number(r.amount).toLocaleString()+' coins</span><span>'+esc(r.status)+'</span></div>'
+      +'<div class="wd-sub">User '+esc(r.telegram_id)+' • '+esc(r.method)+' • send $'+((r.net||0)*RATE).toFixed(4)+'</div>'
+      +'<div class="wd-sub" style="word-break:break-all;user-select:all;">'+esc(r.wallet_address)+'</div>'
+      +btns
+      +'<button class="action" onclick="adminSet('+r.id+',\'rejected\')">Reject (refund)</button>'
+      +'<button class="action" onclick="adminSet('+r.id+',\'cancelled\')">Cancel (refund)</button></div>';
+  }).join('');
+}
+async function adminSet(id, status){
+  let txid = '';
+  if(status==='paid'){
+    txid = prompt('Paste the transaction ID (TXID):') || '';
+    if(!txid.trim()) return;
+  } else if(!confirm('Set request #'+id+' to '+status+'?')) return;
+  try{
+    await api('adminSet', { id, status, txid }, WD_URL);
+  }catch(e){ alert(e.message); }
+  renderAdminWd();
 }
 
 async function loadTasks(){
@@ -448,7 +496,7 @@ function showTab(tab){
   document.getElementById('tab-'+tab).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
   document.getElementById('btn-'+tab).classList.add('active');
-  if(tab==='withdraw'){ renderHistory(); }
+  if(tab==='withdraw'){ renderHistory(); if(IS_OWNER) renderAdminWd(); wdPreview(); }
   if(tab==='tasks'){ renderTasks(); }
 }
 
@@ -577,7 +625,8 @@ async function startApp(){
       </div>
       <div class="form-group">
         <label class="form-label">Amount (min ${MIN_WITHDRAW.toLocaleString()} coins)</label>
-        <input type="number" id="wdAmount" class="form-input" placeholder="e.g. 65000">
+        <input type="number" id="wdAmount" class="form-input" placeholder="e.g. 20000" oninput="wdPreview()">
+        <div class="task-sub" id="wdPreview" style="margin-top:6px;"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Payout method</label>
@@ -594,6 +643,7 @@ async function startApp(){
       <button class="action btn-start" onclick="handleWithdraw()">Request Withdrawal</button>
       <div class="section-title">History</div>
       <div id="wdHistory"></div>
+      ${IS_OWNER ? '<div class="section-title">Admin: withdrawal requests</div><div id="adminWd"></div>' : ''}
     </div>
   `;
   document.getElementById('tabbar').style.display='flex';
