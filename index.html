@@ -195,7 +195,7 @@ async function handleVerify(){
   }
 }
 
-const API_URL = SUPABASE_URL + '/functions/v1/dynamic-endpoint';
+const API_URL = SUPABASE_URL + '/functions/v1/dynamic-action';
 async function api(action, payload){
   const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
   const res = await fetch(API_URL, {
@@ -235,20 +235,20 @@ function fmtTime(ms){
 function preloadAd(){
   try{
     if(typeof show_12030270==='function'){
-      show_12030270({ type:'preload', ymid:String(TG_ID) }).catch(()=>{});
+      show_12030270({ type:'preload' }).catch(()=>{});
     }
   }catch(e){}
 }
 window.addEventListener('load', ()=>setTimeout(preloadAd, 1500));
 
 // Resolves true only if the ad finished without error
-async function watchAd(){
+async function watchAd(ymid){
   if(typeof show_12030270!=='function'){
     alert('Ads are not available right now. Please try again in a moment.');
     return false;
   }
   try{
-    await show_12030270({ ymid:String(TG_ID) });
+    await show_12030270({ ymid:String(ymid) });
     preloadAd();
     return true;
   }catch(e){
@@ -265,22 +265,44 @@ async function handleCollect(i){
   slot.state='watching';
   slot.adsWatched=0;
   render();
+  const ymids = [];
   for(let a=0; a<cfg.ads; a++){
-    const watched = await watchAd();
+    let ymid = null;
+    try{
+      const r0 = await api('adStart');
+      ymid = r0.ymid;
+    }catch(e){
+      alert(e.message);
+      slot.state='ready';
+      slot.adsWatched=0;
+      render();
+      return;
+    }
+    const watched = await watchAd(ymid);
     if(!watched){
       slot.state='ready';
       slot.adsWatched=0;
       render();
       return;
     }
+    ymids.push(ymid);
     slot.adsWatched++;
     render();
   }
-  try{
-    const r = await api('collect', { i });
-    applyServerState(r.state);
-  }catch(e){
-    alert(e.message);
+  let done = false, lastErr = '';
+  for(let t=0; t<8 && !done; t++){
+    try{
+      const r = await api('collect', { i, ymids });
+      applyServerState(r.state);
+      done = true;
+    }catch(e){
+      lastErr = e.message;
+      if(lastErr.indexOf('not confirmed yet')===-1) break;
+      await new Promise(res=>setTimeout(res, 2500));
+    }
+  }
+  if(!done){
+    alert(lastErr);
     slot.state='ready';
   }
   render();
