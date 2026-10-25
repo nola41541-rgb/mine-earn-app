@@ -198,6 +198,25 @@ async function handleVerify(){
 
 const API_URL = SUPABASE_URL + '/functions/v1/dynamic-action';
 const WD_URL = SUPABASE_URL + '/functions/v1/clever-function';
+// Phone clocks can be wrong, so timers use Telegram's server time (auth_date) as the reference
+let CLOCK_OFFSET = 0;
+function nowMs(){ return Date.now() + CLOCK_OFFSET; }
+(function(){
+  try{
+    const ad = Number(window.Telegram.WebApp.initDataUnsafe.auth_date);
+    if(ad > 0){
+      const off = ad*1000 - Date.now();
+      if(Math.abs(off) < 12*3600*1000) CLOCK_OFFSET = off;
+    }
+  }catch(e){}
+})();
+// After the server sets a fresh 30-minute timer, use it to correct the offset precisely
+function calibrate(slot){
+  if(slot && slot.endTime && slot.state==='mining'){
+    const off = (Number(slot.endTime) - SESSION_MS) - Date.now();
+    if(Math.abs(off) < 12*3600*1000) CLOCK_OFFSET = off;
+  }
+}
 async function api(action, payload, url){
   const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
   const res = await fetch(url || API_URL, {
@@ -296,6 +315,7 @@ async function handleCollect(i){
     try{
       const r = await api('collect', { i, ymids });
       applyServerState(r.state);
+      calibrate(state.slots[i]);
       done = true;
     }catch(e){
       lastErr = e.message;
@@ -316,6 +336,7 @@ async function handleStart(i){
   try{
     const r = await api('start', { i });
     applyServerState(r.state);
+    calibrate(state.slots[i]);
   }catch(e){ alert(e.message); }
   render();
 }
@@ -399,9 +420,9 @@ async function renderAdminWd(){
     return '<div class="wd-item"><div class="wd-top"><span>#'+r.id+' • '+Number(r.amount).toLocaleString()+' coins</span><span>'+esc(r.status)+'</span></div>'
       +'<div class="wd-sub">User '+esc(r.telegram_id)+' • '+esc(r.method)+' • send $'+((r.net||0)*RATE).toFixed(4)+'</div>'
       +'<div class="wd-sub" style="word-break:break-all;user-select:all;">'+esc(r.wallet_address)+'</div>'
-      +btns
-      +'<button class="action" onclick="adminSet('+r.id+',\'rejected\')">Reject (refund)</button>'
-      +'<button class="action" onclick="adminSet('+r.id+',\'cancelled\')">Cancel (refund)</button></div>';
+      +'<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">'+btns
+      +'<button class="action" style="background:#3a2230;color:#ff8a8a;" onclick="adminSet('+r.id+',\'rejected\')">Reject (refund)</button>'
+      +'<button class="action" style="background:#2a2f45;color:#c7cce0;" onclick="adminSet('+r.id+',\'cancelled\')">Cancel (refund)</button></div></div>';
   }).join('');
 }
 async function adminSet(id, status){
@@ -521,7 +542,7 @@ function render(){
     } else if(slot.state==='idle'){
       btnHtml = '<button class="action btn-start" onclick="handleStart('+i+')">▶️ Start Mining</button>';
     } else if(slot.state==='mining'){
-      const remain = slot.endTime - Date.now();
+      const remain = slot.endTime - nowMs();
       if(remain<=0){
         slot.state='ready';
         saveState();
