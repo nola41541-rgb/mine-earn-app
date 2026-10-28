@@ -279,41 +279,35 @@ async function watchAd(ymid){
   }
 }
 
+// One ad per tap: the user must press "Watch ad" before every single ad (no auto-chaining)
 async function handleCollect(i){
   const cfg = SLOT_CONFIG[i];
   const slot = state.slots[i];
-  if(slot.state!=='ready') return;
-  slot.state='watching';
-  slot.adsWatched=0;
-  render();
-  const ymids = [];
-  for(let a=0; a<cfg.ads; a++){
+  if(slot.busy) return;
+  if(slot.state!=='ready' && slot.state!=='watching') return;
+  if(slot.state==='ready'){ slot.state='watching'; slot.adsWatched=0; slot.ymids=[]; }
+  if(!slot.ymids) slot.ymids = [];
+  slot.busy = true; render();
+  if(slot.adsWatched < cfg.ads){
     let ymid = null;
-    try{
-      const r0 = await api('adStart');
-      ymid = r0.ymid;
-    }catch(e){
+    try{ ymid = (await api('adStart')).ymid; }
+    catch(e){
       alert(e.message);
-      slot.state='ready';
-      slot.adsWatched=0;
-      render();
-      return;
+      slot.busy = false;
+      if(slot.adsWatched===0) slot.state='ready';
+      render(); return;
     }
     const watched = await watchAd(ymid);
-    if(!watched){
-      slot.state='ready';
-      slot.adsWatched=0;
-      render();
-      return;
-    }
-    ymids.push(ymid);
+    if(!watched){ slot.busy = false; render(); return; }
+    slot.ymids.push(ymid);
     slot.adsWatched++;
-    render();
+    if(slot.adsWatched < cfg.ads){ slot.busy = false; render(); return; }
   }
+  // all required ads watched -> collect (retry while Monetag confirms)
   let done = false, lastErr = '';
   for(let t=0; t<8 && !done; t++){
     try{
-      const r = await api('collect', { i, ymids });
+      const r = await api('collect', { i, ymids: slot.ymids });
       applyServerState(r.state);
       calibrate(state.slots[i]);
       done = true;
@@ -323,10 +317,10 @@ async function handleCollect(i){
       await new Promise(res=>setTimeout(res, 2500));
     }
   }
-  if(!done){
-    alert(lastErr);
-    slot.state='ready';
-  }
+  const cur = state.slots[i];
+  cur.busy = false;
+  if(!done){ alert(lastErr); }
+  else { cur.ymids = []; }
   render();
 }
 
@@ -445,18 +439,14 @@ async function finishGame(score){
     + '<button class="action" style="margin-top:8px;" onclick="closeGameOverlay()">Back</button>';
 }
 
-// ---- Snake ----
-const SN = { N:15 };
+// ---- Snake (round snake, walls wrap around, 5 attempts per play) ----
+const SN = { N:15, maxAtt:5 };
 function snakeInit(){
   const cv = gEl('gCanvas');
   const size = Math.floor(Math.min(window.innerWidth-24, 360)/SN.N)*SN.N;
   cv.width = size; cv.height = size;
   SN.cell = size/SN.N;
-  SN.body = [{x:7,y:7},{x:6,y:7},{x:5,y:7}];
-  SN.dir = {x:1,y:0}; SN.next = {x:1,y:0};
-  SN.score = 0; SN.food = snakeFood();
-  gEl('gScore').textContent = 'Score 0';
-  snakeDraw();
+  SN.score = 0; SN.att = 1;
   let sx=0, sy=0;
   cv.ontouchstart = e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; e.preventDefault(); };
   cv.ontouchend = e=>{
@@ -465,7 +455,18 @@ function snakeInit(){
     if(Math.abs(dx)>Math.abs(dy)) snakeTurn(dx>0?1:-1,0); else snakeTurn(0,dy>0?1:-1);
     e.preventDefault();
   };
-  G.timer = setTimeout(snakeStep, 700);
+  snakeSpawn();
+}
+function snakeLabel(){ gEl('gScore').textContent = 'Score '+SN.score+' • Attempt '+SN.att+'/'+SN.maxAtt; }
+function snakeSpawn(){
+  SN.body = [{x:7,y:7},{x:6,y:7},{x:5,y:7}];
+  SN.dir = {x:1,y:0}; SN.next = {x:1,y:0};
+  SN.started = false; SN.dead = false;
+  SN.food = snakeFood();
+  gEl('gResult').style.display = 'none';
+  gEl('gPad').style.display = 'grid';
+  snakeLabel();
+  snakeDraw();
 }
 function snakeFood(){
   while(true){
@@ -474,29 +475,66 @@ function snakeFood(){
   }
 }
 function snakeTurn(x,y){
-  if(!G || G.over || G.id!=='snake') return;
+  if(!G || G.over || G.id!=='snake' || SN.dead) return;
+  if(!SN.started){
+    // first input starts the snake; if it points backwards, turn the snake around
+    if(x===-SN.dir.x && y===-SN.dir.y){ SN.body.reverse(); }
+    SN.dir = {x,y}; SN.next = {x,y};
+    SN.started = true;
+    G.timer = setTimeout(snakeStep, 200);
+    return;
+  }
   if(x===-SN.dir.x && y===-SN.dir.y) return;
   SN.next = {x,y};
 }
 function snakeStep(){
-  if(!G || G.over || G.id!=='snake') return;
+  if(!G || G.over || G.id!=='snake' || SN.dead) return;
   SN.dir = SN.next;
-  const h = {x:SN.body[0].x+SN.dir.x, y:SN.body[0].y+SN.dir.y};
+  const N = SN.N;
+  const h = { x:(SN.body[0].x+SN.dir.x+N)%N, y:(SN.body[0].y+SN.dir.y+N)%N };
   const ate = h.x===SN.food.x && h.y===SN.food.y;
   const tail = ate ? SN.body : SN.body.slice(0,-1);
-  if(h.x<0||h.y<0||h.x>=SN.N||h.y>=SN.N||tail.some(p=>p.x===h.x&&p.y===h.y)){
-    snakeDraw(); finishGame(SN.score); return;
-  }
+  if(tail.some(p=>p.x===h.x&&p.y===h.y)){ snakeDie(); return; }
   SN.body.unshift(h);
   if(ate){
     SN.score++;
-    gEl('gScore').textContent = 'Score '+SN.score;
+    snakeLabel();
     if(SN.score>=25){ snakeDraw(); finishGame(SN.score); return; }
     SN.food = snakeFood();
   } else SN.body.pop();
   snakeDraw();
-  const delay = Math.max(85, 230 - SN.score*6);
+  const delay = Math.max(120, 260 - SN.score*5);
   G.timer = setTimeout(snakeStep, delay);
+}
+function snakeDie(){
+  SN.dead = true;
+  if(G.timer) clearTimeout(G.timer);
+  snakeDraw();
+  const res = gEl('gResult');
+  gEl('gPad').style.display = 'none';
+  res.style.display = 'block';
+  if(SN.att >= SN.maxAtt){ finishGame(SN.score); return; }
+  const left = SN.maxAtt - SN.att;
+  res.innerHTML = '<div style="font-size:17px;font-weight:bold;">Oops! The snake bit itself</div>'
+    + '<div style="margin:8px 0;color:var(--muted);">Score so far: <b style="color:#fff;">'+SN.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
+    + '<button class="action btn-collect" onclick="snakeContinue()">🎬 Watch ad to continue</button>'
+    + '<button class="action" style="margin-top:8px;" onclick="finishGame(SN.score)">Finish &amp; see result</button>';
+}
+async function snakeContinue(){
+  const res = gEl('gResult');
+  await continuePlaceholderAd(res);
+  if(!G || G.over) return;
+  SN.att++;
+  snakeSpawn();
+}
+// TEST ONLY: labeled 3-second stand-in for the real "continue" ad
+function continuePlaceholderAd(el){
+  return new Promise(resolve=>{
+    let n = 3;
+    const draw = ()=>{ el.innerHTML = '<div style="color:var(--muted);font-size:12px;">AD PLACEHOLDER (TEST)</div><div style="font-size:40px;font-weight:bold;color:var(--gold);margin:10px 0;">'+n+'</div><div style="color:var(--muted);">Your next attempt starts after the ad...</div>'; };
+    draw();
+    const t = setInterval(()=>{ n--; if(n<=0){ clearInterval(t); resolve(); } else draw(); }, 1000);
+  });
 }
 function snakeDraw(){
   const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const k = SN.cell;
@@ -504,7 +542,23 @@ function snakeDraw(){
   c.strokeStyle = 'rgba(255,255,255,0.04)';
   for(let i=1;i<SN.N;i++){ c.beginPath(); c.moveTo(i*k,0); c.lineTo(i*k,cv.height); c.stroke(); c.beginPath(); c.moveTo(0,i*k); c.lineTo(cv.width,i*k); c.stroke(); }
   c.fillStyle = '#ff5c5c'; c.beginPath(); c.arc(SN.food.x*k+k/2, SN.food.y*k+k/2, k*0.38, 0, Math.PI*2); c.fill();
-  SN.body.forEach((p,i)=>{ c.fillStyle = i===0 ? '#ffe27a' : '#ffd23c'; c.fillRect(p.x*k+1, p.y*k+1, k-2, k-2); });
+  for(let i=SN.body.length-1;i>=0;i--){
+    const p = SN.body[i];
+    c.fillStyle = i===0 ? '#ffe27a' : (i%2 ? '#ffd23c' : '#f5c518');
+    c.beginPath(); c.arc(p.x*k+k/2, p.y*k+k/2, k*(i===0?0.48:0.42), 0, Math.PI*2); c.fill();
+  }
+  const h = SN.body[0];
+  const ex = SN.dir.x, ey = SN.dir.y, cx = h.x*k+k/2, cy = h.y*k+k/2;
+  const px = -ey, py = ex;
+  [-1,1].forEach(sgn=>{
+    const x = cx + ex*k*0.14 + px*sgn*k*0.17, y = cy + ey*k*0.14 + py*sgn*k*0.17;
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(x,y,k*0.1,0,Math.PI*2); c.fill();
+    c.fillStyle = '#111'; c.beginPath(); c.arc(x+ex*k*0.03,y+ey*k*0.03,k*0.05,0,Math.PI*2); c.fill();
+  });
+  if(!SN.started && !SN.dead){
+    c.fillStyle = 'rgba(255,255,255,0.9)'; c.font = 'bold '+Math.round(k*0.9)+'px sans-serif'; c.textAlign = 'center';
+    c.fillText('Swipe to start', cv.width/2, cv.height*0.72);
+  }
 }
 document.addEventListener('keydown', e=>{
   const m = {ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];
@@ -732,14 +786,16 @@ function render(){
       if(remain<=0){
         slot.state='ready';
         saveState();
-        btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch '+cfg.ads+' Ad'+(cfg.ads>1?'s':'')+' to Collect</button>';
+        btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch ad 1 of '+cfg.ads+' to Collect</button>';
       } else {
         btnHtml = '<button class="action btn-wait" disabled>⏳ '+fmtTime(remain)+'</button>';
       }
     } else if(slot.state==='ready'){
-      btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch '+cfg.ads+' Ad'+(cfg.ads>1?'s':'')+' to Collect</button>';
+      btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch ad 1 of '+cfg.ads+' to Collect</button>';
     } else if(slot.state==='watching'){
-      btnHtml = '<button class="action btn-wait" disabled>Watching ad '+(slot.adsWatched+1)+' of '+cfg.ads+'...</button>';
+      if(slot.busy) btnHtml = '<button class="action btn-wait" disabled>Please wait...</button>';
+      else if(slot.adsWatched>=cfg.ads) btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🔄 Try collecting again</button>';
+      else btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch ad '+(slot.adsWatched+1)+' of '+cfg.ads+'</button>';
     }
     div.innerHTML = `
       <div class="slot-top">
