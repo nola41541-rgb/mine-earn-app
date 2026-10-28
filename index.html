@@ -404,6 +404,17 @@ function quitGame(){
   }
   closeGameOverlay();
 }
+// TEST ONLY: a labeled 3-second stand-in for a real ad. Replace with a real rewarded ad before enabling claims.
+const GAME_AD_PLACEHOLDER = true;
+function placeholderAd(el){
+  return new Promise(resolve=>{
+    if(!GAME_AD_PLACEHOLDER){ el.innerHTML = 'Checking your result...'; return resolve(); }
+    let n = 3;
+    const draw = ()=>{ el.innerHTML = '<div style="color:var(--muted);font-size:12px;">AD PLACEHOLDER (TEST)</div><div style="font-size:40px;font-weight:bold;color:var(--gold);margin:10px 0;">'+n+'</div><div style="color:var(--muted);">Your result is on the way...</div>'; };
+    draw();
+    const t = setInterval(()=>{ n--; if(n<=0){ clearInterval(t); resolve(); } else draw(); }, 1000);
+  });
+}
 async function finishGame(score){
   if(!G || G.over) return;
   G.over = true;
@@ -411,9 +422,15 @@ async function finishGame(score){
   const res = gEl('gResult');
   gEl('gPad').style.display = 'none';
   res.style.display = 'block';
-  res.innerHTML = 'Checking your result...';
   let r;
-  try{ r = await api('gameFinish', { token:G.token, score }, GAMES_URL); }
+  try{
+    const out = await Promise.all([
+      placeholderAd(res),
+      api('gameFinish', { token:G.token, score }, GAMES_URL).then(v=>({v}), e=>({e}))
+    ]);
+    if(out[1].e) throw out[1].e;
+    r = out[1].v;
+  }
   catch(e){ res.innerHTML = '<div style="color:#ff6b6b;margin-bottom:10px;">'+esc(e.message)+'</div><button class="action btn-start" onclick="closeGameOverlay()">Back</button>'; return; }
   const id = G.id;
   const claimLine = !r.valid ? '<div style="color:#ff6b6b;">This result could not be verified.</div>'
