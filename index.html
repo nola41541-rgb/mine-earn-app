@@ -461,7 +461,7 @@ function snakeLabel(){ gEl('gScore').textContent = 'Score '+SN.score+' • Attem
 function snakeSpawn(){
   SN.body = [{x:7,y:7},{x:6,y:7},{x:5,y:7}];
   SN.dir = {x:1,y:0}; SN.next = {x:1,y:0};
-  SN.started = false; SN.dead = false;
+  SN.started = false; SN.dead = false; SN.resumed = false;
   SN.food = snakeFood();
   gEl('gResult').style.display = 'none';
   gEl('gPad').style.display = 'grid';
@@ -477,8 +477,16 @@ function snakeFood(){
 function snakeTurn(x,y){
   if(!G || G.over || G.id!=='snake' || SN.dead) return;
   if(!SN.started){
-    // first input starts the snake; if it points backwards, turn the snake around
-    if(x===-SN.dir.x && y===-SN.dir.y){ SN.body.reverse(); }
+    if(SN.resumed){
+      // continuing after an ad: ignore a swipe that would run straight into the body
+      const N = SN.N, hd = SN.body[0];
+      const tx = (hd.x+x+N)%N, ty = (hd.y+y+N)%N;
+      const blocked = SN.body.slice(0,-1).some(p=>p.x===tx&&p.y===ty);
+      if(blocked) return;
+    } else if(x===-SN.dir.x && y===-SN.dir.y){
+      // first input of a fresh attempt pointing backwards: turn the snake around
+      SN.body.reverse();
+    }
     SN.dir = {x,y}; SN.next = {x,y};
     SN.started = true;
     G.timer = setTimeout(snakeStep, 200);
@@ -525,7 +533,11 @@ async function snakeContinue(){
   await continuePlaceholderAd(res);
   if(!G || G.over) return;
   SN.att++;
-  snakeSpawn();
+  SN.dead = false; SN.started = false; SN.resumed = true;
+  gEl('gResult').style.display = 'none';
+  gEl('gPad').style.display = 'grid';
+  snakeLabel();
+  snakeDraw();
 }
 // TEST ONLY: labeled 3-second stand-in for the real "continue" ad
 function continuePlaceholderAd(el){
@@ -557,7 +569,7 @@ function snakeDraw(){
   });
   if(!SN.started && !SN.dead){
     c.fillStyle = 'rgba(255,255,255,0.9)'; c.font = 'bold '+Math.round(k*0.9)+'px sans-serif'; c.textAlign = 'center';
-    c.fillText('Swipe to start', cv.width/2, cv.height*0.72);
+    c.fillText(SN.resumed ? 'Swipe to continue' : 'Swipe to start', cv.width/2, cv.height*0.72);
   }
 }
 document.addEventListener('keydown', e=>{
