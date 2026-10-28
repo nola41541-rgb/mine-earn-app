@@ -84,6 +84,7 @@
 
 <nav class="tabbar" id="tabbar" style="display:none;">
   <button class="tab-btn active" id="btn-mine" onclick="showTab('mine')">⛏️<br>Mine</button>
+  <button class="tab-btn" id="btn-play" onclick="showTab('play')">🎮<br>Play</button>
   <button class="tab-btn" id="btn-tasks" onclick="showTab('tasks')">📋<br>Tasks</button>
   <button class="tab-btn" id="btn-profile" onclick="showTab('profile')">👤<br>Profile</button>
   <button class="tab-btn" id="btn-withdraw" onclick="showTab('withdraw')">💸<br>Withdraw</button>
@@ -329,6 +330,171 @@ async function handleCollect(i){
   render();
 }
 
+// ===================== GAMES =====================
+const GAMES_URL = SUPABASE_URL + '/functions/v1/super-responder';
+const GAME_LIST = [
+  {id:'snake', name:'Snake', icon:'🐍', desc:'Eat food and grow. 10 coins per food. Gets faster!', ready:true},
+  {id:'runner', name:'Endless Runner', icon:'🏃', desc:'Run, jump, survive.', ready:false},
+  {id:'shooter', name:'Space Shooter', icon:'🚀', desc:'Destroy enemy ships.', ready:false},
+  {id:'quiz', name:'Timed Quiz', icon:'❓', desc:'Answer fast. 25 coins per correct answer.', ready:false}
+];
+let gameStatus = null;
+async function renderPlay(){
+  const box = document.getElementById('playList');
+  if(!box) return;
+  try{ gameStatus = await api('gamesStatus', {}, GAMES_URL); }catch(e){ box.textContent = e.message; return; }
+  box.innerHTML = GAME_LIST.map(g=>{
+    const used = (gameStatus.runs && gameStatus.runs[g.id]) || 0;
+    const left = gameStatus.max - used;
+    let btn;
+    if(!g.ready) btn = '<button class="action btn-wait" disabled>Coming soon</button>';
+    else if(left<=0) btn = '<button class="action btn-wait" disabled>No runs left today</button>';
+    else btn = '<button class="action btn-start" onclick="startGame(\''+g.id+'\')">▶️ Play ('+left+' left)</button>';
+    return '<div class="slot"><div class="slot-top"><div class="slot-name">'+g.icon+' '+g.name+'</div><div class="slot-rate">'+used+'/'+gameStatus.max+' runs</div></div><div class="slot-progress">'+g.desc+'</div>'+btn+'</div>';
+  }).join('');
+}
+
+let G = null;
+function gEl(id){ return document.getElementById(id); }
+function ensureGameOverlay(){
+  if(gEl('gameOverlay')) return;
+  const d = document.createElement('div');
+  d.id = 'gameOverlay';
+  d.style.cssText = 'display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:#0a0f23;z-index:60;flex-direction:column;align-items:center;padding:10px;overflow:auto;';
+  d.innerHTML = '<div style="width:100%;max-width:380px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+    + '<button class="action" style="width:auto;padding:8px 14px;margin:0;" onclick="quitGame()">✕ Quit</button>'
+    + '<div id="gScore" style="font-weight:bold;color:var(--gold);">Score 0</div></div>'
+    + '<canvas id="gCanvas" style="touch-action:none;background:#0d1530;border-radius:10px;"></canvas>'
+    + '<div id="gPad" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,52px);gap:6px;justify-content:center;">'
+    + '<span></span><button class="action" style="margin:0;" onclick="snakeTurn(0,-1)">▲</button><span></span>'
+    + '<button class="action" style="margin:0;" onclick="snakeTurn(-1,0)">◀</button><button class="action" style="margin:0;" onclick="snakeTurn(0,1)">▼</button><button class="action" style="margin:0;" onclick="snakeTurn(1,0)">▶</button></div>'
+    + '<div id="gResult" style="display:none;width:100%;max-width:380px;text-align:center;background:var(--card);border-radius:14px;padding:16px;margin-top:12px;"></div>';
+  document.body.appendChild(d);
+}
+function lockSwipes(on){
+  try{
+    const w = window.Telegram.WebApp;
+    if(on && w.disableVerticalSwipes) w.disableVerticalSwipes();
+    if(!on && w.enableVerticalSwipes) w.enableVerticalSwipes();
+  }catch(e){}
+}
+async function startGame(id){
+  if(G && !G.over) return;
+  let r;
+  try{ r = await api('gameStart', { game:id }, GAMES_URL); }catch(e){ alert(e.message); renderPlay(); return; }
+  ensureGameOverlay();
+  G = { id, token:r.token, over:false, timer:null };
+  gEl('gameOverlay').style.display = 'flex';
+  gEl('gResult').style.display = 'none';
+  gEl('gPad').style.display = 'grid';
+  gEl('gCanvas').style.display = 'block';
+  lockSwipes(true);
+  if(id==='snake') snakeInit();
+}
+function closeGameOverlay(){
+  if(G && G.timer) clearTimeout(G.timer);
+  const o = gEl('gameOverlay'); if(o) o.style.display = 'none';
+  lockSwipes(false);
+  G = null;
+  renderPlay();
+}
+function quitGame(){
+  if(G && !G.over){
+    if(!confirm('Quit this run? It will still count as one of your 5 runs today.')) return;
+  }
+  closeGameOverlay();
+}
+async function finishGame(score){
+  if(!G || G.over) return;
+  G.over = true;
+  if(G.timer) clearTimeout(G.timer);
+  const res = gEl('gResult');
+  gEl('gPad').style.display = 'none';
+  res.style.display = 'block';
+  res.innerHTML = 'Checking your result...';
+  let r;
+  try{ r = await api('gameFinish', { token:G.token, score }, GAMES_URL); }
+  catch(e){ res.innerHTML = '<div style="color:#ff6b6b;margin-bottom:10px;">'+esc(e.message)+'</div><button class="action btn-start" onclick="closeGameOverlay()">Back</button>'; return; }
+  const id = G.id;
+  const claimLine = !r.valid ? '<div style="color:#ff6b6b;">This result could not be verified.</div>'
+    : (r.coins<=0 ? '<div style="color:var(--muted);">No coins this time. Try again!</div>'
+    : (r.claimEnabled ? '<div style="color:var(--muted);">Claiming is opening soon.</div>'
+    : '<div style="color:var(--muted);">Reward claiming is locked for now. Your score is saved.</div>'));
+  res.innerHTML = '<div style="font-size:18px;font-weight:bold;">Game over</div>'
+    + '<div style="margin:8px 0;">Score: <b>'+score+'</b></div>'
+    + '<div style="font-size:22px;color:var(--gold);font-weight:bold;">'+(r.valid?r.coins:0)+' coins</div>'
+    + claimLine
+    + '<button class="action btn-start" style="margin-top:12px;" onclick="G.over=true;var i=G.id;closeGameOverlay();startGame(i)">▶️ Play again</button>'
+    + '<button class="action" style="margin-top:8px;" onclick="closeGameOverlay()">Back</button>';
+}
+
+// ---- Snake ----
+const SN = { N:15 };
+function snakeInit(){
+  const cv = gEl('gCanvas');
+  const size = Math.floor(Math.min(window.innerWidth-24, 360)/SN.N)*SN.N;
+  cv.width = size; cv.height = size;
+  SN.cell = size/SN.N;
+  SN.body = [{x:7,y:7},{x:6,y:7},{x:5,y:7}];
+  SN.dir = {x:1,y:0}; SN.next = {x:1,y:0};
+  SN.score = 0; SN.food = snakeFood();
+  gEl('gScore').textContent = 'Score 0';
+  snakeDraw();
+  let sx=0, sy=0;
+  cv.ontouchstart = e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; e.preventDefault(); };
+  cv.ontouchend = e=>{
+    const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Math.max(Math.abs(dx),Math.abs(dy))<20) return;
+    if(Math.abs(dx)>Math.abs(dy)) snakeTurn(dx>0?1:-1,0); else snakeTurn(0,dy>0?1:-1);
+    e.preventDefault();
+  };
+  G.timer = setTimeout(snakeStep, 700);
+}
+function snakeFood(){
+  while(true){
+    const f = {x:Math.floor(Math.random()*SN.N), y:Math.floor(Math.random()*SN.N)};
+    if(!SN.body.some(p=>p.x===f.x&&p.y===f.y)) return f;
+  }
+}
+function snakeTurn(x,y){
+  if(!G || G.over || G.id!=='snake') return;
+  if(x===-SN.dir.x && y===-SN.dir.y) return;
+  SN.next = {x,y};
+}
+function snakeStep(){
+  if(!G || G.over || G.id!=='snake') return;
+  SN.dir = SN.next;
+  const h = {x:SN.body[0].x+SN.dir.x, y:SN.body[0].y+SN.dir.y};
+  const ate = h.x===SN.food.x && h.y===SN.food.y;
+  const tail = ate ? SN.body : SN.body.slice(0,-1);
+  if(h.x<0||h.y<0||h.x>=SN.N||h.y>=SN.N||tail.some(p=>p.x===h.x&&p.y===h.y)){
+    snakeDraw(); finishGame(SN.score); return;
+  }
+  SN.body.unshift(h);
+  if(ate){
+    SN.score++;
+    gEl('gScore').textContent = 'Score '+SN.score;
+    if(SN.score>=25){ snakeDraw(); finishGame(SN.score); return; }
+    SN.food = snakeFood();
+  } else SN.body.pop();
+  snakeDraw();
+  const delay = Math.max(85, 230 - SN.score*6);
+  G.timer = setTimeout(snakeStep, delay);
+}
+function snakeDraw(){
+  const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const k = SN.cell;
+  c.fillStyle = '#0d1530'; c.fillRect(0,0,cv.width,cv.height);
+  c.strokeStyle = 'rgba(255,255,255,0.04)';
+  for(let i=1;i<SN.N;i++){ c.beginPath(); c.moveTo(i*k,0); c.lineTo(i*k,cv.height); c.stroke(); c.beginPath(); c.moveTo(0,i*k); c.lineTo(cv.width,i*k); c.stroke(); }
+  c.fillStyle = '#ff5c5c'; c.beginPath(); c.arc(SN.food.x*k+k/2, SN.food.y*k+k/2, k*0.38, 0, Math.PI*2); c.fill();
+  SN.body.forEach((p,i)=>{ c.fillStyle = i===0 ? '#ffe27a' : '#ffd23c'; c.fillRect(p.x*k+1, p.y*k+1, k-2, k-2); });
+}
+document.addEventListener('keydown', e=>{
+  const m = {ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];
+  if(m && G && !G.over){ snakeTurn(m[0],m[1]); e.preventDefault(); }
+});
+// =================== END GAMES ===================
+
 async function handleStart(i){
   const slot = state.slots[i];
   if(slot.state!=='idle') return;
@@ -518,6 +684,7 @@ function showTab(tab){
   document.getElementById('btn-'+tab).classList.add('active');
   if(tab==='withdraw'){ renderHistory(); if(IS_OWNER) renderAdminWd(); wdPreview(); }
   if(tab==='tasks'){ renderTasks(); }
+  if(tab==='play'){ renderPlay(); }
 }
 
 function render(){
@@ -599,6 +766,11 @@ async function startApp(){
       </div>
       <div class="task-sub" id="dailyAds" style="text-align:center;margin-bottom:10px;"></div>
       <div id="slots"></div>
+    </div>
+    <div class="tab-content" id="tab-play">
+      <h1>🎮 Play</h1>
+      <div class="task-sub" style="margin-bottom:12px;">5 runs per game each day. Resets at 00:00 UTC. Up to 250 coins per run.</div>
+      <div id="playList"></div>
     </div>
     <div class="tab-content" id="tab-tasks">
       <h1>📋 Tasks</h1>
