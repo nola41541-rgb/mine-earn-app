@@ -328,7 +328,7 @@ async function handleCollect(i){
 const GAMES_URL = SUPABASE_URL + '/functions/v1/super-responder';
 const GAME_LIST = [
   {id:'snake', name:'Snake', icon:'🐍', desc:'Eat food and grow. 10 coins per food. Gets faster!', ready:true},
-  {id:'runner', name:'Endless Runner', icon:'🏃', desc:'Tap to jump over obstacles. 1 coin per 4 points. Gets faster!', ready:true},
+  {id:'runner', name:'Endless Runner', icon:'🏃', desc:'Swipe to change lanes, jump and slide. 1 coin per 4 points. Gets faster!', ready:true},
   {id:'shooter', name:'Space Shooter', icon:'🚀', desc:'Destroy enemy ships.', ready:false},
   {id:'quiz', name:'Timed Quiz', icon:'❓', desc:'Answer fast. 25 coins per correct answer.', ready:false}
 ];
@@ -362,7 +362,7 @@ function ensureGameOverlay(){
     + '<div id="gPad" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,52px);gap:6px;justify-content:center;">'
     + '<span></span><button class="action" style="margin:0;" onclick="snakeTurn(0,-1)">▲</button><span></span>'
     + '<button class="action" style="margin:0;" onclick="snakeTurn(-1,0)">◀</button><button class="action" style="margin:0;" onclick="snakeTurn(0,1)">▼</button><button class="action" style="margin:0;" onclick="snakeTurn(1,0)">▶</button></div>'
-    + '<div id="gPad2" style="display:none;margin-top:10px;width:100%;max-width:380px;"><button class="action btn-start" style="margin:0;height:64px;font-size:20px;" onclick="runnerJump()">⬆️ JUMP</button></div>'
+    + '<div id="gPad2" style="display:none;margin-top:10px;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,52px);gap:6px;justify-content:center;"><span></span><button class="action" style="margin:0;" onclick="runnerMove(0,\'jump\')">▲</button><span></span><button class="action" style="margin:0;" onclick="runnerMove(-1)">◀</button><button class="action" style="margin:0;" onclick="runnerMove(0,\'slide\')">▼</button><button class="action" style="margin:0;" onclick="runnerMove(1)">▶</button></div>'
     + '<div id="gResult" style="display:none;width:100%;max-width:380px;text-align:center;background:var(--card);border-radius:14px;padding:16px;margin-top:12px;"></div>';
   document.body.appendChild(d);
 }
@@ -411,6 +411,25 @@ function placeholderAd(el){
     const t = setInterval(()=>{ n--; if(n<=0){ clearInterval(t); resolve(); } else draw(); }, 1000);
   });
 }
+function adsForCoinsClient(c){ return c<=0 ? 0 : (c<=100 ? 1 : (c<=200 ? 2 : 3)); }
+// TEST ONLY: a labeled 3-second stand-in for a real rewarded ad
+function adCountdown(el, msg){
+  return new Promise(resolve=>{
+    let n = 3;
+    const draw = ()=>{ el.innerHTML = '<div style="color:var(--muted);font-size:12px;">AD PLACEHOLDER (TEST)</div><div style="font-size:40px;font-weight:bold;color:var(--gold);margin:10px 0;">'+n+'</div><div style="color:var(--muted);">'+msg+'</div>'; };
+    draw();
+    const t = setInterval(()=>{ n--; if(n<=0){ clearInterval(t); resolve(); } else draw(); }, 1000);
+  });
+}
+function waitTap(el, coins, i, n){
+  return new Promise(resolve=>{
+    el.innerHTML = '<div style="font-size:18px;font-weight:bold;">Game over</div>'
+      + '<div style="font-size:22px;color:var(--gold);font-weight:bold;margin:8px 0;">'+coins+' coins earned</div>'
+      + '<div style="color:var(--muted);margin-bottom:10px;">Watch '+n+' ad'+(n>1?'s':'')+' to collect them ('+(i-1)+'/'+n+' done)</div>'
+      + '<button class="action btn-collect" id="adTapBtn">🎬 Watch ad '+i+' of '+n+'</button>';
+    gEl('adTapBtn').onclick = ()=>resolve();
+  });
+}
 async function finishGame(score){
   if(!G || G.over) return;
   G.over = true;
@@ -418,24 +437,25 @@ async function finishGame(score){
   const res = gEl('gResult');
   gEl('gPad').style.display = 'none'; gEl('gPad2').style.display = 'none';
   res.style.display = 'block';
+  res.innerHTML = '<div style="color:var(--muted);">Checking your result...</div>';
   let r;
-  try{
-    const out = await Promise.all([
-      placeholderAd(res),
-      api('gameFinish', { token:G.token, score }, GAMES_URL).then(v=>({v}), e=>({e}))
-    ]);
-    if(out[1].e) throw out[1].e;
-    r = out[1].v;
-  }
+  try{ r = await api('gameFinish', { token:G.token, score }, GAMES_URL); }
   catch(e){ res.innerHTML = '<div style="color:#ff6b6b;margin-bottom:10px;">'+esc(e.message)+'</div><button class="action btn-start" onclick="closeGameOverlay()">Back</button>'; return; }
-  const id = G.id;
+  const coins = r.valid ? r.coins : 0;
+  const need = adsForCoinsClient(coins);
+  for(let i=1;i<=need;i++){
+    await waitTap(res, coins, i, need);
+    if(!G) return;
+    await adCountdown(res, 'Ad '+i+' of '+need+'...');
+    if(!G) return;
+  }
   const claimLine = !r.valid ? '<div style="color:#ff6b6b;">This result could not be verified.</div>'
-    : (r.coins<=0 ? '<div style="color:var(--muted);">No coins this time. Try again!</div>'
+    : (coins<=0 ? '<div style="color:var(--muted);">No coins this time. Try again!</div>'
     : (r.claimEnabled ? '<div style="color:var(--muted);">Claiming is opening soon.</div>'
-    : '<div style="color:var(--muted);">Reward claiming is locked for now. Your score is saved.</div>'));
+    : '<div style="color:var(--muted);">Ads done. Reward claiming is locked for now. Your score is saved.</div>'));
   res.innerHTML = '<div style="font-size:18px;font-weight:bold;">Game over</div>'
     + '<div style="margin:8px 0;">Score: <b>'+score+'</b></div>'
-    + '<div style="font-size:22px;color:var(--gold);font-weight:bold;">'+(r.valid?r.coins:0)+' coins</div>'
+    + '<div style="font-size:22px;color:var(--gold);font-weight:bold;">'+coins+' coins</div>'
     + claimLine
     + '<button class="action btn-start" style="margin-top:12px;" onclick="G.over=true;var i=G.id;closeGameOverlay();startGame(i)">▶️ Play again</button>'
     + '<button class="action" style="margin-top:8px;" onclick="closeGameOverlay()">Back</button>';
@@ -578,26 +598,36 @@ function snakeDraw(){
 }
 document.addEventListener('keydown', e=>{
   const m = {ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];
-  if(G && !G.over && G.id==='runner'){ if(e.key===' '||e.key==='ArrowUp'){ runnerJump(); e.preventDefault(); } return; }
+  if(G && !G.over && G.id==='runner'){
+    if(e.key==='ArrowLeft') runnerMove(-1); else if(e.key==='ArrowRight') runnerMove(1);
+    else if(e.key==='ArrowUp'||e.key===' ') runnerMove(0,'jump'); else if(e.key==='ArrowDown') runnerMove(0,'slide'); else return;
+    e.preventDefault(); return; }
   if(m && G && !G.over){ snakeTurn(m[0],m[1]); e.preventDefault(); }
 });
-
-// ---- Endless Runner (tap to jump, 5 attempts per play, gets faster) ----
-const RN = { maxAtt:5, W:360, H:240 };
+// ---- Endless Runner (3 lanes: swipe left/right to switch lane, up to jump, down to slide) ----
+const RN = { maxAtt:5, W:360, H:340 };
 function runnerInit(){
   const cv = gEl('gCanvas');
-  RN.W = Math.min(window.innerWidth-20, 400); RN.H = 240;
+  RN.W = Math.min(window.innerWidth-20, 400); RN.H = 340;
   cv.width = RN.W; cv.height = RN.H;
-  RN.ground = RN.H - 40;
-  RN.score = 0; RN.att = 1; RN.speed = 200; RN.dist = 0;
-  cv.ontouchstart = e=>{ runnerJump(); e.preventDefault(); };
-  cv.onmousedown = ()=>runnerJump();
+  RN.hy = RN.H*0.22; RN.py = RN.H-56; RN.laneW = RN.W*0.27;
+  RN.score = 0; RN.att = 1; RN.speed = 14; RN.dist = 0;
+  let sx=0, sy=0;
+  cv.ontouchstart = e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; e.preventDefault(); };
+  cv.ontouchend = e=>{
+    const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Math.max(Math.abs(dx),Math.abs(dy))<18){ runnerStart(); }
+    else if(Math.abs(dx)>Math.abs(dy)) runnerMove(dx>0?1:-1);
+    else runnerMove(0, dy<0?'jump':'slide');
+    e.preventDefault();
+  };
+  cv.onmousedown = null;
   runnerSpawn();
 }
 function runnerLabel(){ gEl('gScore').textContent = 'Score '+RN.score+' • Attempt '+RN.att+'/'+RN.maxAtt; }
 function runnerSpawn(){
-  RN.py = RN.ground - 28; RN.vy = 0; RN.onGround = true;
-  RN.obs = []; RN.nextAt = RN.W + 200;
+  RN.lane = 0; RN.x = 0; RN.h = 0; RN.vy = 0; RN.slide = 0;
+  RN.obs = []; RN.nextZ = 45;
   RN.started = false; RN.dead = false; RN.last = 0;
   gEl('gResult').style.display = 'none';
   gEl('gPad').style.display = 'none';
@@ -605,38 +635,50 @@ function runnerSpawn(){
   runnerLabel();
   runnerDraw();
 }
-function runnerJump(){
+function runnerStart(){
+  if(!G || G.over || G.id!=='runner' || RN.dead || RN.started) return false;
+  RN.started = true; RN.last = Date.now(); runnerLoop(); return true;
+}
+function runnerMove(dir, act){
   if(!G || G.over || G.id!=='runner' || RN.dead) return;
-  if(!RN.started){ RN.started = true; RN.last = Date.now(); runnerLoop(); return; }
-  if(RN.onGround){ RN.vy = -640; RN.onGround = false; }
+  if(!RN.started){ runnerStart(); }
+  if(act==='jump'){ if(RN.h===0){ RN.vy = 6.2; } }
+  else if(act==='slide'){ RN.slide = 0.7; if(RN.h>0) RN.vy = -10; }
+  else if(dir){ RN.lane = Math.max(-1, Math.min(1, RN.lane+dir)); }
 }
 function runnerLoop(){
   if(!G || G.over || RN.dead) return;
   const now = Date.now(); let dt = (now - RN.last)/1000; RN.last = now;
   if(dt > 0.05) dt = 0.05;
-  RN.speed = Math.min(420, RN.speed + 4*dt);
+  RN.speed = Math.min(30, RN.speed + 0.25*dt);
   RN.dist += RN.speed*dt;
-  const sc = Math.floor(RN.dist/20);
+  const sc = Math.floor(RN.dist*0.6);
   if(sc !== RN.score){ RN.score = sc; runnerLabel(); }
-  // player physics
-  RN.vy += 2200*dt; RN.py += RN.vy*dt;
-  if(RN.py >= RN.ground - 28){ RN.py = RN.ground - 28; RN.vy = 0; RN.onGround = true; }
+  // player
+  RN.x += (RN.lane - RN.x)*Math.min(1, dt*14);
+  if(RN.h>0 || RN.vy>0){ RN.vy -= 20*dt; RN.h += RN.vy*dt; if(RN.h<=0){ RN.h = 0; RN.vy = 0; } }
+  if(RN.slide>0) RN.slide -= dt;
   // obstacles
-  for(const o of RN.obs) o.x -= RN.speed*dt;
-  RN.obs = RN.obs.filter(o=>o.x + o.w > -10);
-  RN.nextAt -= RN.speed*dt;
-  if(RN.nextAt <= 0){
-    const double = RN.speed > 300 && Math.random() < 0.2;
-    const w = double ? 52 : 20 + Math.floor(Math.random()*8);
-    const h = 26 + Math.floor(Math.random()*16);
-    RN.obs.push({x:RN.W+10, w, h, double});
-    RN.nextAt = w + RN.speed*0.9 + 140 + Math.random()*160;
+  for(const o of RN.obs) o.z -= RN.speed*dt;
+  RN.obs = RN.obs.filter(o=>o.z > -3);
+  RN.nextZ -= RN.speed*dt;
+  if(RN.nextZ <= 0){
+    // a row: never block every lane with something that can't be jumped or slid
+    const lanes = [-1,0,1].sort(()=>Math.random()-0.5);
+    const count = RN.speed>20 && Math.random()<0.5 ? 2 : 1;
+    let blocks = 0;
+    for(let i=0;i<count;i++){
+      let type = ['low','high','block'][Math.floor(Math.random()*3)];
+      if(type==='block'){ if(blocks>=1 && count===2) type='low'; else blocks++; }
+      RN.obs.push({z:60, lane:lanes[i], type});
+    }
+    RN.nextZ = RN.speed*0.95 + 9 + Math.random()*6;
   }
-  // collision (a little forgiving)
-  const px = 50, pw = 24, ph = 24, py = RN.py + 2;
+  // collision
   for(const o of RN.obs){
-    const ox = o.x + 3, ow = o.w - 6, oy = RN.ground - o.h + 3;
-    if(px + pw > ox && px < ox + ow && py + ph > oy){ runnerDie(); return; }
+    if(o.z > 0.8 || o.z < -0.9) continue;
+    if(Math.abs(RN.x - o.lane) > 0.55) continue;
+    if(o.type==='block' || (o.type==='low' && RN.h < 0.55) || (o.type==='high' && RN.slide<=0)){ runnerDie(); return; }
   }
   if(RN.score >= 1000){ RN.score = 1000; runnerLabel(); runnerDraw(); finishGame(1000); return; }
   runnerDraw();
@@ -651,7 +693,7 @@ function runnerDie(){
   res.style.display = 'block';
   if(RN.att >= RN.maxAtt){ finishGame(RN.score); return; }
   const left = RN.maxAtt - RN.att;
-  res.innerHTML = '<div style="font-size:17px;font-weight:bold;">Oops! You hit an obstacle</div>'
+  res.innerHTML = '<div style="font-size:17px;font-weight:bold;">Oops! You crashed</div>'
     + '<div style="margin:8px 0;color:var(--muted);">Score so far: <b style="color:#fff;">'+RN.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
     + '<button class="action btn-collect" onclick="runnerContinue()">🎬 Watch ad to continue</button>'
     + '<button class="action" style="margin-top:8px;" onclick="finishGame(RN.score)">Finish &amp; see result</button>';
@@ -662,45 +704,65 @@ async function runnerContinue(){
   if(!G || G.over) return;
   RN.att++;
   RN.dead = false; RN.started = false;
-  RN.obs = []; RN.nextAt = RN.W + 200;   // clear the path, keep score and speed
-  RN.py = RN.ground - 28; RN.vy = 0; RN.onGround = true;
+  RN.obs = []; RN.nextZ = 40; RN.h = 0; RN.vy = 0; RN.slide = 0;   // clear the path, keep score and speed
   gEl('gResult').style.display = 'none';
   gEl('gPad2').style.display = 'grid';
   runnerLabel();
   runnerDraw();
 }
+function rnProj(z){ return 1/(1+z/7); }
 function runnerDraw(){
-  const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const W = RN.W, H = RN.H, g = RN.ground;
-  const sky = c.createLinearGradient(0,0,0,g); sky.addColorStop(0,'#5db7ff'); sky.addColorStop(1,'#d9f1ff');
-  c.fillStyle = sky; c.fillRect(0,0,W,g);
-  // clouds
-  c.fillStyle = 'rgba(255,255,255,0.85)';
-  for(let i=0;i<3;i++){ const cx = ((i*170 - RN.dist*0.15) % (W+80) + (W+80)) % (W+80) - 40; c.beginPath(); c.arc(cx,40+i*22,16,0,7); c.arc(cx+16,44+i*22,12,0,7); c.arc(cx-16,46+i*22,11,0,7); c.fill(); }
-  // ground with checker strips
-  const off = RN.dist % 60;
-  for(let x=-60;x<W+60;x+=30){ const idx = Math.round((x - off)/30); c.fillStyle = (idx%2===0)?'#248a56':'#1f7a4c'; c.fillRect(x-off, g, 30, H-g); }
-  c.fillStyle = '#16603b'; c.fillRect(0,g,W,4);
-  // obstacles (cactus style)
-  for(const o of RN.obs){
-    c.fillStyle = '#2d9a4b';
-    const parts = o.double ? [[o.x,22],[o.x+30,22]] : [[o.x,o.w]];
-    for(const [x,w] of parts){
-      const r = Math.min(8,w/2);
-      c.beginPath(); c.moveTo(x,g); c.lineTo(x,g-o.h+r); c.quadraticCurveTo(x,g-o.h,x+r,g-o.h); c.lineTo(x+w-r,g-o.h); c.quadraticCurveTo(x+w,g-o.h,x+w,g-o.h+r); c.lineTo(x+w,g); c.fill();
-      c.fillRect(x-5,g-o.h*0.6,6,5); c.fillRect(x+w-1,g-o.h*0.45,6,5);
+  const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const W = RN.W, H = RN.H, hy = RN.hy, py = RN.py;
+  const cx = W/2;
+  const sky = c.createLinearGradient(0,0,0,hy+10); sky.addColorStop(0,'#4aa8ff'); sky.addColorStop(1,'#cfeaff');
+  c.fillStyle = sky; c.fillRect(0,0,W,hy+10);
+  // side grass
+  c.fillStyle = '#2f9a5b'; c.fillRect(0,hy,W,H-hy);
+  // road
+  const roadFar = RN.laneW*1.5*rnProj(80), roadNear = RN.laneW*1.5;
+  c.fillStyle = '#4b4f63';
+  c.beginPath(); c.moveTo(cx-roadFar,hy); c.lineTo(cx+roadFar,hy); c.lineTo(cx+roadNear,H); c.lineTo(cx-roadNear,H); c.fill();
+  // moving cross stripes for speed feel
+  const off = (RN.dist % 8)/8;
+  for(let i=0;i<14;i++){
+    const z = ((i + 1 - off)*6); const f = rnProj(z); const y = hy + (py-hy)*(f - rnProj(80))/(1-rnProj(80)) ;
+    c.fillStyle = (i%2===0) ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    c.fillRect(cx-RN.laneW*1.5*f, y, RN.laneW*3*f, Math.max(2, 14*f));
+  }
+  // lane lines
+  c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 2;
+  for(const l of [-0.5,0.5]){ c.beginPath(); c.moveTo(cx+l*RN.laneW*rnProj(80), hy); c.lineTo(cx+l*RN.laneW, H); c.stroke(); }
+  const yOf = z => hy + (py-hy)*(rnProj(z)-rnProj(80))/(1-rnProj(80));
+  // obstacles far to near
+  const list = RN.obs.slice().sort((a,b)=>b.z-a.z);
+  for(const o of list){
+    if(o.z > 80) continue;
+    const f = rnProj(Math.max(o.z,0)); const x = cx + o.lane*RN.laneW*f; const y = yOf(Math.max(o.z,0)); const u = RN.laneW*0.8*f;
+    if(o.type==='block'){
+      c.fillStyle = '#c0392b'; c.fillRect(x-u/2, y-u*1.5, u, u*1.5);
+      c.fillStyle = '#e9573f'; c.fillRect(x-u/2, y-u*1.5, u, u*0.3);
+      c.fillStyle = '#ffd86b'; c.fillRect(x-u*0.35, y-u*1.1, u*0.7, u*0.25);
+    } else if(o.type==='low'){
+      c.fillStyle = '#ff9f1a'; c.fillRect(x-u/2, y-u*0.45, u, u*0.45);
+      c.fillStyle = '#fff'; for(let i=0;i<4;i++) c.fillRect(x-u/2+i*u/4+u*0.05, y-u*0.45, u*0.12, u*0.45);
+    } else {
+      c.fillStyle = '#8e9aaf'; c.fillRect(x-u/2, y-u*1.2, u*0.1, u*1.2); c.fillRect(x+u/2-u*0.1, y-u*1.2, u*0.1, u*1.2);
+      c.fillStyle = '#ff4d6d'; c.fillRect(x-u/2, y-u*1.15, u, u*0.4);
+      c.fillStyle = '#fff'; c.fillRect(x-u*0.3, y-u*1.05, u*0.6, u*0.12);
     }
   }
-  // player: round runner with eyes
-  const cx = 62, cy = RN.py + 14;
-  if(RN.onGround){ c.fillStyle='rgba(0,0,0,0.18)'; c.beginPath(); c.ellipse(cx,g+2,13,4,0,0,7); c.fill(); }
-  c.fillStyle = '#ffc928'; c.beginPath(); c.arc(cx,cy,14,0,7); c.fill();
-  c.fillStyle = '#fff'; c.beginPath(); c.arc(cx+5,cy-4,4.5,0,7); c.fill();
-  c.fillStyle = '#111'; c.beginPath(); c.arc(cx+6.5,cy-4,2.2,0,7); c.fill();
+  // player
+  const px = cx + RN.x*RN.laneW; const lift = RN.h*60; const sl = RN.slide>0;
+  c.fillStyle='rgba(0,0,0,0.25)'; c.beginPath(); c.ellipse(px, py+2, 22-RN.h*8, 6, 0, 0, 7); c.fill();
+  const bh = sl ? 26 : 54, by = py - lift;
+  c.fillStyle = '#ffc928'; c.beginPath(); c.ellipse(px, by-bh/2, 22, bh/2, 0, 0, 7); c.fill();
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(px-8, by-bh*0.62, 6, 0, 7); c.arc(px+8, by-bh*0.62, 6, 0, 7); c.fill();
+  c.fillStyle = '#111'; c.beginPath(); c.arc(px-8, by-bh*0.62, 2.8, 0, 7); c.arc(px+8, by-bh*0.62, 2.8, 0, 7); c.fill();
   if(!RN.started && !RN.dead){
-    c.fillStyle = 'rgba(0,0,0,0.45)'; c.fillRect(0,H/2-30,W,52);
-    c.fillStyle = '#fff'; c.font = 'bold 18px sans-serif'; c.textAlign = 'center';
-    c.fillText(RN.att>1 ? 'Tap to continue' : 'Tap to start', W/2, H/2-4);
-    c.font = '13px sans-serif'; c.fillText('Tap to jump over the cactus', W/2, H/2+14);
+    c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(0,H/2-40,W,70);
+    c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center';
+    c.fillText(RN.att>1 ? 'Tap to continue' : 'Tap to start', W/2, H/2-10);
+    c.font = '13px sans-serif'; c.fillText('Swipe ◀ ▶ lanes • ▲ jump • ▼ slide', W/2, H/2+14);
   }
 }
 // =================== END GAMES ===================
