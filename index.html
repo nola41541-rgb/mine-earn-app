@@ -358,7 +358,7 @@ function ensureGameOverlay(){
   d.innerHTML = '<div style="width:100%;max-width:380px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
     + '<button class="action" style="width:auto;padding:8px 14px;margin:0;" onclick="quitGame()">✕ Quit</button>'
     + '<div id="gScore" style="font-weight:bold;color:var(--gold);">Score 0</div></div>'
-    + '<canvas id="gCanvas" style="touch-action:none;background:#0d1530;border-radius:10px;"></canvas>'
+    + '<canvas id="gCanvas" style="touch-action:none;background:#1f7a4c;border-radius:18px;box-shadow:0 0 0 4px rgba(255,255,255,0.08);"></canvas>'
     + '<div id="gPad" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,52px);gap:6px;justify-content:center;">'
     + '<span></span><button class="action" style="margin:0;" onclick="snakeTurn(0,-1)">▲</button><span></span>'
     + '<button class="action" style="margin:0;" onclick="snakeTurn(-1,0)">◀</button><button class="action" style="margin:0;" onclick="snakeTurn(0,1)">▼</button><button class="action" style="margin:0;" onclick="snakeTurn(1,0)">▶</button></div>'
@@ -440,10 +440,10 @@ async function finishGame(score){
 }
 
 // ---- Snake (round snake, walls wrap around, 5 attempts per play) ----
-const SN = { N:15, maxAtt:5 };
+const SN = { N:12, maxAtt:5 };
 function snakeInit(){
   const cv = gEl('gCanvas');
-  const size = Math.floor(Math.min(window.innerWidth-24, 360)/SN.N)*SN.N;
+  const size = Math.floor(Math.min(window.innerWidth-20, 400)/SN.N)*SN.N;
   cv.width = size; cv.height = size;
   SN.cell = size/SN.N;
   SN.score = 0; SN.att = 1;
@@ -459,7 +459,7 @@ function snakeInit(){
 }
 function snakeLabel(){ gEl('gScore').textContent = 'Score '+SN.score+' • Attempt '+SN.att+'/'+SN.maxAtt; }
 function snakeSpawn(){
-  SN.body = [{x:7,y:7},{x:6,y:7},{x:5,y:7}];
+  SN.body = [{x:5,y:6},{x:4,y:6},{x:3,y:6}];
   SN.dir = {x:1,y:0}; SN.next = {x:1,y:0};
   SN.started = false; SN.dead = false; SN.resumed = false;
   SN.food = snakeFood();
@@ -550,22 +550,24 @@ function continuePlaceholderAd(el){
 }
 function snakeDraw(){
   const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const k = SN.cell;
-  c.fillStyle = '#0d1530'; c.fillRect(0,0,cv.width,cv.height);
-  c.strokeStyle = 'rgba(255,255,255,0.04)';
-  for(let i=1;i<SN.N;i++){ c.beginPath(); c.moveTo(i*k,0); c.lineTo(i*k,cv.height); c.stroke(); c.beginPath(); c.moveTo(0,i*k); c.lineTo(cv.width,i*k); c.stroke(); }
-  c.fillStyle = '#ff5c5c'; c.beginPath(); c.arc(SN.food.x*k+k/2, SN.food.y*k+k/2, k*0.38, 0, Math.PI*2); c.fill();
+  for(let y=0;y<SN.N;y++){ for(let x=0;x<SN.N;x++){ c.fillStyle = (x+y)%2 ? '#1f7a4c' : '#248a56'; c.fillRect(x*k,y*k,k,k); } }
+  // food: a red apple with a small leaf
+  const fx = SN.food.x*k+k/2, fy = SN.food.y*k+k/2;
+  c.fillStyle = '#ff4d4d'; c.beginPath(); c.arc(fx, fy+k*0.04, k*0.34, 0, Math.PI*2); c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.45)'; c.beginPath(); c.arc(fx-k*0.12, fy-k*0.08, k*0.08, 0, Math.PI*2); c.fill();
+  c.fillStyle = '#9be36b'; c.beginPath(); c.ellipse(fx+k*0.08, fy-k*0.32, k*0.12, k*0.06, -0.5, 0, Math.PI*2); c.fill();
   for(let i=SN.body.length-1;i>=0;i--){
     const p = SN.body[i];
     c.fillStyle = i===0 ? '#ffe27a' : (i%2 ? '#ffd23c' : '#f5c518');
-    c.beginPath(); c.arc(p.x*k+k/2, p.y*k+k/2, k*(i===0?0.48:0.42), 0, Math.PI*2); c.fill();
+    c.beginPath(); c.arc(p.x*k+k/2, p.y*k+k/2, k*(i===0?0.46:0.4), 0, Math.PI*2); c.fill();
   }
   const h = SN.body[0];
   const ex = SN.dir.x, ey = SN.dir.y, cx = h.x*k+k/2, cy = h.y*k+k/2;
   const px = -ey, py = ex;
   [-1,1].forEach(sgn=>{
     const x = cx + ex*k*0.14 + px*sgn*k*0.17, y = cy + ey*k*0.14 + py*sgn*k*0.17;
-    c.fillStyle = '#fff'; c.beginPath(); c.arc(x,y,k*0.1,0,Math.PI*2); c.fill();
-    c.fillStyle = '#111'; c.beginPath(); c.arc(x+ex*k*0.03,y+ey*k*0.03,k*0.05,0,Math.PI*2); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(x,y,k*0.12,0,Math.PI*2); c.fill();
+    c.fillStyle = '#111'; c.beginPath(); c.arc(x+ex*k*0.04,y+ey*k*0.04,k*0.06,0,Math.PI*2); c.fill();
   });
   if(!SN.started && !SN.dead){
     c.fillStyle = 'rgba(255,255,255,0.9)'; c.font = 'bold '+Math.round(k*0.9)+'px sans-serif'; c.textAlign = 'center';
