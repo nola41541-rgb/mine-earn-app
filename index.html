@@ -143,6 +143,45 @@
   .invite-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px;margin-bottom:12px;}
   .invite-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
   .invite-link{background:var(--card2);border:1px dashed var(--line);border-radius:12px;padding:10px;font-size:12px;color:var(--gold);word-break:break-all;margin-bottom:10px;text-align:center;}
+  .tk-sub{color:var(--muted);font-size:13px;margin:-8px 4px 14px;}
+  .tk-cats{display:flex;gap:4px;background:var(--card2);border:1px solid var(--line);border-radius:22px;padding:5px;margin-bottom:12px;}
+  .tk-cat{flex:1;position:relative;background:none;border:none;color:var(--muted);border-radius:18px;padding:9px 2px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:700;}
+  .tk-cat svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .tk-cat.active{background:linear-gradient(160deg,#2f7bff,#1b3f9e);color:#fff;box-shadow:0 4px 14px rgba(47,123,255,0.4);}
+  .tk-dot{position:absolute;top:4px;right:10px;width:9px;height:9px;border-radius:50%;background:#ff5d6c;display:none;}
+  .tk-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .tk-view{display:flex;gap:18px;padding-left:4px;}
+  .tk-view button{background:none;border:none;color:var(--muted);font-size:15px;font-weight:700;padding:6px 0;border-bottom:3px solid transparent;}
+  .tk-view button.active{color:#fff;border-bottom-color:var(--gold);}
+  .tk-new{background:none;border:1.5px solid var(--gold);color:var(--gold);border-radius:20px;padding:7px 14px;font-weight:800;font-size:13px;}
+  .tk-count{color:var(--muted);font-size:12px;margin:0 4px 10px;}
+  .tk-card{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--gold2);border-radius:18px;padding:12px;margin-bottom:10px;align-items:stretch;}
+  .tk-card.done{opacity:0.62;border-left-color:#31d17c;}
+  .tk-badge{width:62px;flex:none;border-radius:14px;background:linear-gradient(170deg,#18295c,#0d1738);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+  .tk-badge b{font-size:17px;color:var(--gold);font-weight:800;}
+  .tk-badge small{font-size:9px;color:var(--muted);letter-spacing:1px;}
+  .tk-main{flex:1;min-width:0;}
+  .tk-title{font-weight:800;font-size:15px;word-break:break-word;}
+  .tk-meta{color:var(--muted);font-size:12px;margin:3px 0 9px;}
+  .tk-actions{display:flex;gap:8px;}
+  .tk-btn{border:none;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:800;}
+  .tk-btn.o{background:transparent;border:1.5px solid var(--line);color:#fff;}
+  .tk-btn.f{background:linear-gradient(180deg,#6fdcff,#2f86ff);color:#031233;}
+  .tk-btn.d{background:#12304a;color:#7ecb7e;}
+  .tk-empty{text-align:center;color:var(--muted);padding:34px 14px;font-size:14px;}
+  .tk-ring{width:62px;height:62px;flex:none;position:relative;}
+  .tk-ring svg{width:62px;height:62px;transform:rotate(-90deg);}
+  .tk-ring circle{fill:none;stroke-width:6;}
+  .tk-ring .bg{stroke:#18295c;}
+  .tk-ring .fg{stroke:url(#ringG);stroke-linecap:round;transition:stroke-dashoffset .4s;}
+  .tk-ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
+  .tk-test{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.8px;color:#ffd24d;background:rgba(255,210,77,0.12);border-radius:8px;padding:2px 6px;margin-left:6px;vertical-align:middle;}
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:70;display:none;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;background:var(--card);border-top:1px solid var(--line);border-radius:26px 26px 0 0;padding:10px 16px 24px;z-index:71;transform:translateY(105%);transition:transform .25s;}
+  .sheet.open{transform:none;}
+  .sheet-grip{width:44px;height:5px;border-radius:3px;background:var(--field);margin:0 auto 12px;}
+  .sheet-title{font-size:18px;font-weight:800;margin-bottom:12px;}
+  .adm-box{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px 16px;text-align:center;}
 </style>
 </head>
 <body>
@@ -1445,27 +1484,87 @@ async function loadTasks(){
   try{ const r = await api('tasks'); return r.rows || []; }catch(e){ return []; }
 }
 
+// ---------------- Tasks tab ----------------
+const TK = { cat:'social', view:'all' };
+const DAILY_ADS = [
+  {id:'giga', name:'GigaPub', per:40, max:20, color:'#3ad17c'},
+  {id:'usl', name:'USL Ads', per:70, max:20, color:'#ff9a3c'}
+];
+function tkDay(){ return new Date().toISOString().slice(0,10); }
+function tkGet(id){ try{ return Number(localStorage.getItem('tkAd:'+id+':'+tkDay())||0); }catch(e){ return 0; } }
+function tkSet(id,n){ try{ localStorage.setItem('tkAd:'+id+':'+tkDay(), String(n)); }catch(e){} }
+function tkSetCat(c){ TK.cat = c; TK.view = 'all'; renderTasks(); }
+function tkSetView(v){ TK.view = v; renderTasks(); }
+function openTaskSheet(){ document.getElementById('taskSheetBg').style.display='block'; document.getElementById('taskSheet').classList.add('open'); }
+function closeTaskSheet(){ document.getElementById('taskSheetBg').style.display='none'; document.getElementById('taskSheet').classList.remove('open'); }
+function tkRing(done,max,color){
+  const C = 2*Math.PI*25, off = C*(1-Math.min(1,done/max));
+  return '<div class="tk-ring"><svg viewBox="0 0 62 62"><defs><linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fdcff"/><stop offset="1" stop-color="#2f7bff"/></linearGradient></defs><circle class="bg" cx="31" cy="31" r="25"/><circle class="fg" cx="31" cy="31" r="25" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/></svg><span>'+done+'/'+max+'</span></div>';
+}
+function tkAdPlaceholder(id){
+  const a = DAILY_ADS.find(x=>x.id===id); if(!a) return;
+  const n = tkGet(id); if(n >= a.max) return;
+  let box = document.getElementById('tkAdBox');
+  if(!box){ box = document.createElement('div'); box.id = 'tkAdBox'; box.className = 'modal'; box.innerHTML = '<div class="modal-box" id="tkAdInner"></div>'; document.body.appendChild(box); }
+  box.style.display = 'flex';
+  const inner = document.getElementById('tkAdInner');
+  let s = 3;
+  const draw = ()=>{ inner.innerHTML = '<div style="color:var(--muted);font-size:12px;">AD PLACEHOLDER (TEST) • '+a.name+'</div><div style="font-size:44px;font-weight:800;color:var(--gold);margin:12px 0;">'+s+'</div><div style="color:var(--muted);font-size:13px;">Please wait...</div>'; };
+  draw();
+  const t = setInterval(()=>{
+    s--;
+    if(s<=0){ clearInterval(t); tkSet(id, n+1); box.style.display='none'; renderTasks(); }
+    else draw();
+  }, 1000);
+}
 async function renderTasks(){
   const container = document.getElementById('taskList');
   if(!container) return;
-  const rows = await loadTasks();
-  if(rows.length===0){
-    container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px;">No tasks available right now.</div>';
+  document.querySelectorAll('.tk-cat').forEach(b=>b.classList.toggle('active', b.dataset.c===TK.cat));
+  document.getElementById('tkViewAll').classList.toggle('active', TK.view==='all');
+  document.getElementById('tkViewMine').classList.toggle('active', TK.view==='mine');
+  const pending = DAILY_ADS.reduce((n,a)=>n+(tkGet(a.id)<a.max?1:0),0);
+  const dot = document.getElementById('tkDailyDot'); if(dot) dot.style.display = pending ? 'block' : 'none';
+  const cnt = document.getElementById('tkCount');
+  if(TK.cat==='daily' && TK.view==='all'){
+    cnt.textContent = 'Resets every day at 00:00 UTC';
+    const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
+    let h = '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Mining ads</div><div class="tk-meta">50 coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
+    h += DAILY_ADS.map(a=>{
+      const n = tkGet(a.id), full = n>=a.max;
+      return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:'+a.color+';">'+tkRing(n,a.max)+'<div class="tk-main"><div class="tk-title">'+a.name+'<span class="tk-test">TEST AD</span></div><div class="tk-meta">'+a.per+' coins per ad • '+a.max+' ads a day</div><div class="tk-actions">'
+        + (full ? '<button class="tk-btn d" disabled>✓ Done today</button>' : '<button class="tk-btn f" onclick="tkAdPlaceholder(\''+a.id+'\')">▶ Watch ad '+(n+1)+'</button>')
+        + '</div></div></div>';
+    }).join('');
+    h += '<div class="tk-empty" style="padding:14px;font-size:12px;">These are test ads. Coin rewards for them switch on once the ad networks approve the app.</div>';
+    container.innerHTML = h;
     return;
   }
-  container.innerHTML = rows.map(t=>{
+  const rows = await loadTasks();
+  const catOf = t => t.category || 'social';
+  let list;
+  if(TK.view==='mine'){
+    list = rows.filter(t=>state.tasksCompleted.includes(t.id));
+    cnt.textContent = list.length+' completed';
+  } else {
+    list = rows.filter(t=>catOf(t)===TK.cat);
+    const doneN = list.filter(t=>state.tasksCompleted.includes(t.id)).length;
+    cnt.textContent = doneN+'/'+list.length+' done';
+  }
+  if(list.length===0){
+    const msg = TK.view==='mine' ? 'You have not completed any tasks yet.' : (TK.cat==='social' ? 'No tasks available right now.' : 'Nothing here yet. New tasks will appear soon.');
+    container.innerHTML = '<div class="tk-empty">'+msg+'</div>';
+    return;
+  }
+  container.innerHTML = list.map(t=>{
     const done = state.tasksCompleted.includes(t.id);
     const full = t.completions_count >= t.max_completions;
     let btns;
-    if(done){
-      btns = '<button class="task-btn btn-full" disabled>✅ Completed</button>';
-    } else if(full){
-      btns = '<button class="task-btn btn-full" disabled>Full</button>';
-    } else {
-      btns = '<button class="task-btn btn-open" onclick="window.open(\''+t.link+'\',\'_blank\')">🔗 Open</button><button class="task-btn btn-claim" onclick="handleClaimTask('+t.id+','+t.reward+')">🎁 Claim</button>';
-    }
-    const typeLabel = t.type==='telegram' ? 'Telegram' : 'Social Media';
-    return '<div class="task-item"><div class="task-top"><span class="task-title">'+t.title+'</span><span class="task-reward">+'+t.reward+' coins</span></div><div class="task-sub">'+typeLabel+' • '+t.completions_count+'/'+t.max_completions+' claimed</div><div class="task-btn-row">'+btns+'</div></div>';
+    if(done) btns = '<button class="tk-btn d" disabled>✓ Completed</button>';
+    else if(full) btns = '<button class="tk-btn d" style="color:var(--muted);background:var(--card2);" disabled>Full</button>';
+    else btns = '<button class="tk-btn o" onclick="window.open(\''+esc(t.link)+'\',\'_blank\')">Open ↗</button><button class="tk-btn f" onclick="handleClaimTask('+t.id+','+t.reward+')">Claim</button>';
+    const typeLabel = t.type==='telegram' ? 'Telegram' : 'Social media';
+    return '<div class="tk-card'+(done?' done':'')+'"><div class="tk-badge"><span class="coin"></span><b>+'+t.reward+'</b><small>COINS</small></div><div class="tk-main"><div class="tk-title">'+esc(t.title)+'</div><div class="tk-meta">'+typeLabel+' • '+t.completions_count+'/'+t.max_completions+' claimed</div><div class="tk-actions">'+btns+'</div></div></div>';
   }).join('');
 }
 
@@ -1706,9 +1805,24 @@ async function startApp(){
     </div>
     <div class="tab-content" id="tab-tasks">
       <h1>Tasks</h1>
-      <div class="section-title">Available Tasks</div>
+      <div class="tk-sub">Pick a category and collect coins.</div>
+      <div class="tk-cats" id="tkCats">
+        <button class="tk-cat active" data-c="social" onclick="tkSetCat('social')"><svg viewBox="0 0 24 24"><path d="M4 12l16-7-5 15-3-6z"/></svg><span>Social</span></button>
+        <button class="tk-cat" data-c="daily" onclick="tkSetCat('daily')"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><span>Daily</span><i class="tk-dot" id="tkDailyDot"></i></button>
+        <button class="tk-cat" data-c="exclusive" onclick="tkSetCat('exclusive')"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><span>Exclusive</span></button>
+        <button class="tk-cat" data-c="partner" onclick="tkSetCat('partner')"><svg viewBox="0 0 24 24"><path d="M3 12l4-4 4 3 3-3 4 4-7 7z"/></svg><span>Partner</span></button>
+      </div>
+      <div class="tk-bar">
+        <div class="tk-view"><button class="active" id="tkViewAll" onclick="tkSetView('all')">Tasks</button><button id="tkViewMine" onclick="tkSetView('mine')">My tasks</button></div>
+        <button class="tk-new" onclick="openTaskSheet()">＋ New</button>
+      </div>
+      <div class="tk-count" id="tkCount"></div>
       <div id="taskList"></div>
-      <div class="section-title">Create a Task</div>
+    </div>
+    <div class="sheet-bg" id="taskSheetBg" onclick="closeTaskSheet()"></div>
+    <div class="sheet" id="taskSheet">
+      <div class="sheet-grip"></div>
+      <div class="sheet-title">Create a task</div>
       ${paymentBox}
       <div class="form-group">
         <label class="form-label">Task title</label>
@@ -1732,6 +1846,7 @@ async function startApp(){
       </div>
       <div class="error-msg" id="taskMsg"></div>
       <button class="action btn-start" onclick="handleCreateTask()">Create Task</button>
+      <button class="action" style="margin-top:8px;" onclick="closeTaskSheet()">Close</button>
     </div>
     <div class="tab-content" id="tab-profile">
       <h1>Profile</h1>
