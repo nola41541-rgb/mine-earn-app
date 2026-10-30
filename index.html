@@ -8,86 +8,117 @@
 <script src='//libtl.com/sdk.js' data-zone='12030270' data-sdk='show_12030270'></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{--bg:#0a0f23;--card:#131a35;--gold:#ffd23c;--text:#fff;--muted:#9aa4c7;}
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);padding:16px 16px 90px 16px;}
-  h1{text-align:center;margin:8px 0 4px;font-size:24px;}
+  :root{--bg:#0e0b07;--card:#1a1510;--card2:#120e0a;--line:rgba(255,184,28,0.16);--gold:#ffb81c;--gold2:#ff8f00;--text:#fff;--muted:#a79d8a;--field:#2a231a;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(circle at 50% -8%,rgba(255,184,28,0.14),transparent 55%),var(--bg);background-attachment:fixed;color:var(--text);padding:14px 14px 118px 14px;min-height:100vh;}
+  h1{text-align:left;margin:6px 4px 14px;font-size:26px;font-weight:800;letter-spacing:-0.3px;}
   .loading{text-align:center;padding:60px 20px;color:var(--muted);}
-  .balance{text-align:center;background:var(--card);border-radius:14px;padding:16px;margin-bottom:16px;}
-  .balance .coins{font-size:28px;font-weight:bold;color:var(--gold);}
+  .balance{background:linear-gradient(145deg,#2a2013,#1a1510 60%);border:1px solid rgba(255,184,28,0.35);border-radius:24px;padding:20px;margin-bottom:14px;text-align:center;box-shadow:0 8px 30px rgba(255,150,0,0.08);}
+  .balance .coins{font-size:32px;font-weight:800;color:var(--gold);}
   .balance .usd{color:var(--muted);font-size:13px;margin-top:4px;}
-  .slot{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;}
+  .slot{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:12px;}
   .slot-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-  .slot-name{font-weight:bold;font-size:16px;}
-  .slot-rate{color:var(--gold);font-size:13px;}
+  .slot-name{font-weight:800;font-size:17px;display:flex;align-items:center;gap:10px;}
+  .slot-badge{width:30px;height:30px;border-radius:10px;background:linear-gradient(145deg,#ffd35c,#ff9d00);color:#2b1a00;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;}
+  .slot-rate{color:var(--gold);font-size:13px;font-weight:700;}
   .slot-progress{font-size:12px;color:var(--muted);margin-bottom:8px;}
-  .bar{background:#222b4d;border-radius:6px;height:6px;overflow:hidden;margin-bottom:10px;}
-  .bar-fill{background:var(--gold);height:100%;}
-  button.action{width:100%;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:bold;}
-  .btn-start{background:#3b82f6;color:#fff;}
-  .btn-wait{background:#333c5e;color:var(--muted);}
-  .btn-collect{background:var(--gold);color:#1a1500;}
-  .btn-done{background:#2f3a2f;color:#7ecb7e;}
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:50;}
-  .modal-box{background:var(--card);padding:24px;border-radius:14px;text-align:center;max-width:280px;}
-  .tabbar{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid #222b4d;z-index:40;}
-  .tab-btn{flex:1;background:none;border:none;color:var(--muted);padding:10px 0;font-size:11px;}
+  .bar{background:var(--field);border-radius:8px;height:8px;overflow:hidden;margin-bottom:12px;}
+  .bar-fill{background:linear-gradient(90deg,#ffcf4a,#ff9d00);height:100%;border-radius:8px;}
+  button.action{width:100%;padding:13px;border:1px solid var(--line);border-radius:14px;font-size:15px;font-weight:700;background:var(--field);color:#fff;}
+  button.action:active{transform:scale(0.98);}
+  .btn-start{background:linear-gradient(180deg,#2fd36f,#17a24a)!important;color:#05240f!important;border:none!important;}
+  .btn-wait{background:var(--card2)!important;color:var(--muted)!important;}
+  .btn-collect{background:linear-gradient(180deg,#ffd45a,#ffa41c)!important;color:#2b1a00!important;border:none!important;}
+  .btn-done{background:#16251a!important;color:#7ecb7e!important;}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;z-index:50;}
+  .modal-box{background:var(--card);border:1px solid var(--line);padding:24px;border-radius:22px;text-align:center;max-width:280px;}
+  .tabbar{position:fixed;bottom:12px;left:12px;right:12px;height:66px;display:flex;align-items:center;background:rgba(26,21,16,0.97);border:1px solid var(--line);border-radius:34px;z-index:40;box-shadow:0 10px 30px rgba(0,0,0,0.6);}
+  .tab-btn{flex:1;background:none;border:none;color:#8d8372;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;height:100%;padding:0;}
+  .tab-btn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   .tab-btn.active{color:var(--gold);}
+  .tab-center{position:relative;}
+  .tab-center .orb{width:68px;height:68px;border-radius:50%;margin-top:-38px;background:radial-gradient(circle at 50% 35%,#2b2216,#0e0b07);border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;box-shadow:0 0 22px rgba(255,170,0,0.45),0 6px 14px rgba(0,0,0,0.6);}
+  .tab-center .orb svg{width:34px;height:34px;fill:var(--gold);stroke:none;}
+  .tab-center.active .orb{box-shadow:0 0 30px rgba(255,170,0,0.8),0 6px 14px rgba(0,0,0,0.6);}
+  .tab-center span.lbl{margin-top:2px;}
   .tab-content{display:none;}
   .tab-content.active{display:block;}
-  .profile-card{background:var(--card);border-radius:14px;padding:20px;text-align:center;margin-bottom:16px;}
-  .profile-avatar{width:72px;height:72px;border-radius:50%;background:#222b4d;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 10px;overflow:hidden;}
+  .profile-card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;text-align:center;margin-bottom:16px;}
+  .profile-avatar{width:76px;height:76px;border-radius:50%;background:var(--field);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 10px;overflow:hidden;}
   .profile-avatar img{width:100%;height:100%;object-fit:cover;}
-  .profile-name{font-size:18px;font-weight:bold;}
+  .profile-name{font-size:19px;font-weight:800;}
   .profile-username{color:var(--muted);font-size:13px;margin-bottom:14px;}
-  .stat-row{display:flex;justify-content:space-between;background:#0f1730;border-radius:10px;padding:12px 16px;margin-bottom:8px;}
+  .stat-row{display:flex;justify-content:space-between;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:13px 16px;margin-bottom:8px;}
   .stat-label{color:var(--muted);font-size:13px;}
-  .stat-value{font-weight:bold;color:var(--gold);}
+  .stat-value{font-weight:800;color:var(--gold);}
   .form-group{margin-bottom:12px;}
   .form-label{font-size:13px;color:var(--muted);margin-bottom:6px;display:block;}
-  .form-input{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3358;background:#0f1730;color:#fff;font-size:15px;}
+  .form-input{width:100%;padding:13px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:#fff;font-size:15px;}
   .method-row{display:flex;gap:8px;margin-bottom:12px;}
-  .method-btn{flex:1;padding:10px;border-radius:10px;border:1px solid #2a3358;background:#0f1730;color:var(--muted);font-size:13px;text-align:center;}
-  .method-btn.active{border-color:var(--gold);color:var(--gold);}
-  .wd-item{background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;}
-  .wd-top{display:flex;justify-content:space-between;font-weight:bold;}
+  .method-btn{flex:1;padding:11px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:var(--muted);font-size:13px;text-align:center;}
+  .method-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(255,184,28,0.08);}
+  .wd-item{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:8px;}
+  .wd-top{display:flex;justify-content:space-between;font-weight:700;}
   .wd-sub{color:var(--muted);font-size:12px;margin-top:4px;}
   .badge-pending{color:#f0a500;font-size:12px;}
   .badge-approved{color:#7ecb7e;font-size:12px;}
   .error-msg{color:#ff6b6b;font-size:13px;margin-bottom:8px;min-height:16px;}
   .success-msg{color:#7ecb7e;font-size:13px;margin-bottom:8px;min-height:16px;}
-  .section-title{font-size:15px;font-weight:bold;margin:18px 0 10px;}
-  .task-item{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;}
+  .section-title{font-size:15px;font-weight:800;margin:18px 4px 10px;}
+  .task-item{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:15px;margin-bottom:10px;}
   .task-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
-  .task-title{font-weight:bold;font-size:15px;}
-  .task-reward{color:var(--gold);font-size:13px;}
+  .task-title{font-weight:700;font-size:15px;}
+  .task-reward{color:var(--gold);font-size:13px;font-weight:700;}
   .task-sub{color:var(--muted);font-size:12px;margin-bottom:10px;}
   .task-btn-row{display:flex;gap:8px;}
-  .task-btn{flex:1;padding:10px;border-radius:8px;border:none;font-size:13px;font-weight:bold;}
-  .btn-open{background:#3b82f6;color:#fff;}
-  .btn-claim{background:var(--gold);color:#1a1500;}
-  .btn-full{background:#333c5e;color:var(--muted);}
-  .wallet-box{background:#0f1730;border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--muted);word-break:break-all;}
+  .task-btn{flex:1;padding:11px;border-radius:12px;border:none;font-size:13px;font-weight:700;}
+  .btn-open{background:var(--field);color:#fff;border:1px solid var(--line);}
+  .btn-claim{background:linear-gradient(180deg,#ffd45a,#ffa41c);color:#2b1a00;}
+  .btn-full{background:var(--card2);color:var(--muted);}
+  .wallet-box{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--muted);word-break:break-all;}
   .wallet-box b{color:#fff;}
-  .support-btn{display:block;text-align:center;background:#0f1730;color:var(--gold);padding:12px;border-radius:10px;text-decoration:none;font-weight:bold;margin-top:10px;}
+  .support-btn{display:block;text-align:center;background:var(--card2);border:1px solid var(--line);color:var(--gold);padding:13px;border-radius:14px;text-decoration:none;font-weight:700;margin-top:10px;}
   .gate-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:20px;}
   .gate-icon{font-size:48px;margin-bottom:16px;}
-  .gate-title{font-size:20px;font-weight:bold;margin-bottom:8px;}
+  .gate-title{font-size:20px;font-weight:800;margin-bottom:8px;}
   .gate-sub{color:var(--muted);font-size:14px;margin-bottom:24px;}
-  .gate-channel-btn{display:block;width:100%;max-width:320px;background:var(--card);color:#fff;padding:14px;border-radius:10px;text-decoration:none;font-weight:bold;margin-bottom:10px;}
-  .gate-verify-btn{width:100%;max-width:320px;background:var(--gold);color:#1a1500;padding:14px;border:none;border-radius:10px;font-weight:bold;font-size:15px;margin-top:10px;}
+  .gate-channel-btn{display:block;width:100%;max-width:320px;background:var(--card);border:1px solid var(--line);color:#fff;padding:14px;border-radius:14px;text-decoration:none;font-weight:700;margin-bottom:10px;}
+  .gate-verify-btn{width:100%;max-width:320px;background:linear-gradient(180deg,#ffd45a,#ffa41c);color:#2b1a00;padding:14px;border:none;border-radius:14px;font-weight:800;font-size:15px;margin-top:10px;}
   .gate-error{color:#ff6b6b;font-size:13px;margin-top:12px;min-height:16px;}
+  .chip-row{display:flex;gap:8px;margin:0 4px 14px;flex-wrap:wrap;}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:7px 12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .chip b{color:var(--gold);font-size:13px;}
+  .coin{display:inline-block;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe27a,#ff9d00);border:1.5px solid #ffcf4a;position:relative;flex:none;}
+  .coin::after{content:"";position:absolute;left:4px;top:3px;width:5px;height:8px;background:#7a4500;clip-path:polygon(60% 0,15% 55%,50% 55%,35% 100%,90% 40%,52% 40%);}
+  .game-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .gcard{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:9px 9px 13px;position:relative;}
+  .gcard:active{transform:scale(0.98);}
+  .gthumb{height:124px;border-radius:17px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,0.08);}
+  .gthumb svg{width:100%;height:100%;display:block;}
+  .gplay{position:absolute;right:8px;bottom:8px;width:44px;height:44px;border-radius:50%;background:linear-gradient(180deg,#ffd45a,#ffa41c);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.5);}
+  .gplay svg{width:18px;height:18px;fill:#2b1a00;margin-left:2px;}
+  .gcat{font-size:11px;font-weight:800;letter-spacing:1.2px;margin:12px 4px 2px;}
+  .gname{font-size:18px;font-weight:800;margin:0 4px 10px;}
+  .gmeta{display:flex;justify-content:space-between;align-items:center;margin:0 4px;}
+  .greward{display:flex;align-items:center;gap:6px;font-weight:800;color:var(--gold);font-size:17px;}
+  .gpips{display:flex;align-items:center;gap:3px;color:var(--muted);font-size:12px;font-weight:700;}
+  .gpip{width:6px;height:15px;border-radius:3px;background:#3a3123;}
+  .gpip.on{background:linear-gradient(180deg,#ffd45a,#ff9d00);}
+  .gpips span{margin-left:4px;}
+  .gdim{opacity:0.5;}
+  .gdim .gplay{background:#3a3123;}
+  .gdim .gplay svg{fill:#8d8372;}
 </style>
 </head>
 <body>
 <div id="app"><div class="loading" id="loadingMsg">Loading...</div></div>
 
 <nav class="tabbar" id="tabbar" style="display:none;">
-  <button class="tab-btn active" id="btn-mine" onclick="showTab('mine')">⛏️<br>Mine</button>
-  <button class="tab-btn" id="btn-play" onclick="showTab('play')">🎮<br>Play</button>
-  <button class="tab-btn" id="btn-tasks" onclick="showTab('tasks')">📋<br>Tasks</button>
-  <button class="tab-btn" id="btn-profile" onclick="showTab('profile')">👤<br>Profile</button>
-  <button class="tab-btn" id="btn-withdraw" onclick="showTab('withdraw')">💸<br>Withdraw</button>
+  <button class="tab-btn active" id="btn-mine" onclick="showTab('mine')"><svg viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M9 3l-2 6 5 12 5-12-2-6"/></svg><span>Mine</span></button>
+  <button class="tab-btn" id="btn-tasks" onclick="showTab('tasks')"><svg viewBox="0 0 24 24"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg><span>Tasks</span></button>
+  <button class="tab-btn tab-center" id="btn-play" onclick="showTab('play')"><span class="orb"><svg viewBox="0 0 24 24"><path d="M7 7h10a5 5 0 015 5v2a3.2 3.2 0 01-5.4 2.3L15 15H9l-1.6 1.3A3.2 3.2 0 012 14v-2a5 5 0 015-5z"/><path d="M7.5 10v4M5.5 12h4" stroke="#1a1510" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="15.7" cy="11" r="1.1" fill="#1a1510"/><circle cx="18.3" cy="13" r="1.1" fill="#1a1510"/></svg></span><span class="lbl">Play</span></button>
+  <button class="tab-btn" id="btn-withdraw" onclick="showTab('withdraw')"><svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 012-2h13v3"/><rect x="3" y="8" width="18" height="12" rx="3"/><circle cx="16.5" cy="14" r="1.2"/></svg><span>Withdraw</span></button>
+  <button class="tab-btn" id="btn-profile" onclick="showTab('profile')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><span>Profile</span></button>
 </nav>
 
 <div class="modal" id="adModal" style="display:none;">
@@ -326,26 +357,36 @@ async function handleCollect(i){
 
 // ===================== GAMES =====================
 const GAMES_URL = SUPABASE_URL + '/functions/v1/super-responder';
+const GAME_THUMBS = {
+snake:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><pattern id="ckS" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#1f7a4c"/><rect width="16" height="16" fill="#26925a"/><rect x="16" y="16" width="16" height="16" fill="#26925a"/></pattern></defs><rect width="160" height="124" fill="url(#ckS)"/><g fill="#7ee85a" stroke="#2f9d3e" stroke-width="1.5"><circle cx="24" cy="84" r="9"/><circle cx="42" cy="84" r="9"/><circle cx="60" cy="84" r="9"/><circle cx="60" cy="66" r="9"/><circle cx="78" cy="66" r="9"/><circle cx="96" cy="66" r="9"/></g><circle cx="114" cy="66" r="11" fill="#9bf26c" stroke="#2f9d3e" stroke-width="1.5"/><circle cx="117" cy="61" r="3.5" fill="#fff"/><circle cx="117" cy="71" r="3.5" fill="#fff"/><circle cx="118" cy="61" r="1.6" fill="#111"/><circle cx="118" cy="71" r="1.6" fill="#111"/><path d="M125 66h10m0 0l4-3m-4 3l4 3" stroke="#ff4d4d" stroke-width="2" fill="none"/><circle cx="118" cy="26" r="11" fill="#ff4d4d"/><circle cx="114" cy="23" r="3" fill="rgba(255,255,255,0.5)"/><path d="M118 15c2-6 7-8 10-7-1 5-5 8-10 7z" fill="#9be36b"/></svg>',
+runner:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="skR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4aa8ff"/><stop offset="1" stop-color="#cfeaff"/></linearGradient></defs><rect width="160" height="124" fill="#2f9a5b"/><rect width="160" height="38" fill="url(#skR)"/><polygon points="72,38 88,38 158,124 2,124" fill="#4b4f63"/><path d="M76 38L50 124M84 38L110 124" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/><rect x="92" y="70" width="22" height="9" rx="2" fill="#ff9f1a"/><rect x="40" y="58" width="16" height="22" rx="2" fill="#c0392b"/><rect x="43" y="63" width="10" height="5" fill="#ffd86b"/><ellipse cx="80" cy="116" rx="12" ry="3.5" fill="rgba(0,0,0,0.3)"/><path d="M75 108v7M85 108v7" stroke="#2b3a67" stroke-width="5" stroke-linecap="round"/><rect x="69" y="86" width="22" height="24" rx="7" fill="#e24b4b"/><rect x="73" y="90" width="14" height="14" rx="3" fill="#2f6fe0"/><path d="M68 90l-3 14M92 90l3 14" stroke="#e24b4b" stroke-width="5" stroke-linecap="round"/><circle cx="80" cy="79" r="8" fill="#2a1b14"/></svg>',
+shooter:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="spG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a0626"/><stop offset="1" stop-color="#25187a"/></linearGradient><radialGradient id="plG"><stop offset="0" stop-color="#7a58d8"/><stop offset="1" stop-color="#2a1a6a"/></radialGradient></defs><rect width="160" height="124" fill="url(#spG)"/><circle cx="118" cy="38" r="26" fill="url(#plG)"/><ellipse cx="118" cy="38" rx="44" ry="9" fill="none" stroke="rgba(170,150,255,0.5)" stroke-width="3" transform="rotate(-20 118 38)"/><g fill="#fff"><circle cx="20" cy="20" r="1.2"/><circle cx="48" cy="52" r="1"/><circle cx="140" cy="96" r="1.2"/><circle cx="30" cy="96" r="1"/><circle cx="76" cy="14" r="1.2"/></g><path d="M42 24l9 14 9-14-5 3-4-8-4 8z" fill="#b0245d" stroke="#ff7fb0"/><polygon points="110,62 118,58 126,62 126,72 118,76 110,72" fill="#6a2bd9" stroke="#b58cff" stroke-width="1.5"/><circle cx="118" cy="67" r="4" fill="#e3d1ff"/><rect x="73" y="52" width="2.5" height="18" fill="#fff"/><rect x="85" y="52" width="2.5" height="18" fill="#fff"/><path d="M76 118l-3 6h14l-3-6" fill="#ff8c2a"/><path d="M80 80l9 22 -3 8h-12l-3-8z" fill="#eef2fb"/><path d="M62 112l14-16h8l14 16-8 4h-20z" fill="#9aa7c4"/><ellipse cx="80" cy="96" rx="3.5" ry="7" fill="#3aa8ff"/></svg>',
+quiz:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="qzG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d3a74"/><stop offset="1" stop-color="#0a1a3f"/></linearGradient></defs><rect width="160" height="124" fill="url(#qzG)"/><g fill="rgba(255,255,255,0.18)" font-family="sans-serif" font-weight="800" font-size="22"><text x="12" y="30">+</text><text x="130" y="36">÷</text><text x="124" y="110">−</text><text x="14" y="108">×</text></g><circle cx="80" cy="46" r="26" fill="#eaf6ff"/><circle cx="80" cy="46" r="26" fill="none" stroke="#3aa8ff" stroke-width="5" stroke-dasharray="120 60" transform="rotate(-90 80 46)"/><text x="80" y="57" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="34" fill="#0d3a74">?</text><rect x="22" y="88" width="34" height="20" rx="10" fill="#3aa8ff"/><rect x="63" y="88" width="34" height="20" rx="10" fill="#22c55e"/><rect x="104" y="88" width="34" height="20" rx="10" fill="#ffb81c"/></svg>'
+};
 const GAME_LIST = [
-  {id:'snake', name:'Snake', icon:'🐍', desc:'Eat food and grow. 10 coins per food. Gets faster!', ready:true},
-  {id:'runner', name:'Endless Runner', icon:'🏃', desc:'Swipe to change lanes, jump and slide. 1 coin per 4 points. Gets faster!', ready:true},
-  {id:'shooter', name:'Galaxy Blaster', icon:'🚀', desc:'Blast alien ships, dodge their fire, grab power-ups. 5 coins per ship. Gets harder!', ready:true},
-  {id:'quiz', name:'Timed Quiz', icon:'❓', desc:'General knowledge and maths. 25 coins per correct answer. Gets harder!', ready:true}
+  {id:'snake', name:'Snake', cat:'ARCADE', col:'#31d17c', ready:true},
+  {id:'runner', name:'Endless Runner', cat:'ARCADE', col:'#2bd1c9', ready:true},
+  {id:'shooter', name:'Galaxy Blaster', cat:'ACTION', col:'#ff8a3c', ready:true},
+  {id:'quiz', name:'Timed Quiz', cat:'BRAIN', col:'#3aa8ff', ready:true}
 ];
 let gameStatus = null;
 async function renderPlay(){
   const box = document.getElementById('playList');
   if(!box) return;
+  const bal = document.getElementById('playBal'); if(bal) bal.textContent = state.balance.toLocaleString();
   try{ gameStatus = await api('gamesStatus', {}, GAMES_URL); }catch(e){ box.textContent = e.message; return; }
-  box.innerHTML = GAME_LIST.map(g=>{
+  box.innerHTML = '<div class="game-grid">' + GAME_LIST.map(g=>{
     const used = (gameStatus.runs && gameStatus.runs[g.id]) || 0;
-    const left = gameStatus.max - used;
-    let btn;
-    if(!g.ready) btn = '<button class="action btn-wait" disabled>Coming soon</button>';
-    else if(left<=0) btn = '<button class="action btn-wait" disabled>No runs left today</button>';
-    else btn = '<button class="action btn-start" onclick="startGame(\''+g.id+'\')">▶️ Play ('+left+' left)</button>';
-    return '<div class="slot"><div class="slot-top"><div class="slot-name">'+g.icon+' '+g.name+'</div><div class="slot-rate">'+used+'/'+gameStatus.max+' runs</div></div><div class="slot-progress">'+g.desc+'</div>'+btn+'</div>';
-  }).join('');
+    const left = Math.max(0, gameStatus.max - used);
+    const pips = Array.from({length:gameStatus.max},(_,i)=>'<div class="gpip'+(i<left?' on':'')+'"></div>').join('');
+    const click = left>0 ? 'startGame(\''+g.id+'\')' : 'alert(\'No plays left for this game today. It resets at 00:00 UTC.\')';
+    return '<div class="gcard'+(left<=0?' gdim':'')+'" onclick="'+click+'">'
+      + '<div class="gthumb">'+GAME_THUMBS[g.id]+'<div class="gplay"><svg viewBox="0 0 24 24"><path d="M6 3.5v17l15-8.5z"/></svg></div></div>'
+      + '<div class="gcat" style="color:'+g.col+'">'+g.cat+'</div>'
+      + '<div class="gname">'+g.name+'</div>'
+      + '<div class="gmeta"><div class="greward"><span class="coin"></span>250</div><div class="gpips">'+pips+'<span>'+left+'/'+gameStatus.max+'</span></div></div>'
+      + '</div>';
+  }).join('') + '</div>';
 }
 
 let G = null;
@@ -354,7 +395,7 @@ function ensureGameOverlay(){
   if(gEl('gameOverlay')) return;
   const d = document.createElement('div');
   d.id = 'gameOverlay';
-  d.style.cssText = 'display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:#0a0f23;z-index:60;flex-direction:column;align-items:center;padding:10px;overflow:auto;';
+  d.style.cssText = 'display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:#0e0b07;z-index:60;flex-direction:column;align-items:center;padding:10px;overflow:auto;';
   d.innerHTML = '<div style="width:100%;max-width:380px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
     + '<button class="action" style="width:auto;padding:8px 14px;margin:0;" id="gQuitBtn" onclick="quitGame()">✕ Quit</button>'
     + '<div id="gScore" style="font-weight:bold;color:var(--gold);">Score 0</div></div>'
@@ -1375,7 +1416,7 @@ function render(){
     }
     div.innerHTML = `
       <div class="slot-top">
-        <div class="slot-name">${cfg.name}</div>
+        <div class="slot-name"><span class="slot-badge">${i+1}</span>${cfg.name}</div>
         <div class="slot-rate">+${cfg.coins} coins / ${cfg.ads} ads</div>
       </div>
       <div class="slot-progress">${slot.sessions}/${MAX_SESSIONS} collects today</div>
@@ -1408,7 +1449,7 @@ async function startApp(){
 
   document.getElementById('app').innerHTML = `
     <div class="tab-content active" id="tab-mine">
-      <h1>⛏️ MineEarn</h1>
+      <h1>MineEarn</h1>
       <div class="balance">
         <div class="coins" id="balanceCoins"></div>
         <div class="usd" id="balanceUsd"></div>
@@ -1417,12 +1458,12 @@ async function startApp(){
       <div id="slots"></div>
     </div>
     <div class="tab-content" id="tab-play">
-      <h1>🎮 Play</h1>
-      <div class="task-sub" style="margin-bottom:12px;">5 runs per game each day. Resets at 00:00 UTC. Up to 250 coins per run.</div>
+      <h1>Play &amp; Earn</h1>
+      <div class="chip-row"><div class="chip"><span class="coin"></span><b id="playBal">0</b></div><div class="chip">5 plays per game daily</div><div class="chip">Max 250 coins per play</div></div>
       <div id="playList"></div>
     </div>
     <div class="tab-content" id="tab-tasks">
-      <h1>📋 Tasks</h1>
+      <h1>Tasks</h1>
       <div class="section-title">Available Tasks</div>
       <div id="taskList"></div>
       <div class="section-title">Create a Task</div>
@@ -1451,7 +1492,7 @@ async function startApp(){
       <button class="action btn-start" onclick="handleCreateTask()">Create Task</button>
     </div>
     <div class="tab-content" id="tab-profile">
-      <h1>👤 Profile</h1>
+      <h1>Profile</h1>
       <div class="profile-card">
         <div class="profile-avatar">${photo}</div>
         <div class="profile-name">${name}</div>
@@ -1463,7 +1504,7 @@ async function startApp(){
       </div>
     </div>
     <div class="tab-content" id="tab-withdraw">
-      <h1>💸 Withdraw</h1>
+      <h1>Withdraw</h1>
       <div class="balance">
         <div class="coins" id="wdBalance"></div>
         <div class="usd">Available balance</div>
