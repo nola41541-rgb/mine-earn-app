@@ -140,6 +140,9 @@
   .earn-tx b{display:block;font-size:15px;}
   .earn-tx span{display:block;font-size:12px;color:var(--muted);margin-top:2px;}
   .earn-go{color:var(--gold);font-size:26px;}
+  .invite-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px;margin-bottom:12px;}
+  .invite-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+  .invite-link{background:var(--card2);border:1px dashed var(--line);border-radius:12px;padding:10px;font-size:12px;color:var(--gold);word-break:break-all;margin-bottom:10px;text-align:center;}
 </style>
 </head>
 <body>
@@ -224,6 +227,9 @@ function getTelegramId(){
 }
 const TG_ID = getTelegramId();
 const TG_USER = getTelegramUser();
+const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-handler';
+const BOT_APP_LINK = 'https://t.me/mineearnx_bot/mineearn';
+function myRefLink(){ return BOT_APP_LINK + '?startapp=' + TG_ID; }
 const IS_OWNER = TG_ID === OWNER_TG_ID;
 let state = null;
 
@@ -1523,7 +1529,41 @@ function showTab(tab){
   if(tab==='home'){ renderHome(); }
 }
 function goWithdraw(){ showTab('profile'); setTimeout(()=>{ const e = document.getElementById('wdSection'); if(e) e.scrollIntoView({behavior:'smooth'}); }, 80); }
+function copyRef(){
+  const link = myRefLink();
+  const done = ()=>{ const b = document.getElementById('refCopyBtn'); if(b){ b.textContent = '✅ Copied!'; setTimeout(()=>{ b.textContent = '📋 Copy link'; }, 1800); } };
+  try{ navigator.clipboard.writeText(link).then(done, ()=>fallbackCopy(link, done)); }catch(e){ fallbackCopy(link, done); }
+}
+function fallbackCopy(text, done){
+  const t = document.createElement('textarea'); t.value = text; t.style.cssText = 'position:fixed;opacity:0;'; document.body.appendChild(t); t.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ alert(text); }
+  document.body.removeChild(t);
+}
+function shareRef(){
+  const text = 'Watch ads, play games and earn coins on MineEarn! Join with my link:';
+  const url = 'https://t.me/share/url?url=' + encodeURIComponent(myRefLink()) + '&text=' + encodeURIComponent(text);
+  try{ window.Telegram.WebApp.openTelegramLink(url); }catch(e){ window.open(url, '_blank'); }
+}
+async function refJoinOnce(){
+  try{
+    const sp = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.start_param;
+    if(!sp || !/^[0-9]{5,15}$/.test(sp) || sp === TG_ID) return;
+    if(localStorage.getItem('refTried') === sp) return;
+    await api('refJoin', { code: sp }, REF_URL);
+    localStorage.setItem('refTried', sp);
+  }catch(e){}
+}
+async function renderRefInfo(){
+  const l = document.getElementById('refLink'); if(l) l.textContent = myRefLink();
+  try{
+    const r = await api('refInfo', {}, REF_URL);
+    document.getElementById('refInvited').textContent = r.invited;
+    document.getElementById('refPaid').textContent = r.paid;
+    document.getElementById('refEarned').textContent = Number(r.earned).toLocaleString();
+  }catch(e){}
+}
 async function renderHome(){
+  renderRefInfo();
   try{
     const g = await api('gamesStatus', {}, GAMES_URL);
     let left = 0; for(const k of Object.keys(g.runs||{})) left += Math.max(0, g.max - g.runs[k]);
@@ -1637,7 +1677,17 @@ async function startApp(){
       <div class="earn-card" onclick="showTab('play')"><div class="earn-ic">🎮</div><div class="earn-tx"><b>Games</b><span>4 games • up to 250 coins per play • 5 plays each daily</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="showTab('tasks')"><div class="earn-ic">✅</div><div class="earn-tx"><b>Tasks</b><span>Join channels and follow pages for coins</span></div><div class="earn-go">›</div></div>
       <div class="earn-card dim"><div class="earn-ic">📺</div><div class="earn-tx"><b>Watch &amp; earn</b><span>More ad rewards • <i>coming soon</i></span></div></div>
-      <div class="earn-card dim"><div class="earn-ic">👥</div><div class="earn-tx"><b>Invite friends</b><span>500 coins when a friend joins • <i>coming soon</i></span></div></div>
+      <div class="section-title">Invite &amp; earn</div>
+      <div class="invite-card">
+        <div class="invite-top"><div class="earn-ic">👥</div><div class="earn-tx"><b>Invite friends</b><span>500 coins when a friend joins + 3,000 coins when their first withdrawal is paid</span></div></div>
+        <div class="invite-link" id="refLink"></div>
+        <div style="display:flex;gap:8px;"><button class="action" style="flex:1;" onclick="copyRef()" id="refCopyBtn">📋 Copy link</button><button class="action btn-collect" style="flex:1;" onclick="shareRef()">📤 Share</button></div>
+        <div class="tile-row" style="margin-top:12px;margin-bottom:0;">
+          <div class="tile"><div class="tile-num" id="refInvited">0</div><div class="tile-lbl">Friends joined</div></div>
+          <div class="tile"><div class="tile-num" id="refPaid">0</div><div class="tile-lbl">First withdrawals paid</div></div>
+          <div class="tile"><div class="tile-num" id="refEarned">0</div><div class="tile-lbl">Coins earned</div></div>
+        </div>
+      </div>
       <a class="support-btn" href="${SUPPORT_LINK}" target="_blank">🆘 Contact Support</a>
     </div>
     <div class="tab-content" id="tab-mine">
@@ -1723,7 +1773,7 @@ async function startApp(){
     </div>
   `;
   document.getElementById('tabbar').style.display='flex';
-  setTimeout(renderHome, 300);
+  refJoinOnce().then(()=>{ renderHome(); });
   setInterval(render, 1000);
   render();
   renderTasks();
