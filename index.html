@@ -329,8 +329,8 @@ const GAMES_URL = SUPABASE_URL + '/functions/v1/super-responder';
 const GAME_LIST = [
   {id:'snake', name:'Snake', icon:'🐍', desc:'Eat food and grow. 10 coins per food. Gets faster!', ready:true},
   {id:'runner', name:'Endless Runner', icon:'🏃', desc:'Swipe to change lanes, jump and slide. 1 coin per 4 points. Gets faster!', ready:true},
-  {id:'shooter', name:'Space Shooter', icon:'🚀', desc:'Drag to move, ship fires by itself. 5 coins per enemy. Gets harder!', ready:true},
-  {id:'quiz', name:'Timed Quiz', icon:'❓', desc:'Answer before time runs out. 25 coins per correct answer. Gets harder!', ready:true}
+  {id:'shooter', name:'Galaxy Blaster', icon:'🚀', desc:'Blast alien ships, dodge their fire, grab power-ups. 5 coins per ship. Gets harder!', ready:true},
+  {id:'quiz', name:'Timed Quiz', icon:'❓', desc:'General knowledge and maths. 25 coins per correct answer. Gets harder!', ready:true}
 ];
 let gameStatus = null;
 async function renderPlay(){
@@ -356,7 +356,7 @@ function ensureGameOverlay(){
   d.id = 'gameOverlay';
   d.style.cssText = 'display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:#0a0f23;z-index:60;flex-direction:column;align-items:center;padding:10px;overflow:auto;';
   d.innerHTML = '<div style="width:100%;max-width:380px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-    + '<button class="action" style="width:auto;padding:8px 14px;margin:0;" onclick="quitGame()">✕ Quit</button>'
+    + '<button class="action" style="width:auto;padding:8px 14px;margin:0;" id="gQuitBtn" onclick="quitGame()">✕ Quit</button>'
     + '<div id="gScore" style="font-weight:bold;color:var(--gold);">Score 0</div></div>'
     + '<canvas id="gCanvas" style="touch-action:none;background:#1f7a4c;border-radius:18px;box-shadow:0 0 0 4px rgba(255,255,255,0.08);"></canvas>'
     + '<div id="gPad" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,52px);gap:6px;justify-content:center;">'
@@ -368,6 +368,17 @@ function ensureGameOverlay(){
     + '<div id="gResult" style="display:none;width:100%;max-width:380px;text-align:center;background:var(--card);border-radius:14px;padding:16px;margin-top:12px;"></div>';
   document.body.appendChild(d);
 }
+const GAME_CAP = { snake:25, runner:1000, shooter:50, quiz:10 };
+function checkCap(score){
+  if(!G || G.capped || !GAME_CAP[G.id] || score < GAME_CAP[G.id]) return;
+  G.capped = true;
+  const q = gEl('gQuitBtn'); if(q) q.textContent = '✓ Finish';
+  let t = gEl('gToast');
+  if(!t){ t = document.createElement('div'); t.id = 'gToast'; t.style.cssText = 'position:fixed;left:50%;top:64px;transform:translateX(-50%);background:#ffd24d;color:#222;font-weight:bold;padding:10px 14px;border-radius:12px;z-index:80;text-align:center;max-width:90%;'; document.body.appendChild(t); }
+  t.textContent = '🏆 250 coins reached! You can keep playing, or tap Finish.'; t.style.display = 'block';
+  setTimeout(()=>{ t.style.display = 'none'; }, 3500);
+}
+function curScore(){ if(!G) return 0; return G.id==='snake'?SN.score:G.id==='runner'?RN.score:G.id==='shooter'?SH.score:QZ.score; }
 function lockSwipes(on){
   try{
     const w = window.Telegram.WebApp;
@@ -380,7 +391,8 @@ async function startGame(id){
   let r;
   try{ r = await api('gameStart', { game:id }, GAMES_URL); }catch(e){ alert(e.message); renderPlay(); return; }
   ensureGameOverlay();
-  G = { id, token:r.token, over:false, timer:null };
+  G = { id, token:r.token, over:false, timer:null, capped:false };
+  gEl('gQuitBtn').textContent = '✕ Quit';
   gEl('gameOverlay').style.display = 'flex';
   gEl('gResult').style.display = 'none';
   gEl('gPad').style.display = 'none'; gEl('gPad2').style.display = 'none'; gEl('gPad3').style.display = 'none'; gEl('gQuiz').style.display = 'none';
@@ -399,6 +411,7 @@ function closeGameOverlay(){
   renderPlay();
 }
 function quitGame(){
+  if(G && !G.over && G.capped){ finishGame(curScore()); return; }
   if(G && !G.over){
     if(!confirm('Quit this run? It will still count as one of your 5 runs today.')) return;
   }
@@ -443,7 +456,7 @@ async function finishGame(score){
   res.style.display = 'block';
   res.innerHTML = '<div style="color:var(--muted);">Checking your result...</div>';
   let r;
-  try{ r = await api('gameFinish', { token:G.token, score }, GAMES_URL); }
+  try{ r = await api('gameFinish', { token:G.token, score:Math.min(score, GAME_CAP[G.id]||score) }, GAMES_URL); }
   catch(e){ res.innerHTML = '<div style="color:#ff6b6b;margin-bottom:10px;">'+esc(e.message)+'</div><button class="action btn-start" onclick="closeGameOverlay()">Back</button>'; return; }
   const coins = r.valid ? r.coins : 0;
   const need = adsForCoinsClient(coins);
@@ -483,7 +496,7 @@ function snakeInit(){
   };
   snakeSpawn();
 }
-function snakeLabel(){ gEl('gScore').textContent = 'Score '+SN.score+' • Attempt '+SN.att+'/'+SN.maxAtt; }
+function snakeLabel(){ gEl('gScore').textContent = 'Score '+SN.score+' • Attempt '+SN.att+'/'+SN.maxAtt;  checkCap(SN.score); }
 function snakeSpawn(){
   SN.body = [{x:5,y:6},{x:4,y:6},{x:3,y:6}];
   SN.dir = {x:1,y:0}; SN.next = {x:1,y:0};
@@ -533,7 +546,7 @@ function snakeStep(){
   if(ate){
     SN.score++;
     snakeLabel();
-    if(SN.score>=25){ snakeDraw(); finishGame(SN.score); return; }
+    if(SN.body.length >= SN.N*SN.N - 1){ snakeDraw(); finishGame(SN.score); return; }
     SN.food = snakeFood();
   } else SN.body.pop();
   snakeDraw();
@@ -630,7 +643,7 @@ function runnerInit(){
   cv.onmousedown = null;
   runnerSpawn();
 }
-function runnerLabel(){ gEl('gScore').textContent = 'Score '+RN.score+' • Attempt '+RN.att+'/'+RN.maxAtt; }
+function runnerLabel(){ gEl('gScore').textContent = 'Score '+RN.score+' • Attempt '+RN.att+'/'+RN.maxAtt;  checkCap(RN.score); }
 function runnerSpawn(){
   RN.lane = 0; RN.x = 0; RN.h = 0; RN.vy = 0; RN.slide = 0;
   RN.obs = []; RN.nextZ = 45;
@@ -686,7 +699,6 @@ function runnerLoop(){
     if(Math.abs(RN.x - o.lane) > 0.55) continue;
     if(o.type==='block' || (o.type==='low' && RN.h < 0.55) || (o.type==='high' && RN.slide<=0)){ runnerDie(); return; }
   }
-  if(RN.score >= 1000){ RN.score = 1000; runnerLabel(); runnerDraw(); finishGame(1000); return; }
   runnerDraw();
   G.timer = setTimeout(runnerLoop, 16);
 }
@@ -809,26 +821,27 @@ function runnerDraw(){
   }
 }
 
-// ---- Space Shooter (drag to move, auto-fire, 5 attempts per play) ----
-const SH = { maxAtt:5, W:360, H:420, move:0 };
+// ---- Galaxy Blaster (drag to move, auto-fire, 5 attempts per play) ----
+const SH = { maxAtt:5, W:360, H:440, move:0 };
 function shooterInit(){
   const cv = gEl('gCanvas');
-  SH.W = Math.min(window.innerWidth-20, 400); SH.H = 420;
+  SH.W = Math.min(window.innerWidth-20, 400); SH.H = 440;
   cv.width = SH.W; cv.height = SH.H;
-  SH.score = 0; SH.att = 1; SH.kills = 0;
-  const setX = e=>{ const r = cv.getBoundingClientRect(); const t = e.touches[0]; SH.x = Math.max(20, Math.min(SH.W-20, t.clientX - r.left)); };
+  SH.score = 0; SH.att = 1; SH.t = 0;
+  const setX = e=>{ const r = cv.getBoundingClientRect(); const t = e.touches[0]; SH.x = Math.max(24, Math.min(SH.W-24, t.clientX - r.left)); };
   cv.ontouchstart = e=>{ setX(e); shooterStart(); e.preventDefault(); };
   cv.ontouchmove = e=>{ setX(e); e.preventDefault(); };
-  cv.onmousedown = e=>{ shooterStart(); };
-  SH.stars = Array.from({length:40},()=>({x:Math.random()*SH.W,y:Math.random()*SH.H,s:Math.random()*1.6+0.4}));
+  cv.onmousedown = ()=>{ shooterStart(); };
+  SH.stars = Array.from({length:70},()=>({x:Math.random()*SH.W,y:Math.random()*SH.H,s:Math.random()*0.9+0.2}));
   shooterSpawn();
 }
-function shooterLabel(){ gEl('gScore').textContent = 'Destroyed '+SH.score+'/50 • Attempt '+SH.att+'/'+SH.maxAtt; }
+function shooterLabel(){ gEl('gScore').textContent = 'Score '+SH.score+' • ≈'+Math.min(250,SH.score*5)+' coins'; checkCap(SH.score); }
 function shooterSpawn(){
-  SH.x = SH.W/2; SH.en = []; SH.bu = []; SH.fire = 0; SH.spawn = 1.2; SH.move = 0;
+  SH.x = SH.W/2; SH.en = []; SH.bu = []; SH.eb = []; SH.caps = []; SH.parts = []; SH.pops = [];
+  SH.fire = 0; SH.spawn = 1.0; SH.move = 0; SH.power = 0;
   SH.started = false; SH.dead = false; SH.last = 0;
   gEl('gResult').style.display = 'none';
-  gEl('gPad').style.display = 'none'; gEl('gPad2').style.display = 'none'; gEl('gPad3').style.display = 'none'; gEl('gQuiz').style.display = 'none'; gEl('gPad3').style.display = 'grid';
+  gEl('gPad').style.display = 'none'; gEl('gPad2').style.display = 'none'; gEl('gPad3').style.display = 'grid';
   shooterLabel(); shooterDraw();
 }
 function shooterStart(){
@@ -836,32 +849,69 @@ function shooterStart(){
   SH.started = true; SH.last = Date.now(); shooterLoop();
 }
 function shooterPress(d){ shooterStart(); SH.move = d; }
+function shBoom(x,y,col,n){
+  for(let i=0;i<n;i++){ const a=Math.random()*6.283, v=40+Math.random()*180; SH.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:0.5+Math.random()*0.4,t:0,c:col[i%col.length],r:1.5+Math.random()*3}); }
+  SH.parts.push({x,y,vx:0,vy:0,life:0.3,t:0,c:'#fff',r:8,ring:true});
+}
 function shooterLoop(){
   if(!G || G.over || SH.dead) return;
   const now = Date.now(); let dt = (now - SH.last)/1000; SH.last = now; if(dt>0.05) dt = 0.05;
-  SH.x = Math.max(20, Math.min(SH.W-20, SH.x + SH.move*300*dt));
-  // fire
-  SH.fire -= dt;
-  if(SH.fire <= 0){ SH.bu.push({x:SH.x, y:SH.H-60}); SH.fire = 0.32; }
-  for(const b of SH.bu) b.y -= 520*dt;
-  SH.bu = SH.bu.filter(b=>b.y>-10);
-  // enemies: slow and few at first, faster and tougher later
+  SH.t += dt;
+  SH.x = Math.max(24, Math.min(SH.W-24, SH.x + SH.move*320*dt));
+  const sy = SH.H-50;
+  // auto fire (twin guns; triple spread with power-up)
+  SH.fire -= dt; if(SH.power>0) SH.power -= dt;
+  if(SH.fire <= 0){
+    if(SH.power>0){ for(const a of [-0.22,0,0.22]) SH.bu.push({x:SH.x,y:sy-24,vx:Math.sin(a)*620,vy:-Math.cos(a)*620}); }
+    else { SH.bu.push({x:SH.x-9,y:sy-14,vx:0,vy:-640}); SH.bu.push({x:SH.x+9,y:sy-14,vx:0,vy:-640}); }
+    SH.fire = 0.28;
+  }
+  for(const b of SH.bu){ b.x += b.vx*dt; b.y += b.vy*dt; }
+  SH.bu = SH.bu.filter(b=>b.y>-20 && b.x>-10 && b.x<SH.W+10);
+  // spawn: easy at the start, then faster, tougher and mixed
   SH.spawn -= dt;
   if(SH.spawn <= 0){
-    const k = SH.score;
-    let hp = 1; if(k>=15 && Math.random()<0.3) hp = 2; if(k>=32 && Math.random()<0.25) hp = 3;
-    SH.en.push({x:24+Math.random()*(SH.W-48), y:-20, hp, hp0:hp, sp:Math.min(150, 60+k*1.8)});
-    SH.spawn = Math.max(0.6, 1.4 - k*0.016);
+    const s = SH.score, r = Math.random(); let e;
+    if(s>=10 && r<0.2){ const hp = s>=30?3:2; e = {k:'turret',x:30+Math.random()*(SH.W-60),y:-30,hp,hp0:hp,sp:38}; }
+    else if(s>=5 && r<0.45){ e = {k:'dart',x:20+Math.random()*(SH.W-40),y:-20,hp:1,hp0:1,sp:150+Math.min(40,s)}; }
+    else { e = {k:'fighter',x:30+Math.random()*(SH.W-60),y:-20,hp:1,hp0:1,sp:52+Math.min(s,50)*1.3,ph:Math.random()*6,shoot:(s>=8&&Math.random()<0.35)?1.5+Math.random()*2:0}; e.bx = e.x; }
+    SH.en.push(e);
+    SH.spawn = Math.max(0.6, 1.4 - s*0.013);
   }
-  for(const e of SH.en) e.y += e.sp*dt;
-  // bullet hits
-  for(const b of SH.bu){ for(const e of SH.en){ if(e.hp>0 && Math.abs(b.x-e.x)<20 && Math.abs(b.y-e.y)<18){ e.hp--; b.y = -99; if(e.hp<=0){ SH.score++; shooterLabel(); } break; } } }
+  for(const e of SH.en){
+    e.y += e.sp*dt;
+    if(e.k==='fighter'){ e.x = e.bx + Math.sin(SH.t*1.6+e.ph)*26; if(e.shoot){ e.shoot -= dt; if(e.shoot<=0 && e.y>20 && e.y<SH.H-160){ SH.eb.push({x:e.x,y:e.y+16,vy:200}); e.shoot = 2+Math.random()*2; } } }
+  }
+  for(const b of SH.eb) b.y += b.vy*dt;
+  SH.eb = SH.eb.filter(b=>b.y<SH.H+10);
+  // bullets vs enemies
+  for(const b of SH.bu){ for(const e of SH.en){
+    const rr = e.k==='turret'?22:(e.k==='dart'?14:18);
+    if(e.hp>0 && Math.abs(b.x-e.x)<rr && Math.abs(b.y-e.y)<rr){
+      e.hp--; b.y = -99;
+      if(e.hp<=0){
+        SH.score++; shooterLabel();
+        shBoom(e.x,e.y, e.k==='turret'?['#c9a6ff','#ff9f1a','#fff']:['#ffb347','#ff5a36','#ffe14d'], e.k==='turret'?26:16);
+        SH.pops.push({x:e.x,y:e.y,t:0,text:'+5'});
+        if(Math.random()<0.12) SH.caps.push({x:e.x,y:e.y});
+      } else SH.parts.push({x:b.x,y:b.y,vx:0,vy:0,life:0.15,t:0,c:'#fff',r:5,ring:true});
+      break;
+    } } }
   SH.en = SH.en.filter(e=>e.hp>0);
-  // ship hit or enemy got through
-  for(const e of SH.en){ if(e.y > SH.H-20 || (Math.abs(e.x-SH.x)<24 && Math.abs(e.y-(SH.H-40))<24)){ shooterDie(); return; } }
-  for(const s of SH.stars){ s.y += s.s*40*dt; if(s.y>SH.H){ s.y=0; s.x=Math.random()*SH.W; } }
+  // capsules
+  for(const c of SH.caps) c.y += 80*dt;
+  for(const c of SH.caps){ if(Math.abs(c.x-SH.x)<26 && Math.abs(c.y-sy)<28){ c.y = 9999; SH.power = 8; SH.pops.push({x:SH.x,y:sy-40,t:0,text:'TRIPLE SHOT!'}); } }
+  SH.caps = SH.caps.filter(c=>c.y<SH.H+20);
+  // particles, popups, stars
+  for(const p of SH.parts){ p.t += dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vx *= 0.96; p.vy *= 0.96; }
+  SH.parts = SH.parts.filter(p=>p.t<p.life);
+  for(const p of SH.pops){ p.t += dt; p.y -= 40*dt; }
+  SH.pops = SH.pops.filter(p=>p.t<0.9);
+  for(const s of SH.stars){ s.y += s.s*260*dt; if(s.y>SH.H){ s.y=-10; s.x=Math.random()*SH.W; } }
+  // ship hit / enemy through / pink orb
+  for(const e of SH.en){ if(e.y > SH.H-18 || (Math.abs(e.x-SH.x)<26 && Math.abs(e.y-sy)<26)){ shBoom(SH.x,sy,['#ffb347','#fff','#4aa8ff'],24); shooterDie(); return; } }
+  for(const b of SH.eb){ if(Math.abs(b.x-SH.x)<16 && Math.abs(b.y-sy)<22){ shBoom(SH.x,sy,['#ffb347','#fff','#4aa8ff'],24); shooterDie(); return; } }
   shooterDraw();
-  if(SH.score >= 50){ finishGame(50); return; }
   G.timer = setTimeout(shooterLoop, 16);
 }
 function shooterDie(){
@@ -874,7 +924,7 @@ function shooterDie(){
   if(SH.att >= SH.maxAtt){ finishGame(SH.score); return; }
   const left = SH.maxAtt - SH.att;
   res.innerHTML = '<div style="font-size:17px;font-weight:bold;">Your ship was hit!</div>'
-    + '<div style="margin:8px 0;color:var(--muted);">Destroyed so far: <b style="color:#fff;">'+SH.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
+    + '<div style="margin:8px 0;color:var(--muted);">Score so far: <b style="color:#fff;">'+SH.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
     + '<button class="action btn-collect" onclick="shooterContinue()">🎬 Watch ad to continue</button>'
     + '<button class="action" style="margin-top:8px;" onclick="finishGame(SH.score)">Finish &amp; see result</button>';
 }
@@ -882,28 +932,80 @@ async function shooterContinue(){
   const res = gEl('gResult');
   await continuePlaceholderAd(res);
   if(!G || G.over) return;
-  SH.att++; SH.dead = false; SH.started = false; SH.en = []; SH.bu = []; SH.spawn = 1.2; SH.move = 0; SH.x = SH.W/2;
+  SH.att++; SH.dead = false; SH.started = false; SH.en = []; SH.bu = []; SH.eb = []; SH.caps = []; SH.spawn = 1.0; SH.move = 0; SH.x = SH.W/2;
   gEl('gResult').style.display = 'none';
   gEl('gPad3').style.display = 'grid';
   shooterLabel(); shooterDraw();
 }
 function shooterDraw(){
   const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const W = SH.W, H = SH.H;
-  const bg = c.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#050a24'); bg.addColorStop(1,'#16205a');
+  const bg = c.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#0a0626'); bg.addColorStop(0.6,'#1b1050'); bg.addColorStop(1,'#0d1a4a');
   c.fillStyle = bg; c.fillRect(0,0,W,H);
-  c.fillStyle = '#fff'; for(const s of SH.stars){ c.globalAlpha = 0.4+s.s*0.3; c.fillRect(s.x,s.y,s.s,s.s); } c.globalAlpha = 1;
+  // planet with ring (backdrop)
+  const pg = c.createRadialGradient(W*0.68,H*0.36,10,W*0.7,H*0.38,95); pg.addColorStop(0,'#6a49c8'); pg.addColorStop(1,'rgba(30,20,90,0.1)');
+  c.fillStyle = pg; c.beginPath(); c.arc(W*0.7,H*0.38,92,0,7); c.fill();
+  c.strokeStyle = 'rgba(160,140,255,0.35)'; c.lineWidth = 6; c.beginPath(); c.ellipse(W*0.7,H*0.38,150,34,-0.35,0,7); c.stroke();
+  // star rain
+  for(const s of SH.stars){ c.fillStyle = 'rgba(255,255,255,'+(0.25+s.s*0.5)+')'; c.fillRect(s.x, s.y, 1.5, 4+s.s*10); }
+  // enemies
   for(const e of SH.en){
-    c.fillStyle = e.hp0===1 ? '#ff5470' : (e.hp0===2 ? '#a66bff' : '#ff9f1a');
-    c.beginPath(); c.moveTo(e.x-18,e.y-10); c.lineTo(e.x+18,e.y-10); c.lineTo(e.x+10,e.y+12); c.lineTo(e.x-10,e.y+12); c.closePath(); c.fill();
-    c.fillStyle = '#fff'; c.beginPath(); c.arc(e.x-6,e.y-2,3.5,0,7); c.arc(e.x+6,e.y-2,3.5,0,7); c.fill();
-    c.fillStyle = '#111'; c.beginPath(); c.arc(e.x-6,e.y-1,1.6,0,7); c.arc(e.x+6,e.y-1,1.6,0,7); c.fill();
-    if(e.hp0>1){ c.fillStyle='rgba(0,0,0,0.5)'; c.fillRect(e.x-14,e.y-17,28,3); c.fillStyle='#7dff9b'; c.fillRect(e.x-14,e.y-17,28*e.hp/e.hp0,3); }
+    const x = e.x, y = e.y;
+    if(e.k==='fighter'){
+      c.fillStyle = '#b0245d'; c.strokeStyle = '#ff7fb0'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(x,y+18); c.lineTo(x+9,y-2); c.lineTo(x+26,y-14); c.lineTo(x+10,y-8); c.lineTo(x+6,y-16); c.lineTo(x-6,y-16); c.lineTo(x-10,y-8); c.lineTo(x-26,y-14); c.lineTo(x-9,y-2); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#35e0d6'; c.beginPath(); c.arc(x-6,y-8,2.6,0,7); c.arc(x+6,y-8,2.6,0,7); c.fill();
+      c.fillStyle = '#ff3b6b'; c.beginPath(); c.arc(x,y+4,3.5,0,7); c.fill();
+    } else if(e.k==='dart'){
+      c.fillStyle = '#ff9f1a'; c.strokeStyle = '#ffd27a'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(x,y+18); c.lineTo(x+14,y-10); c.lineTo(x,y-3); c.lineTo(x-14,y-10); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#7a2d00'; c.beginPath(); c.arc(x,y,2.5,0,7); c.fill();
+    } else {
+      c.fillStyle = 'rgba(150,100,255,0.25)'; c.beginPath(); c.arc(x,y,30,0,7); c.fill();
+      c.fillStyle = '#6a2bd9'; c.strokeStyle = '#b58cff'; c.lineWidth = 2;
+      c.beginPath(); for(let i=0;i<6;i++){ const a=i*Math.PI/3+Math.PI/6; const px=x+Math.cos(a)*23, py=y+Math.sin(a)*23; if(i===0) c.moveTo(px,py); else c.lineTo(px,py); } c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#e3d1ff'; c.beginPath(); c.arc(x,y-2,8,0,7); c.fill();
+      c.fillStyle = '#24134f'; c.beginPath(); c.arc(x-15,y+10,5,0,7); c.arc(x+15,y+10,5,0,7); c.fill();
+      c.fillStyle = '#9a7dff'; c.fillRect(x-17,y+14,4,9); c.fillRect(x+13,y+14,4,9);
+    }
+    if(e.hp0>1){ c.fillStyle='rgba(0,0,0,0.55)'; c.fillRect(x-16,y-32,32,4); c.fillStyle='#7dff9b'; c.fillRect(x-16,y-32,32*e.hp/e.hp0,4); }
   }
-  c.fillStyle = '#ffe14d'; for(const b of SH.bu){ c.beginPath(); c.roundRect(b.x-2,b.y-8,4,12,2); c.fill(); }
-  const sx = SH.x, sy = SH.H-40;
-  c.fillStyle = '#ff7a2f'; c.beginPath(); c.moveTo(sx-6,sy+16); c.lineTo(sx,sy+26+Math.random()*5); c.lineTo(sx+6,sy+16); c.fill();
-  c.fillStyle = '#cfd8ff'; c.beginPath(); c.moveTo(sx,sy-22); c.lineTo(sx+20,sy+16); c.lineTo(sx+8,sy+10); c.lineTo(sx-8,sy+10); c.lineTo(sx-20,sy+16); c.closePath(); c.fill();
-  c.fillStyle = '#4aa8ff'; c.beginPath(); c.ellipse(sx,sy-2,5,9,0,0,7); c.fill();
+  // enemy orbs
+  for(const b of SH.eb){ c.fillStyle='rgba(255,111,181,0.35)'; c.beginPath(); c.arc(b.x,b.y,10,0,7); c.fill(); c.fillStyle='#ff6fb5'; c.beginPath(); c.arc(b.x,b.y,5.5,0,7); c.fill(); c.fillStyle='#fff'; c.beginPath(); c.arc(b.x-1.5,b.y-1.5,2,0,7); c.fill(); }
+  // capsules (power-up)
+  for(const k of SH.caps){ c.fillStyle='rgba(58,176,255,0.3)'; c.beginPath(); c.arc(k.x,k.y,18,0,7); c.fill(); c.fillStyle='#3ab0ff'; c.beginPath(); c.roundRect(k.x-13,k.y-8,26,16,8); c.fill(); c.fillStyle='rgba(255,255,255,0.7)'; c.beginPath(); c.roundRect(k.x-9,k.y-5,12,4,2); c.fill(); }
+  // bullets: glowing white beams
+  for(const b of SH.bu){ c.fillStyle='rgba(255,200,120,0.35)'; c.fillRect(b.x-3,b.y-12,6,22); c.fillStyle='#fff'; c.fillRect(b.x-1.5,b.y-11,3,20); }
+  // ship
+  if(!SH.dead){
+    const sx = SH.x, sy = SH.H-50, fl = 12+Math.random()*9;
+    c.fillStyle='rgba(255,140,40,0.9)'; for(const dx of [-9,9]){ c.beginPath(); c.moveTo(sx+dx-4,sy+20); c.lineTo(sx+dx,sy+20+fl*1.3); c.lineTo(sx+dx+4,sy+20); c.fill(); }
+    c.fillStyle='#ffe9a8'; for(const dx of [-9,9]){ c.beginPath(); c.moveTo(sx+dx-2,sy+20); c.lineTo(sx+dx,sy+20+fl*0.7); c.lineTo(sx+dx+2,sy+20); c.fill(); }
+    if(SH.power>0){ c.strokeStyle='rgba(80,190,255,'+(0.4+0.3*Math.sin(SH.t*12))+')'; c.lineWidth=3; c.beginPath(); c.arc(sx,sy,34,0,7); c.stroke(); }
+    const wg = c.createLinearGradient(sx-32,0,sx+32,0); wg.addColorStop(0,'#7f8ca8'); wg.addColorStop(0.5,'#d5dcec'); wg.addColorStop(1,'#7f8ca8');
+    c.fillStyle = wg; c.beginPath(); c.moveTo(sx-34,sy+16); c.lineTo(sx-9,sy-8); c.lineTo(sx+9,sy-8); c.lineTo(sx+34,sy+16); c.lineTo(sx+24,sy+22); c.lineTo(sx-24,sy+22); c.closePath(); c.fill();
+    c.strokeStyle = '#ff9a1f'; c.lineWidth = 3; c.beginPath(); c.moveTo(sx-30,sy+14); c.lineTo(sx-14,sy); c.moveTo(sx+30,sy+14); c.lineTo(sx+14,sy); c.stroke();
+    c.fillStyle = '#eef2fb'; c.beginPath(); c.moveTo(sx,sy-32); c.lineTo(sx+10,sy-8); c.lineTo(sx+9,sy+22); c.lineTo(sx-9,sy+22); c.lineTo(sx-10,sy-8); c.closePath(); c.fill();
+    c.fillStyle = '#3aa8ff'; c.beginPath(); c.ellipse(sx,sy-9,4.5,9,0,0,7); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.6)'; c.beginPath(); c.ellipse(sx-1.5,sy-12,1.5,4,0,0,7); c.fill();
+    c.fillStyle = '#ff9a1f'; c.fillRect(sx-9,sy+8,18,3);
+  }
+  // explosions
+  for(const p of SH.parts){
+    const a = 1 - p.t/p.life;
+    if(p.ring){ c.strokeStyle='rgba(255,255,255,'+a+')'; c.lineWidth=3; c.beginPath(); c.arc(p.x,p.y,p.r+p.t*160,0,7); c.stroke(); c.fillStyle='rgba(255,230,160,'+(a*0.6)+')'; c.beginPath(); c.arc(p.x,p.y,(p.r+p.t*90),0,7); c.fill(); }
+    else { c.globalAlpha = a; c.fillStyle = p.c; c.beginPath(); c.arc(p.x,p.y,p.r*a+0.5,0,7); c.fill(); c.globalAlpha = 1; }
+  }
+  // +5 popups
+  c.textAlign = 'center'; c.font = 'bold 16px sans-serif';
+  for(const p of SH.pops){ c.globalAlpha = 1 - p.t/0.9; c.fillStyle = p.text==='+5' ? '#ffd24d' : '#7de3ff'; c.fillText(p.text,p.x,p.y); c.globalAlpha = 1; }
+  // HUD: wave chip + hearts (= attempts left)
+  const wave = 1 + Math.floor(SH.score/10);
+  c.fillStyle = 'rgba(0,0,0,0.4)'; c.beginPath(); c.roundRect(8,8,56,26,13); c.fill();
+  c.fillStyle = '#fff'; c.font = 'bold 14px sans-serif'; c.textAlign = 'center'; c.fillText('Wave '+wave, 36, 26);
+  const hearts = SH.maxAtt - SH.att + 1;
+  c.fillStyle = 'rgba(0,0,0,0.4)'; c.beginPath(); c.roundRect(W-8-hearts*20-12,8,hearts*20+12,26,13); c.fill();
+  c.font = '16px sans-serif'; c.fillStyle = '#ff4d6d'; c.textAlign = 'left';
+  for(let i=0;i<hearts;i++) c.fillText('♥', W-8-hearts*20-6+i*20, 27);
   if(!SH.started && !SH.dead){
     c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(0,H/2-40,W,70);
     c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center';
@@ -912,54 +1014,61 @@ function shooterDraw(){
   }
 }
 
-// ---- Timed Quiz (10 correct answers = max reward, 5 attempts per play) ----
+// ---- Timed Quiz (general knowledge + maths, 5 attempts per play) ----
 const QZ_BANK = [
  [ // easy
+  ['Which company makes the iPhone?',['Apple','Samsung','Google','Nokia'],0],
+  ['What is the currency of the United States?',['Dollar','Euro','Pound','Yen'],0],
+  ['Which is the biggest country in the world by area?',['Russia','Canada','China','USA'],0],
+  ['Which social media app was formerly called Twitter?',['X','Threads','Snapchat','TikTok'],0],
+  ['Which sport is Lionel Messi famous for?',['Football','Tennis','Basketball','Golf'],0],
+  ['In which country is the Eiffel Tower?',['France','Italy','Spain','Germany'],0],
+  ['Who flies an aeroplane?',['Pilot','Chef','Doctor','Farmer'],0],
+  ['Which is the biggest animal in the ocean?',['Blue whale','Shark','Dolphin','Octopus'],0],
   ['What colour do you get by mixing red and white?',['Pink','Orange','Purple','Brown'],0],
-  ['How many days are in a week?',['5','6','7','8'],2],
-  ['Which animal is known as the king of the jungle?',['Lion','Tiger','Elephant','Bear'],0],
-  ['What is the capital of Nigeria?',['Lagos','Abuja','Kano','Ibadan'],1],
-  ['How many legs does a spider have?',['6','8','10','4'],1],
-  ['Which planet do we live on?',['Mars','Venus','Earth','Jupiter'],2],
-  ['What is 5 + 7?',['11','12','13','14'],1],
-  ['Which fruit is yellow and curved?',['Apple','Banana','Grape','Orange'],1],
-  ['How many months are in a year?',['10','11','12','13'],2],
-  ['Which of these is a mammal?',['Shark','Dolphin','Salmon','Octopus'],1],
-  ['What do bees make?',['Milk','Honey','Silk','Butter'],1],
-  ['Which shape has 3 sides?',['Square','Circle','Triangle','Rectangle'],2],
-  ['What is the opposite of "hot"?',['Cold','Warm','Dry','Soft'],0],
-  ['In which direction does the sun rise?',['West','East','North','South'],1],
-  ['How many minutes are in one hour?',['30','60','90','100'],1]
+  ['How many days are in a week?',['5','6','7','8'],2]
  ],
  [ // medium
-  ['What is the largest ocean on Earth?',['Atlantic','Indian','Pacific','Arctic'],2],
-  ['Which continent is Nigeria in?',['Asia','Africa','Europe','South America'],1],
-  ['What is 9 × 8?',['63','72','81','64'],1],
-  ['Which gas do humans need to breathe?',['Carbon dioxide','Oxygen','Nitrogen','Helium'],1],
-  ['How many continents are there?',['5','6','7','8'],2],
-  ['What is the capital of Ghana?',['Accra','Kumasi','Lomé','Dakar'],0],
+  ['Which country hosted the 2024 Summer Olympics?',['France','Japan','Brazil','UK'],0],
+  ['Who won the 2022 FIFA World Cup?',['Argentina','France','Brazil','Germany'],0],
+  ['Where is the headquarters of the United Nations?',['New York','Geneva','London','Paris'],0],
+  ['Which company created ChatGPT?',['OpenAI','Google','Meta','Amazon'],0],
+  ['What is the capital of Australia?',['Sydney','Canberra','Melbourne','Perth'],1],
+  ['Which country hosted the 2022 FIFA World Cup?',['Qatar','Russia','Brazil','Japan'],0],
+  ['What is the currency of Japan?',['Yen','Won','Yuan','Rupee'],0],
+  ['Who founded Facebook?',['Mark Zuckerberg','Bill Gates','Elon Musk','Jeff Bezos'],0],
   ['Which planet is known as the Red Planet?',['Venus','Mars','Saturn','Mercury'],1],
-  ['Who painted the Mona Lisa?',['Picasso','Van Gogh','Leonardo da Vinci','Michelangelo'],2],
-  ['What is the largest animal on land?',['Elephant','Giraffe','Hippo','Rhino'],0],
-  ['At what temperature (°C) does water freeze?',['0','10','-10','100'],0],
-  ['How many players does one football team have on the pitch?',['9','10','11','12'],2],
-  ['Which river is the longest in Africa?',['Niger','Congo','Nile','Zambezi'],2]
+  ['Which is the largest ocean on Earth?',['Atlantic','Indian','Pacific','Arctic'],2]
  ],
  [ // harder
+  ['What does AI stand for?',['Artificial Intelligence','Automatic Internet','Advanced Input','Applied Index'],0],
+  ['Which organisation runs the Olympic Games?',['IOC','FIFA','UEFA','NBA'],0],
+  ['Which country won Euro 2024?',['Spain','England','France','Germany'],0],
+  ['How many countries are there in Africa?',['54','50','48','60'],0],
+  ['Which language has the most native speakers?',['Mandarin Chinese','English','Spanish','Hindi'],0],
+  ['What does GDP measure?',["A country's economic output",'Population','Rainfall','Army size'],0],
+  ['Which cryptocurrency was created first?',['Bitcoin','Ethereum','Dogecoin','TON'],0],
+  ['Which planet did the Perseverance rover land on?',['Mars','Venus','The Moon','Jupiter'],0],
   ['What is the chemical symbol for gold?',['Au','Ag','Go','Gd'],0],
-  ['What is the smallest prime number?',['0','1','2','3'],2],
-  ['In which year did World War II end?',['1918','1939','1945','1950'],2],
-  ['What is the capital of Canada?',['Toronto','Ottawa','Vancouver','Montreal'],1],
-  ['How many sides does a hexagon have?',['5','6','7','8'],1],
-  ['Which planet is famous for its rings?',['Jupiter','Saturn','Neptune','Mars'],1],
-  ['What is the hardest natural substance?',['Gold','Iron','Diamond','Quartz'],2],
-  ['Which African country has the largest population?',['Ethiopia','Egypt','Nigeria','South Africa'],2],
-  ['What is 15% of 200?',['20','25','30','35'],2],
-  ['Who wrote "Things Fall Apart"?',['Wole Soyinka','Chinua Achebe','Chimamanda Adichie','Ben Okri'],1],
-  ['Light travels at about…',['300,000 km/s','30,000 km/s','3,000 km/s','3 million km/s'],0],
-  ['Which organ pumps blood around the body?',['Liver','Lungs','Heart','Kidney'],2]
+  ['In which year did World War II end?',['1918','1939','1945','1950'],2]
  ]
 ];
+function mathQ(tier){
+  const r = n=>Math.floor(Math.random()*n), R = (a,b)=>a+r(b-a+1);
+  let text, ans, near = [];
+  const kind = tier===0 ? r(2) : (tier===1 ? 2+r(2) : r(5));
+  if(kind===0){ const a=R(3,30), b=R(3,30); text = a+' + '+b; ans = a+b; }
+  else if(kind===1){ let a=R(10,40), b=R(3,25); if(b>a){ const t=a; a=b; b=t; } text = a+' − '+b; ans = a-b; }
+  else if(kind===2){ const a=tier===1?R(2,12):R(12,25), b=tier===1?R(2,12):R(3,9); text = a+' × '+b; ans = a*b; near = [ans+a, ans-a, ans+b, ans-b]; }
+  else if(kind===3){ const b=tier===1?R(2,12):R(3,15), q=tier===1?R(2,12):R(5,25); text = (b*q)+' ÷ '+b; ans = q; near = [q+1, q-1, q+2, q-2]; }
+  else if(tier===2 && Math.random()<0.5){ const a=R(3,9), b=R(3,9), c=R(5,30); text = a+' × '+b+' + '+c; ans = a*b+c; near = [a*b-c, a*b+c+a, a*b+c-b]; }
+  else { const a=R(100,500), b=R(100,400); if(Math.random()<0.5){ text = a+' + '+b; ans = a+b; } else { const hi=Math.max(a,b), lo=Math.min(a,b); text = hi+' − '+lo; ans = hi-lo; } }
+  const set = [ans];
+  for(const n of near){ if(n>=0 && !set.includes(n) && set.length<4) set.push(n); }
+  const offs = [1,-1,2,-2,10,-10,5,-5,3,-3,20,-20];
+  for(const o of offs.sort(()=>Math.random()-0.5)){ const v = ans+o; if(v>=0 && !set.includes(v) && set.length<4) set.push(v); }
+  return ['What is '+text+' ?', set.map(String), 0];
+}
 const QZ = { maxAtt:5, target:10 };
 function quizInit(){
   gEl('gCanvas').style.display = 'none';
@@ -967,28 +1076,29 @@ function quizInit(){
   QZ.score = 0; QZ.att = 1; QZ.asked = 0; QZ.used = {}; QZ.locked = false;
   quizNext();
 }
-function quizLabel(){ gEl('gScore').textContent = 'Correct '+QZ.score+'/'+QZ.target+' • Attempt '+QZ.att+'/'+QZ.maxAtt; }
+function quizLabel(){ gEl('gScore').textContent = 'Correct '+QZ.score+' • Attempt '+QZ.att+'/'+QZ.maxAtt; checkCap(QZ.score); }
 function quizPick(){
   const tier = QZ.asked<5 ? 0 : (QZ.asked<10 ? 1 : 2);
+  if(Math.random()<0.5) return {q:mathQ(tier), tier, math:true};
   const order = [tier, ...[0,1,2].filter(t=>t!==tier)];
   for(const t of order){
     const free = QZ_BANK[t].map((q,i)=>i).filter(i=>!QZ.used[t+':'+i]);
-    if(free.length){ const i = free[Math.floor(Math.random()*free.length)]; QZ.used[t+':'+i] = 1; return {q:QZ_BANK[t][i], tier}; }
+    if(free.length){ const i = free[Math.floor(Math.random()*free.length)]; QZ.used[t+':'+i] = 1; return {q:QZ_BANK[t][i], tier, math:false}; }
   }
-  QZ.used = {}; return quizPick();
+  QZ.used = {}; return {q:mathQ(tier), tier, math:true};
 }
 function quizNext(){
   if(!G || G.over) return;
   const p = quizPick(); QZ.asked++;
   const opts = p.q[1].map((t,i)=>({t, ok:i===p.q[2]})).sort(()=>Math.random()-0.5);
   QZ.cur = { opts }; QZ.locked = false;
-  QZ.total = [15,12,10][p.tier]; QZ.left = QZ.total;
+  QZ.total = p.math ? [10,12,15][p.tier] : [15,12,10][p.tier]; QZ.left = QZ.total;
   gEl('gResult').style.display = 'none';
   quizLabel();
   gEl('gQuiz').innerHTML = '<div style="background:var(--card);border-radius:14px;padding:16px;">'
-    + '<div style="color:var(--muted);font-size:12px;">Question '+QZ.asked+' • '+QZ.total+' seconds</div>'
+    + '<div style="color:var(--muted);font-size:12px;">Question '+QZ.asked+' • '+(p.math?'Maths':'General knowledge')+' • '+QZ.total+' seconds</div>'
     + '<div style="height:8px;background:rgba(255,255,255,0.12);border-radius:6px;margin:8px 0 14px;overflow:hidden;"><div id="qzBar" style="height:100%;width:100%;background:var(--gold);"></div></div>'
-    + '<div style="font-size:18px;font-weight:bold;margin-bottom:14px;">'+esc(p.q[0])+'</div>'
+    + '<div style="font-size:'+(p.math?'24':'18')+'px;font-weight:bold;margin-bottom:14px;">'+esc(p.q[0])+'</div>'
     + opts.map((o,i)=>'<button class="action" id="qzOpt'+i+'" style="margin:0 0 8px;text-align:left;" onclick="quizAnswer('+i+')">'+esc(o.t)+'</button>').join('')
     + '</div>';
   quizTick();
@@ -1008,8 +1118,7 @@ function quizAnswer(i){
   if(ok){ QZ.score++; quizLabel(); }
   G.timer = setTimeout(()=>{
     if(!G || G.over) return;
-    if(ok){ if(QZ.score>=QZ.target) finishGame(QZ.score); else quizNext(); }
-    else quizFail(i<0);
+    if(ok) quizNext(); else quizFail(i<0);
   }, 1300);
 }
 function quizFail(timeout){
