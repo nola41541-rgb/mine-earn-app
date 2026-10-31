@@ -176,6 +176,23 @@
   .tk-ring .fg{stroke:url(#ringG);stroke-linecap:round;transition:stroke-dashoffset .4s;}
   .tk-ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
   .tk-test{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.8px;color:#ffd24d;background:rgba(255,210,77,0.12);border-radius:8px;padding:2px 6px;margin-left:6px;vertical-align:middle;}
+
+  .adm{position:fixed;inset:0;z-index:90;background:radial-gradient(circle at 15% -8%,rgba(47,123,255,0.38),transparent 52%),var(--bg);overflow:auto;padding:14px 14px 40px;display:none;}
+  .adm.open{display:block;}
+  .adm-head{display:flex;justify-content:space-between;align-items:center;margin:4px 2px 12px;}
+  .adm-head h1{margin:0;font-size:22px;}
+  .adm-tabs{display:flex;gap:6px;margin-bottom:14px;}
+  .adm-tabs button{flex:1;padding:10px 4px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--muted);font-size:13px;font-weight:800;}
+  .adm-tabs button.on{background:linear-gradient(180deg,#6fdcff,#2f86ff);color:#031233;border:none;}
+  .adm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .adm-stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;}
+  .adm-stat b{display:block;font-size:20px;color:var(--gold);margin-bottom:2px;}
+  .adm-stat span{font-size:12px;color:var(--muted);}
+  .adm-user{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:8px;}
+  .adm-row{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin:3px 0;}
+  .adm-row span{color:var(--muted);}
+  .adm-log{font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);padding:8px 2px;word-break:break-word;}
+  .adm-log b{color:#fff;}
   .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:70;display:none;}
   .sheet{position:fixed;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;background:var(--card);border-top:1px solid var(--line);border-radius:26px 26px 0 0;padding:10px 16px 24px;z-index:71;transform:translateY(105%);transition:transform .25s;}
   .sheet.open{transform:none;}
@@ -266,6 +283,7 @@ function getTelegramId(){
 }
 const TG_ID = getTelegramId();
 const TG_USER = getTelegramUser();
+const ADMIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-hub';
 const TASK_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/task-hub';
 const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-handler';
 const BOT_APP_LINK = 'https://t.me/mineearnx_bot/mineearn';
@@ -1822,6 +1840,117 @@ async function handleCreateTask(){
   renderTasks();
 }
 
+
+// ===== Admin panel (owner only; every call is re-checked on the server) =====
+const ADM = { tab:'stats', user:null };
+function admEnsure(){
+  let el = document.getElementById('admScreen');
+  if(!el){ el = document.createElement('div'); el.id = 'admScreen'; el.className = 'adm'; document.body.appendChild(el); }
+  return el;
+}
+function admOpen(){
+  if(!IS_OWNER) return;
+  admEnsure().classList.add('open');
+  admTab(ADM.tab || 'stats');
+}
+function admClose(){ admEnsure().classList.remove('open'); }
+function admShell(inner){
+  const t = (k,l)=>'<button class="'+(ADM.tab===k?'on':'')+'" onclick="admTab(\''+k+'\')">'+l+'</button>';
+  admEnsure().innerHTML = '<div class="adm-head"><h1>Admin panel</h1><button class="tk-btn o" onclick="admClose()">✕ Close</button></div>'
+    + '<div class="adm-tabs">'+t('stats','Stats')+t('users','Users')+t('announce','Announce')+t('log','Log')+'</div>'
+    + '<div id="admBody">'+inner+'</div>';
+}
+function admTab(k){
+  ADM.tab = k;
+  if(k==='stats') admStats();
+  else if(k==='users') admUsers('');
+  else if(k==='announce') admAnnounce();
+  else admLog();
+}
+function admNum(n){ return Number(n||0).toLocaleString('en-US'); }
+function admUsd(c){ return '$'+(Number(c||0)/100000).toFixed(2); }
+async function admStats(){
+  admShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const s = (await api('stats', {}, ADMIN_URL)).stats;
+    const box = (v,l)=>'<div class="adm-stat"><b>'+v+'</b><span>'+l+'</span></div>';
+    document.getElementById('admBody').innerHTML =
+      '<div class="adm-grid">'
+      + box(admNum(s.totalUsers),'Total users')
+      + box(admNum(s.newToday),'New today')
+      + box(admNum(s.activeToday),'Active today')
+      + box(admNum(s.bannedUsers),'Suspended')
+      + box(admNum(s.coinsInApp),'Coins in all balances')
+      + box(admNum(s.earnedToday),'Coins earned today')
+      + box(admNum(s.adsToday),'Ads watched today')
+      + box(admNum(s.adsTotal),'Ads watched, total')
+      + box(admNum(s.pending),'Open withdrawals')
+      + box(admNum(s.paidCount),'Paid withdrawals')
+      + box(admUsd(s.paidCoins),'Total paid out')
+      + box(admNum(s.tasksOpen),'Active tasks')
+      + '</div><button class="action" style="margin-top:6px;" onclick="admStats()">↻ Refresh</button>';
+  }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function admUsers(q){
+  admShell('<div style="display:flex;gap:8px;margin-bottom:10px;"><input id="admQ" class="form-input" inputmode="numeric" placeholder="Telegram ID" value="'+esc(q)+'"><button class="tk-btn f" onclick="admUsers(document.getElementById(\'admQ\').value)">Find</button></div><div id="admList"><div class="tk-empty">Loading...</div></div>');
+  try{
+    const r = await api('userFind', { q }, ADMIN_URL);
+    ADM.rows = r.rows;
+    const list = document.getElementById('admList');
+    if(!r.rows.length){ list.innerHTML = '<div class="tk-empty">'+esc(r.note||'No users.')+'</div>'; return; }
+    list.innerHTML = (r.note?'<div class="tk-meta" style="margin-bottom:8px;">'+esc(r.note)+'</div>':'')
+      + r.rows.map((u,i)=>'<div class="adm-user"><div class="adm-row"><b>ID '+esc(u.id)+'</b><b style="color:'+(u.banned?'#ff8a8a':'#7ecb7e')+'">'+(u.banned?'Suspended':'Active')+'</b></div>'
+      + '<div class="adm-row"><span>Balance</span><b>'+admNum(u.balance)+' coins</b></div>'
+      + '<div class="adm-row"><span>Referrals</span>'+u.referrals+'</div>'
+      + '<div class="adm-row"><span>Tasks done</span>'+u.tasks+'</div>'
+      + '<div class="adm-row"><span>Invited by</span>'+esc(u.referredBy||'-')+'</div>'
+      + '<div style="display:flex;gap:8px;margin-top:8px;"><button class="tk-btn f" style="flex:1;" onclick="admCoins('+i+')">± Coins</button><button class="tk-btn o" style="flex:1;" onclick="admBan('+i+')">'+(u.banned?'Unsuspend':'Suspend')+'</button></div></div>').join('');
+  }catch(e){ document.getElementById('admList').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function admCoins(i){
+  const u = ADM.rows[i]; if(!u) return;
+  const a = prompt('User '+u.id+'\nBalance: '+u.balance+'\n\nCoins to ADD (use a minus sign to remove, e.g. -500):');
+  if(a===null) return;
+  const amount = Number(String(a).replace(/[, ]/g,''));
+  if(!Number.isInteger(amount) || amount===0){ alert('Enter a whole number, not 0.'); return; }
+  const reason = prompt('Short reason (saved in the Log):','');
+  if(reason===null) return;
+  if(!confirm((amount>0?'Add ':'Remove ')+Math.abs(amount)+' coins '+(amount>0?'to':'from')+' user '+u.id+'?')) return;
+  try{ const r = await api('userAdjust', { id:u.id, amount, reason }, ADMIN_URL); alert('Done. New balance: '+r.balance); }catch(e){ alert(e.message); }
+  admUsers(u.id);
+}
+async function admBan(i){
+  const u = ADM.rows[i]; if(!u) return;
+  if(!confirm((u.banned?'Unsuspend':'Suspend')+' user '+u.id+'?\n\nA suspended user cannot earn coins or request withdrawals.')) return;
+  try{ await api('userBan', { id:u.id, banned:!u.banned }, ADMIN_URL); }catch(e){ alert(e.message); }
+  admUsers(u.id);
+}
+function admAnnounce(){
+  admShell('<div class="wallet-box" style="line-height:1.5;margin-bottom:10px;">Write a message. <b>Send test to me</b> sends it only to you. <b>Send to everyone</b> messages every user through the bot (users who blocked the bot are skipped). It can take a minute.</div>'
+    + '<textarea id="admMsg" class="form-input" rows="6" maxlength="1000" placeholder="Your message..."></textarea>'
+    + '<div id="admAnnRes" class="tk-meta" style="margin:8px 0;"></div>'
+    + '<button class="action" onclick="admSend(true)">Send test to me</button>'
+    + '<button class="action btn-collect" style="margin-top:8px;" onclick="admSend(false)">Send to everyone</button>');
+}
+async function admSend(test){
+  const text = (document.getElementById('admMsg').value||'').trim();
+  const res = document.getElementById('admAnnRes');
+  if(text.length<3){ res.textContent = 'Write at least 3 characters.'; return; }
+  if(!test && !confirm('Send this message to ALL users now?')) return;
+  res.textContent = test ? 'Sending test...' : 'Sending to everyone, please wait...';
+  try{
+    const r = await api('announce', { text, test }, ADMIN_URL);
+    res.textContent = test ? (r.sent ? 'Test sent. Check your Telegram.' : 'Test failed. Open the bot chat and press Start first.') : 'Done. Sent: '+r.sent+', failed/blocked: '+r.failed;
+  }catch(e){ res.textContent = e.message; }
+}
+async function admLog(){
+  admShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('logList', {}, ADMIN_URL);
+    document.getElementById('admBody').innerHTML = r.rows.length ? r.rows.map(x=>'<div class="adm-log"><b>'+esc(x.action)+'</b> • '+esc(String(x.created_at||'').replace('T',' ').slice(0,16))+'<br>'+esc(x.details||'')+'</div>').join('') : '<div class="tk-empty">Nothing logged yet.</div>';
+  }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+
 function showTab(tab){
   if(tab==='withdraw') tab = 'profile';
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
@@ -1994,6 +2123,7 @@ async function startApp(){
         </div>
       </div>
       <a class="support-btn" href="${SUPPORT_LINK}" target="_blank">🆘 Contact Support</a>
+        ${IS_OWNER ? '<button class="action btn-collect" style="margin-top:10px;" onclick="admOpen()">🛠 Admin panel</button>' : ''}
     </div>
     <div class="tab-content" id="tab-mine">
       <h1>MineEarn</h1>
