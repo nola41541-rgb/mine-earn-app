@@ -266,6 +266,7 @@ function getTelegramId(){
 }
 const TG_ID = getTelegramId();
 const TG_USER = getTelegramUser();
+const TASK_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/task-hub';
 const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-handler';
 const BOT_APP_LINK = 'https://t.me/mineearnx_bot/mineearn';
 function myRefLink(){ return BOT_APP_LINK + '?startapp=' + TG_ID; }
@@ -879,49 +880,110 @@ async function runnerContinue(){
   runnerLabel();
   runnerDraw();
 }
+function rnLimb(c, x0,y0, x1,y1, x2,y2, w0,w1,w2, c0, c1){
+  // two tapered segments (upper, lower) with rounded joints and a soft highlight
+  const seg = (ax,ay,bx,by,wa,wb,col)=>{
+    const dx = bx-ax, dy = by-ay, L = Math.hypot(dx,dy)||1, nx = -dy/L, ny = dx/L;
+    const g = c.createLinearGradient(ax-nx*wa,ay-ny*wa,ax+nx*wa,ay+ny*wa);
+    g.addColorStop(0,col[0]); g.addColorStop(0.55,col[1]); g.addColorStop(1,col[2]);
+    c.fillStyle = g; c.beginPath();
+    c.moveTo(ax+nx*wa,ay+ny*wa); c.lineTo(bx+nx*wb,by+ny*wb);
+    c.arc(bx,by,wb,Math.atan2(ny,nx),Math.atan2(-ny,-nx),true);
+    c.lineTo(ax-nx*wa,ay-ny*wa); c.arc(ax,ay,wa,Math.atan2(-ny,-nx),Math.atan2(ny,nx),true);
+    c.closePath(); c.fill();
+  };
+  seg(x0,y0,x1,y1,w0,w1,c0); seg(x1,y1,x2,y2,w1,w2,c1||c0);
+}
 function runnerHuman(c, px, gy){
-  const t = RN.dist*1.1, air = RN.h>0, sl = RN.slide>0;
-  const legL = sl?14:26, torsoH = sl?19:28;
-  const hipY = gy - legL;
-  const sway = air?0:Math.sin(t)*2;
-  const liftL = air?10:Math.max(0,Math.sin(t))*10, liftR = air?10:Math.max(0,-Math.sin(t))*10;
-  const spread = air?5:0;
-  c.lineCap = 'round';
-  // legs: dark jeans with a lighter side, then trainers with soles
-  for(const [sx,lift] of [[-6,liftL],[6,liftR]]){
-    const fx = px+sx+(sx<0?-spread:spread)+sway*0.5, fy = gy-lift-3;
-    c.strokeStyle = '#1f2c55'; c.lineWidth = 9.5; c.beginPath(); c.moveTo(px+sx,hipY); c.lineTo(fx,fy); c.stroke();
-    c.strokeStyle = 'rgba(120,150,230,0.35)'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(px+sx-2,hipY); c.lineTo(fx-2,fy); c.stroke();
-    c.fillStyle = '#f4f4f6'; c.beginPath(); c.ellipse(fx, gy-lift-1.5, 7, 4.2, 0, 0, 7); c.fill();
-    c.fillStyle = '#d63a3a'; c.fillRect(fx-6, gy-lift+1, 12, 2);
-  }
-  // hoodie torso with shading, hood fold and backpack straps
-  const ty = hipY - torsoH;
-  const tg = c.createLinearGradient(px-14,0,px+14,0); tg.addColorStop(0,'#ff7a7a'); tg.addColorStop(0.5,'#e24b4b'); tg.addColorStop(1,'#b83030');
-  c.fillStyle = tg; c.beginPath(); c.roundRect(px-14+sway, ty, 28, torsoH+4, 9); c.fill();
-  const bgp = c.createLinearGradient(px-9,0,px+9,0); bgp.addColorStop(0,'#4a8bff'); bgp.addColorStop(1,'#1f55c9');
-  c.fillStyle = bgp; c.beginPath(); c.roundRect(px-9+sway, ty+4, 18, Math.max(11,torsoH-7), 5); c.fill();
-  c.fillStyle = 'rgba(255,255,255,0.22)'; c.fillRect(px-7+sway, ty+6, 3, Math.max(8,torsoH-11));
-  c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(px-9+sway, ty+4+Math.max(11,torsoH-7)*0.5, 18, 2);
-  c.strokeStyle = 'rgba(0,0,0,0.25)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(px-10+sway,ty+2); c.quadraticCurveTo(px+sway,ty+9,px+10+sway,ty+2); c.stroke();
-  // arms
-  const shY = ty+8;
-  const hL = air ? shY-17 : shY+15 - Math.sin(t)*9;
-  const hR = air ? shY-17 : shY+15 + Math.sin(t)*9;
-  c.strokeStyle = '#d24242'; c.lineWidth = 7.5;
-  c.beginPath(); c.moveTo(px-15+sway, shY); c.lineTo(px-18+sway, hL); c.stroke();
-  c.beginPath(); c.moveTo(px+15+sway, shY); c.lineTo(px+18+sway, hR); c.stroke();
-  c.fillStyle = '#e0ac82';
-  c.beginPath(); c.arc(px-18+sway, hL, 3.8, 0, 7); c.fill();
-  c.beginPath(); c.arc(px+18+sway, hR, 3.8, 0, 7); c.fill();
-  // neck, ears and hair seen from behind
-  const hy2 = ty - 8;
-  c.fillStyle = '#c98f66'; c.fillRect(px-4.5+sway, ty-4, 9, 6);
-  c.fillStyle = '#e0ac82';
-  c.beginPath(); c.arc(px-10+sway, hy2+1.5, 2.8, 0, 7); c.arc(px+10+sway, hy2+1.5, 2.8, 0, 7); c.fill();
-  const hg = c.createRadialGradient(px-3+sway,hy2-4,1,px+sway,hy2,11); hg.addColorStop(0,'#5a3a2a'); hg.addColorStop(1,'#1f120c');
-  c.fillStyle = hg; c.beginPath(); c.arc(px+sway, hy2, 10.5, 0, 7); c.fill();
-  c.fillStyle = 'rgba(255,255,255,0.18)'; c.beginPath(); c.ellipse(px-3+sway, hy2-5, 4.5, 2.4, -0.4, 0, 7); c.fill();
+  const air = RN.h>0, sl = RN.slide>0;
+  const ph = RN.dist*1.15;                       // run-cycle phase
+  const run = !air && !sl;
+  const s0 = Math.sin(ph), s1 = Math.sin(ph+Math.PI), c0 = Math.cos(ph);
+  const bounce = run ? Math.abs(Math.sin(ph))*3 : 0;
+  const crouch = sl ? 15 : 0;
+  gy = gy - 0;
+  const hipY = gy - 37 + crouch - bounce*0.6, hipX = px;
+  const sway = run ? c0*1.6 : 0;
+  // ---------- legs (grey joggers + running shoes) ----------
+  const pants = ['#4a5163','#6d768c','#3a4052'], pantsLow = ['#3f4557','#5d667c','#2f3446'];
+  const legPose = (side, sn)=>{
+    const lift = air ? 0.85 : (sl ? 0.0 : Math.max(0, sn));
+    const hx = hipX + side*7, ax = px + side*(6 + (air?7:2*Math.max(0,-sn)) - lift*2.5), ay = gy - lift*(air?16:19) - (sl?0:0);
+    const kx = (hx+ax)/2 + side*(sl?9:3.5) + (lift>0?side*2.5:0), ky = (hipY+ay)/2 - (lift*5) + (sl?-3:0);
+    return {hx,ax,ay,kx,ky,lift};
+  };
+  const L = legPose(-1,s0), R = legPose(1,s1);
+  const drawLeg = (P, side)=>{
+    rnLimb(c,P.hx,hipY,P.kx,P.ky,P.ax,P.ay-3,6.4,5.2,3.8,pants,pantsLow);
+    // knee fold
+    c.strokeStyle = 'rgba(0,0,0,0.18)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(P.kx-4,P.ky+1); c.lineTo(P.kx+4,P.ky+1); c.stroke();
+    // reflective side stripe
+    c.strokeStyle = 'rgba(235,240,255,0.55)'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(P.hx+side*5.5,hipY+3); c.lineTo(P.kx+side*4.5,P.ky); c.lineTo(P.ax+side*3,P.ay-5); c.stroke();
+    // shoe: heel counter, midsole, sole (sole visible when kicked back)
+    const sx = P.ax, sy = P.ay;
+    if(P.lift>0.35){
+      c.fillStyle = '#f3f5fa'; c.beginPath(); c.roundRect(sx-5.5,sy-6,11,8,3); c.fill();
+      c.fillStyle = '#2b2f3a'; c.beginPath(); c.roundRect(sx-5,sy-1,10,6,2.5); c.fill();
+      c.strokeStyle='#ff6a3d'; c.lineWidth=1.4; c.beginPath(); c.moveTo(sx-4,sy+1.5); c.lineTo(sx+4,sy+1.5); c.stroke();
+    } else {
+      c.fillStyle = '#f3f5fa'; c.beginPath(); c.roundRect(sx-6,sy-7,12,8,3.5); c.fill();
+      c.fillStyle = '#ff6a3d'; c.fillRect(sx-5,sy-3,10,2.2);
+      c.fillStyle = '#2b2f3a'; c.beginPath(); c.roundRect(sx-6.5,sy,13,3.4,1.7); c.fill();
+    }
+  };
+  // draw the lifted leg first (farther), then the planted one
+  if(L.lift < R.lift){ drawLeg(R,1); drawLeg(L,-1); } else { drawLeg(L,-1); drawLeg(R,1); }
+  // ---------- torso ----------
+  const torsoH = sl ? 22 : 30, tw = 27 + (run ? c0*2.2 : 0);
+  const ty = hipY - torsoH + 3, tx = px + sway;
+  // backpack (swings slightly against the torso)
+  const bpx = tx - (run ? c0*1.2 : 0);
+  const bg = c.createLinearGradient(bpx-10,0,bpx+10,0); bg.addColorStop(0,'#2d5fd6'); bg.addColorStop(0.5,'#4b86ff'); bg.addColorStop(1,'#1f3f9c');
+  // hoodie
+  const hg = c.createLinearGradient(tx-tw/2,0,tx+tw/2,0); hg.addColorStop(0,'#c93a3a'); hg.addColorStop(0.45,'#f0605a'); hg.addColorStop(0.8,'#d2423f'); hg.addColorStop(1,'#a82f2f');
+  c.fillStyle = hg; c.beginPath(); c.moveTo(tx-tw/2+3,ty); c.quadraticCurveTo(tx,ty-3,tx+tw/2-3,ty); c.lineTo(tx+tw/2,ty+torsoH*0.78); c.quadraticCurveTo(tx+tw/2-1,ty+torsoH+3,tx+tw/2-5,ty+torsoH+4); c.lineTo(tx-tw/2+5,ty+torsoH+4); c.quadraticCurveTo(tx-tw/2+1,ty+torsoH+3,tx-tw/2,ty+torsoH*0.78); c.closePath(); c.fill();
+  // fabric wrinkles
+  c.strokeStyle = 'rgba(80,10,10,0.28)'; c.lineWidth = 1.1;
+  c.beginPath(); c.moveTo(tx-8,ty+torsoH*0.55); c.quadraticCurveTo(tx-3,ty+torsoH*0.6,tx-9,ty+torsoH*0.85); c.moveTo(tx+9,ty+torsoH*0.5); c.quadraticCurveTo(tx+4,ty+torsoH*0.62,tx+9,ty+torsoH*0.82); c.stroke();
+  // hem
+  c.fillStyle = 'rgba(70,10,10,0.35)'; c.fillRect(tx-tw/2+5,ty+torsoH+1,tw-10,3);
+  // backpack body, straps, pocket
+  c.fillStyle = bg; c.beginPath(); c.roundRect(bpx-9.5,ty+4,19,torsoH-6,5); c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.2)'; c.fillRect(bpx-7.5,ty+6,3,torsoH-10);
+  c.fillStyle = 'rgba(0,0,0,0.22)'; c.beginPath(); c.roundRect(bpx-6.5,ty+torsoH*0.5,13,torsoH*0.32,3); c.fill();
+  c.strokeStyle = '#142a63'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(bpx-6.5,ty+torsoH*0.5+4); c.lineTo(bpx+6.5,ty+torsoH*0.5+4); c.stroke();
+  c.strokeStyle = '#1a1d28'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(tx-8,ty+1); c.quadraticCurveTo(tx-11,ty+8,tx-9.5,ty+torsoH*0.7); c.moveTo(tx+8,ty+1); c.quadraticCurveTo(tx+11,ty+8,tx+9.5,ty+torsoH*0.7); c.stroke();
+  // ---------- arms ----------
+  const shY = ty + 6, shL = tx - tw/2 + 1, shR = tx + tw/2 - 1;
+  const arm = (side, sn)=>{
+    const sx = side<0 ? shL : shR;
+    let ex, ey, hx, hy;
+    if(air){ ex = sx + side*9; ey = shY - 6; hx = sx + side*12; hy = shY - 17; }
+    else if(sl){ ex = sx + side*10; ey = shY + 6; hx = sx + side*5; hy = shY + 14; }
+    else { ex = sx + side*(9 + 1.5*sn); ey = shY + 9 - sn*3; hx = sx + side*(7 + 3*(-sn)); hy = shY + 14 - sn*9; }
+    const sleeve = ['#b83636','#e8564f','#9a2a2a'];
+    rnLimb(c,sx,shY,ex,ey,hx,hy,5.2,4.4,3.6,sleeve,sleeve);
+    c.fillStyle = 'rgba(70,10,10,0.35)'; c.beginPath(); c.arc(hx,hy,3.9,0,7); c.fill();       // cuff
+    const sk = c.createRadialGradient(hx-1,hy-1,0.5,hx,hy,4.4); sk.addColorStop(0,'#f0c29a'); sk.addColorStop(1,'#c58b62');
+    c.fillStyle = sk; c.beginPath(); c.arc(hx,hy+0.8,3.4,0,7); c.fill();
+  };
+  // far arm behind torso edge, near arm in front
+  if(s0>0){ arm(-1,-s0); arm(1,-s1); } else { arm(1,-s1); arm(-1,-s0); }
+  // ---------- neck, head, hair ----------
+  const hy2 = ty - 9 + (run ? Math.sin(ph*2)*0.9 : 0) + (sl?3:0), hx2 = tx + (run ? c0*0.8 : 0);
+  c.fillStyle = '#b87f58'; c.fillRect(hx2-4.6,ty-5,9.2,8);
+  c.fillStyle = '#c98f66'; c.beginPath(); c.arc(hx2-10,hy2+2,2.8,0,7); c.arc(hx2+10,hy2+2,2.8,0,7); c.fill();
+  // hood bunched behind the neck
+  c.fillStyle = '#b53737'; c.beginPath(); c.ellipse(hx2,ty-1,11,4.2,0,0,7); c.fill();
+  const hr = c.createRadialGradient(hx2-3,hy2-5,1.5,hx2,hy2,12); hr.addColorStop(0,'#5e4030'); hr.addColorStop(0.6,'#2c1d15'); hr.addColorStop(1,'#140c08');
+  c.fillStyle = hr; c.beginPath(); c.arc(hx2,hy2,10.6,0,7); c.fill();
+  // fade at the nape + hair strands
+  c.fillStyle = 'rgba(190,140,105,0.38)'; c.beginPath(); c.ellipse(hx2,hy2+7.6,7.5,3,0,0,7); c.fill();
+  c.strokeStyle = 'rgba(255,230,200,0.22)'; c.lineWidth = 1;
+  for(let i=-3;i<=3;i++){ c.beginPath(); c.moveTo(hx2+i*2.4,hy2-9); c.quadraticCurveTo(hx2+i*2.9,hy2-2,hx2+i*2.2,hy2+5); c.stroke(); }
+  c.fillStyle = 'rgba(255,255,255,0.16)'; c.beginPath(); c.ellipse(hx2-3.4,hy2-6,4.4,2.2,-0.5,0,7); c.fill();
+  // warm rim light from the sun on the right
+  c.strokeStyle = 'rgba(255,230,170,0.5)'; c.lineWidth = 1.4; c.beginPath(); c.arc(hx2,hy2,10.4,-0.9,0.7); c.stroke();
 }
 function rnProj(z){ return 1/(1+z/7); }
 function rnHash(n){ const x = Math.sin(n*78.233)*43758.5453; return x - Math.floor(x); }
@@ -1571,7 +1633,7 @@ async function adminSet(id, status){
 }
 
 async function loadTasks(){
-  try{ const r = await api('tasks'); return r.rows || []; }catch(e){ return []; }
+  try{ const r = await api('taskList', {}, TASK_URL); return r.rows || []; }catch(e){ return []; }
 }
 
 // ---------------- Tasks tab ----------------
@@ -1585,9 +1647,11 @@ function tkGet(id){ try{ return Number(localStorage.getItem('tkAd:'+id+':'+tkDay
 function tkSet(id,n){ try{ localStorage.setItem('tkAd:'+id+':'+tkDay(), String(n)); }catch(e){} }
 const TK_WAIT = 10;
 let tkOpened = {};
-function tkOpen(id, link){
-  tkOpened[id] = Date.now();
+async function tkOpen(id, link){
   try{ window.Telegram.WebApp.openLink(link); }catch(e){ window.open(link, '_blank'); }
+  let wait = TK_WAIT;
+  try{ const r = await api('taskOpen', { taskId:id }, TASK_URL); wait = r.wait; }catch(e){ alert(e.message); return; }
+  tkOpened[id] = Date.now() - (TK_WAIT - wait)*1000;
   renderTasks();
   if(TK.timer) clearInterval(TK.timer);
   TK.timer = setInterval(()=>{
@@ -1599,7 +1663,29 @@ function tkOpen(id, link){
 function tkSetCat(c){ TK.cat = c; TK.view = 'all'; renderTasks(); }
 function tkSetView(v){ TK.view = v; renderTasks(); }
 function openTaskSheet(){ document.getElementById('taskSheetBg').style.display='block'; document.getElementById('taskSheet').classList.add('open'); }
-function closeTaskSheet(){ document.getElementById('taskSheetBg').style.display='none'; document.getElementById('taskSheet').classList.remove('open'); }
+async function openManageSheet(){
+  document.getElementById('taskSheetBg').style.display='block';
+  document.getElementById('manageSheet').classList.add('open');
+  renderManage();
+}
+function closeManageSheet(){ document.getElementById('taskSheetBg').style.display='none'; document.getElementById('manageSheet').classList.remove('open'); }
+async function renderManage(){
+  const box = document.getElementById('manageList');
+  box.innerHTML = '<div class="tk-empty">Loading...</div>';
+  try{
+    const r = await api('adminList', {}, TASK_URL);
+    const rows = r.rows.filter(t=>t.status!=='deleted');
+    if(!rows.length){ box.innerHTML = '<div class="tk-empty">No tasks yet.</div>'; return; }
+    const catBtn = (t,c)=> '<button class="tk-btn '+((t.category||'social')===c?'f':'o')+'" style="padding:6px 9px;font-size:11px;" onclick="adminTask('+t.id+',\'category\',\''+c+'\')">'+c.slice(0,1).toUpperCase()+c.slice(1)+'</button>';
+    box.innerHTML = rows.map(t=>'<div class="tk-card" style="flex-direction:column;gap:8px;"><div><div class="tk-title">'+esc(t.title)+'</div><div class="tk-meta" style="margin:2px 0 0;">'+esc(t.status)+' • '+t.completions_count+'/'+t.max_completions+' • '+(t.type==='telegram'?'Telegram':'Social')+'</div></div><div class="tk-actions" style="flex-wrap:wrap;">'+catBtn(t,'social')+catBtn(t,'exclusive')+catBtn(t,'partner')+(t.status==='active'?'<button class="tk-btn o" style="padding:6px 9px;font-size:11px;" onclick="adminTask('+t.id+',\'status\',\'paused\')">Pause</button>':'<button class="tk-btn f" style="padding:6px 9px;font-size:11px;" onclick="adminTask('+t.id+',\'status\',\'active\')">Resume</button>')+'<button class="tk-btn o" style="padding:6px 9px;font-size:11px;color:#ff8a8a;" onclick="adminTask('+t.id+',\'status\',\'deleted\')">Delete</button></div></div>').join('');
+  }catch(e){ box.innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function adminTask(id, field, value){
+  if(value==='deleted' && !confirm('Delete this task?')) return;
+  try{ const p = { id }; p[field] = value; await api('adminSet', p, TASK_URL); }catch(e){ alert(e.message); }
+  renderManage(); renderTasks();
+}
+function closeTaskSheet(){ document.getElementById('taskSheetBg').style.display='none'; document.getElementById('taskSheet').classList.remove('open'); const m = document.getElementById('manageSheet'); if(m) m.classList.remove('open'); }
 function tkRing(done,max,color){
   const C = 2*Math.PI*25, off = C*(1-Math.min(1,done/max));
   return '<div class="tk-ring"><svg viewBox="0 0 62 62"><defs><linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fdcff"/><stop offset="1" stop-color="#2f7bff"/></linearGradient></defs><circle class="bg" cx="31" cy="31" r="25"/><circle class="fg" cx="31" cy="31" r="25" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/></svg><span>'+done+'/'+max+'</span></div>';
@@ -1681,8 +1767,9 @@ async function renderTasks(){
 async function handleClaimTask(taskId, reward){
   if(state.tasksCompleted.includes(taskId)) return;
   try{
-    const r = await api('claimTask', { taskId });
-    applyServerState(r.state);
+    const r = await api('taskClaim', { taskId }, TASK_URL);
+    state.balance = r.balance;
+    state.tasksCompleted = r.tasksCompleted;
   }catch(e){ alert(e.message); }
   render();
   renderTasks();
@@ -1719,10 +1806,10 @@ async function handleCreateTask(){
   const msg = document.getElementById('taskMsg');
   msg.textContent='';
   msg.className='error-msg';
-  if(!title || !link || !max || max<100){ msg.textContent = 'Fill all fields (minimum 100 completions).'; return; }
+  if(!title || !link || !max || max<1){ msg.textContent = 'Fill all fields.'; return; }
   let result;
   try{
-    result = await api('createTask', { title, link, type, max });
+    result = await api('adminCreate', { title, link, type, max, category: (document.getElementById('taskCat')||{}).value || 'exclusive' }, TASK_URL);
   }catch(e){
     msg.textContent = e.message;
     return;
@@ -1731,12 +1818,7 @@ async function handleCreateTask(){
   document.getElementById('taskLink').value='';
   document.getElementById('taskMax').value='';
   msg.className='success-msg';
-  if(result.active){
-    msg.textContent = '✅ Task created and is now live!';
-  } else {
-    const fee = (0.10*(max/100)).toFixed(2);
-    msg.textContent = '✅ Submitted! Send $'+fee+' to a wallet below, then message support to activate it.';
-  }
+  msg.textContent = '✅ Task created and is now live!';
   renderTasks();
 }
 
@@ -1772,9 +1854,9 @@ async function refJoinOnce(){
   try{
     const sp = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.start_param;
     if(!sp || !/^[0-9]{5,15}$/.test(sp) || sp === TG_ID) return;
-    if(localStorage.getItem('refTried') === sp) return;
+    if(localStorage.getItem('refTried:'+TG_ID) === sp) return;
     await api('refJoin', { code: sp }, REF_URL);
-    localStorage.setItem('refTried', sp);
+    localStorage.setItem('refTried:'+TG_ID, sp);
   }catch(e){}
 }
 async function renderRefInfo(){
@@ -1937,13 +2019,19 @@ async function startApp(){
         <button class="tk-cat" data-c="partner" onclick="tkSetCat('partner')"><svg viewBox="0 0 24 24"><path d="M3 12l4-4 4 3 3-3 4 4-7 7z"/></svg><span>Partner</span></button>
       </div>
       <div class="tk-bar">
-        <div class="tk-view"><button class="active" id="tkViewAll" onclick="tkSetView('all')">Tasks</button><button id="tkViewMine" onclick="tkSetView('mine')">My tasks</button></div>
-        <button class="tk-new" id="tkNewBtn" onclick="openTaskSheet()">＋ New</button>
+        <div class="tk-view"><button class="active" id="tkViewAll" onclick="tkSetView('all')">Tasks</button><button id="tkViewMine" onclick="tkSetView('mine')">Completed tasks</button></div>
+        <div style="display:flex;gap:8px;">${IS_OWNER ? '<button class="tk-new" onclick="openManageSheet()">⚙ Manage</button>' : ''}<button class="tk-new" id="tkNewBtn" onclick="openTaskSheet()">＋ New</button></div>
       </div>
       <div class="tk-count" id="tkCount"></div>
       <div id="taskList"></div>
     </div>
     <div class="sheet-bg" id="taskSheetBg" onclick="closeTaskSheet()"></div>
+    <div class="sheet" id="manageSheet">
+      <div class="sheet-grip"></div>
+      <div class="sheet-title">Manage tasks</div>
+      <div id="manageList"></div>
+      <button class="action" style="margin-top:8px;" onclick="closeManageSheet()">Close</button>
+    </div>
     <div class="sheet" id="taskSheet">
       <div class="sheet-grip"></div>
       <div class="sheet-title">${IS_OWNER ? 'Create a task' : 'Create an Exclusive task'}</div>
@@ -1963,6 +2051,7 @@ async function startApp(){
           <option value="social">Social Media (300 coins)</option>
         </select>
       </div>
+      ${IS_OWNER ? '<div class="form-group"><label class="form-label">Category</label><select id="taskCat" class="form-input"><option value="exclusive">Exclusive</option><option value="partner">Partner</option><option value="social">Social</option></select></div>' : ''}
       <div class="form-group">
         <label class="form-label">Number of completions wanted</label>
         <input type="number" id="taskMax" class="form-input" placeholder="e.g. 100" oninput="updateFeePreview()">
