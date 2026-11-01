@@ -181,8 +181,8 @@
   .adm.open{display:block;}
   .adm-head{display:flex;justify-content:space-between;align-items:center;margin:4px 2px 12px;}
   .adm-head h1{margin:0;font-size:22px;}
-  .adm-tabs{display:flex;gap:6px;margin-bottom:14px;}
-  .adm-tabs button{flex:1;padding:10px 4px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--muted);font-size:13px;font-weight:800;}
+  .adm-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+  .adm-tabs button{flex:1 1 28%;padding:10px 4px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--muted);font-size:13px;font-weight:800;}
   .adm-tabs button.on{background:linear-gradient(180deg,#6fdcff,#2f86ff);color:#031233;border:none;}
   .adm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
   .adm-stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;}
@@ -262,6 +262,7 @@ const SLOT_CONFIG = [
   {name:"Slot 5", coins:100, ads:2},
 ];
 const MAX_SESSIONS = 5;
+let AD_PAY = 50; // coins per ad; the server tells us the live value
 const SESSION_MS = 30*60*1000;
 let selectedMethod = 'USDT_BEP20';
 
@@ -284,6 +285,7 @@ function getTelegramId(){
 const TG_ID = getTelegramId();
 const TG_USER = getTelegramUser();
 const ADMIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-hub';
+const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-more';
 const TASK_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/task-hub';
 const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-handler';
 const BOT_APP_LINK = 'https://t.me/mineearnx_bot/mineearn';
@@ -340,7 +342,7 @@ async function handleVerify(){
   }
 }
 
-const API_URL = SUPABASE_URL + '/functions/v1/mine-hub';
+const API_URL = SUPABASE_URL + '/functions/v1/mine-v2';
 const WD_URL = SUPABASE_URL + '/functions/v1/smart-worker';
 // Phone clocks can be wrong, so timers use Telegram's server time (auth_date) as the reference
 let CLOCK_OFFSET = 0;
@@ -380,6 +382,7 @@ function applyServerState(s){
 }
 async function loadState(){
   const r = await api('load');
+  if(r.reward) AD_PAY = Number(r.reward) || 50;
   const s = r.state;
   s.slots.forEach(sl=>{ if(sl.state==='watching') sl.state='mining'; });
   return s;
@@ -1737,7 +1740,7 @@ async function renderTasks(){
   if(TK.cat==='daily' && TK.view==='all'){
     cnt.textContent = 'Resets every day at 00:00 UTC';
     const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
-    let h = '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Mining ads</div><div class="tk-meta">50 coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
+    let h = '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Mining ads</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
     h += DAILY_ADS.map(a=>{
       const n = tkGet(a.id), full = n>=a.max;
       return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:'+a.color+';">'+tkRing(n,a.max)+'<div class="tk-main"><div class="tk-title">'+a.name+'<span class="tk-test">TEST AD</span></div><div class="tk-meta">'+a.per+' coins per ad • '+a.max+' ads a day</div><div class="tk-actions">'
@@ -1857,7 +1860,7 @@ function admClose(){ admEnsure().classList.remove('open'); }
 function admShell(inner){
   const t = (k,l)=>'<button class="'+(ADM.tab===k?'on':'')+'" onclick="admTab(\''+k+'\')">'+l+'</button>';
   admEnsure().innerHTML = '<div class="adm-head"><h1>Admin panel</h1><button class="tk-btn o" onclick="admClose()">✕ Close</button></div>'
-    + '<div class="adm-tabs">'+t('stats','Stats')+t('users','Users')+t('announce','Announce')+t('log','Log')+'</div>'
+    + '<div class="adm-tabs">'+t('stats','Stats')+t('users','Users')+t('announce','Announce')+t('games','Games')+t('settings','Settings')+t('log','Log')+'</div>'
     + '<div id="admBody">'+inner+'</div>';
 }
 function admTab(k){
@@ -1865,6 +1868,8 @@ function admTab(k){
   if(k==='stats') admStats();
   else if(k==='users') admUsers('');
   else if(k==='announce') admAnnounce();
+  else if(k==='games') admGames();
+  else if(k==='settings') admSettings();
   else admLog();
 }
 function admNum(n){ return Number(n||0).toLocaleString('en-US'); }
@@ -1943,6 +1948,39 @@ async function admSend(test){
     res.textContent = test ? (r.sent ? 'Test sent. Check your Telegram.' : 'Test failed. Open the bot chat and press Start first.') : 'Done. Sent: '+r.sent+', failed/blocked: '+r.failed;
   }catch(e){ res.textContent = e.message; }
 }
+
+async function admGames(){
+  admShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('gameStats', {}, ADMIN2_URL);
+    const names = {snake:'Snake',runner:'Endless Runner',shooter:'Galaxy Blaster',quiz:'Timed Quiz'};
+    const keys = Object.keys(r.games);
+    let h = '<div class="tk-meta" style="margin-bottom:8px;">Today (UTC) • '+r.totalRuns+' runs • Reward claiming: '+(r.claimEnabled?'ON':'OFF (locked)')+'</div>';
+    h += keys.length ? keys.map(k=>{ const g=r.games[k]; return '<div class="adm-user"><div class="adm-row"><b>'+esc(names[k]||k)+'</b><b>'+g.runs+' runs</b></div><div class="adm-row"><span>Finished</span>'+g.finished+'</div><div class="adm-row"><span>Rejected (suspicious)</span>'+g.rejected+'</div><div class="adm-row"><span>Coins earned (before claim)</span>'+admNum(g.coins)+'</div><div class="adm-row"><span>Best score</span>'+admNum(g.best)+'</div></div>'; }).join('') : '<div class="tk-empty">No game runs yet today.</div>';
+    h += '<div class="section-title">Watch list</div>' + (r.watch.length ? r.watch.map(u=>'<div class="adm-user"><div class="adm-row"><b>ID '+esc(u.id)+'</b><span>'+u.runs+' runs</span></div><div class="adm-row"><span>Rejected</span><b style="color:'+(u.rejected>=2?'#ff8a8a':'#fff')+'">'+u.rejected+'</b></div><div class="adm-row"><span>Coins</span>'+admNum(u.coins)+'</div><button class="tk-btn o" style="margin-top:6px;" onclick="admUsers(\''+esc(u.id)+'\')">Open user</button></div>').join('') : '<div class="tk-empty">No one looks suspicious.</div>');
+    document.getElementById('admBody').innerHTML = h + '<button class="action" style="margin-top:6px;" onclick="admGames()">↻ Refresh</button>';
+  }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function admSettings(){
+  admShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('settingsGet', {}, ADMIN2_URL);
+    document.getElementById('admBody').innerHTML =
+      '<div class="wallet-box" style="line-height:1.5;">Change the coins paid for every mining ad. It applies within about 15 seconds. Users see the new amount the next time they open the app. A collect (2 ads) pays double this number.</div>'
+      + '<label class="form-label">Coins per mining ad (1 to 500)</label>'
+      + '<input id="admReward" class="form-input" inputmode="numeric" value="'+r.adReward+'">'
+      + '<div id="admSetRes" class="tk-meta" style="margin:8px 0;"></div>'
+      + '<button class="action btn-collect" onclick="admSaveSettings()">Save</button>'
+      + '<div class="adm-user" style="margin-top:14px;"><div class="adm-row"><span>Game reward claiming</span><b>'+(r.gameClaim?'ON':'OFF (locked)')+'</b></div><div class="tk-meta">This stays locked until an ad network is approved.</div></div>';
+  }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function admSaveSettings(){
+  const v = Number((document.getElementById('admReward').value||'').replace(/[, ]/g,''));
+  const res = document.getElementById('admSetRes');
+  if(!Number.isInteger(v) || v<1 || v>500){ res.textContent = 'Enter a whole number from 1 to 500.'; return; }
+  if(!confirm('Pay '+v+' coins per mining ad from now on?')) return;
+  try{ const r = await api('settingsSet', { adReward:v }, ADMIN2_URL); res.textContent = 'Saved. Coins per ad: '+r.adReward; }catch(e){ res.textContent = e.message; }
+}
 async function admLog(){
   admShell('<div class="tk-empty">Loading...</div>');
   try{
@@ -2018,7 +2056,7 @@ function render(){
 
   const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
   const dEl = document.getElementById('dailyAds');
-  if(dEl) dEl.textContent = 'Ads today: '+adsDone+'/50 • +50 coins per ad';
+  if(dEl) dEl.textContent = 'Ads today: '+adsDone+'/50 • +'+AD_PAY+' coins per ad';
   const container = document.getElementById('slots');
   container.innerHTML='';
   SLOT_CONFIG.forEach((cfg,i)=>{
@@ -2050,7 +2088,7 @@ function render(){
     div.innerHTML = `
       <div class="slot-top">
         <div class="slot-name"><span class="slot-badge">${i+1}</span>${cfg.name}</div>
-        <div class="slot-rate">+${cfg.coins} coins / ${cfg.ads} ads</div>
+        <div class="slot-rate">+${AD_PAY*cfg.ads} coins / ${cfg.ads} ads</div>
       </div>
       <div class="slot-progress">${slot.sessions}/${MAX_SESSIONS} collects today</div>
       <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
@@ -2108,7 +2146,7 @@ async function startApp(){
         <div class="day"><b>Day 1</b><span>50</span></div><div class="day"><b>Day 2</b><span>100</span></div><div class="day"><b>Day 3</b><span>150</span></div><div class="day"><b>Day 4</b><span>200</span></div><div class="day"><b>Day 5</b><span>250</span></div>
       </div>
       <div class="section-title">Ways to earn</div>
-      <div class="earn-card" onclick="showTab('mine')"><div class="earn-ic">⛏️</div><div class="earn-tx"><b>Mining</b><span>5 slots • watch 2 ads per collect • 50 coins per ad</span></div><div class="earn-go">›</div></div>
+      <div class="earn-card" onclick="showTab('mine')"><div class="earn-ic">⛏️</div><div class="earn-tx"><b>Mining</b><span>5 slots • watch 2 ads per collect • ${AD_PAY} coins per ad</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="showTab('play')"><div class="earn-ic">🎮</div><div class="earn-tx"><b>Games</b><span>4 games • up to 250 coins per play • 5 plays each daily</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="showTab('tasks')"><div class="earn-ic">✅</div><div class="earn-tx"><b>Tasks</b><span>Join channels and follow pages for coins</span></div><div class="earn-go">›</div></div>
       <div class="section-title">Invite &amp; earn</div>
