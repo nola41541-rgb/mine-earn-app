@@ -240,7 +240,7 @@ const SUPABASE_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0YXFyYWhpcWpma2RmY3JiZXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4NDgwMjMsImV4cCI6MjEwNTQyNDAyM30.2DcbBtWcrbWYOAgyanz9-CsFdoK6Ynwu-CMn9w9bZcc';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const CHECK_MEMBERSHIP_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/clever-worker';
+const CHECK_MEMBERSHIP_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/gate-check';
 const CHANNELS_TO_JOIN = [
   { name: 'Boss Crypto Hub', link: 'https://t.me/bosscryptohub' },
   { name: 'MineEarn Announcement', link: 'https://t.me/mineearnhub' },
@@ -300,17 +300,18 @@ function defaultSlots(){
 async function checkMembership(){
   if(IS_OWNER) return true;
   try{
+    const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
     const res = await fetch(CHECK_MEMBERSHIP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({ telegram_id: TG_ID })
+      body: JSON.stringify({ initData })
     });
     const data = await res.json();
-    window.lastGateInfo = res.status + ' ' + JSON.stringify(data).slice(0,160);
-    return !!data.joined;
+    window.lastGateInfo = data.ok ? (data.joined ? 'joined' : 'not joined yet') : (data.error || 'could not check');
+    return !!(data.ok && data.joined);
   }catch(e){
     console.error('Membership check failed', e);
-    window.lastGateInfo = 'network error: ' + (e && e.message ? e.message : e);
+    window.lastGateInfo = 'network error, try again';
     return false;
   }
 }
