@@ -177,6 +177,17 @@
   .tk-ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
   .tk-test{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.8px;color:#ffd24d;background:rgba(255,210,77,0.12);border-radius:8px;padding:2px 6px;margin-left:6px;vertical-align:middle;}
 
+
+  .com{position:fixed;inset:0;z-index:88;background:radial-gradient(circle at 15% -8%,rgba(47,123,255,0.38),transparent 52%),var(--bg);overflow:auto;padding:14px 14px 40px;display:none;}
+  .com.open{display:block;}
+  .com-row{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:8px;font-size:13px;}
+  .com-row b{color:var(--gold);}
+  .com-row small{display:block;color:var(--muted);font-size:11px;margin-top:2px;word-break:break-all;}
+  .com-rank{width:28px;height:28px;border-radius:9px;background:linear-gradient(145deg,#6fdcff,#2f7bff);color:#031233;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-right:10px;flex:none;}
+  .com-doc h3{margin:16px 2px 6px;font-size:15px;}
+  .com-doc p{margin:0 2px 8px;color:var(--muted);font-size:13px;line-height:1.55;}
+  .legal-row{display:flex;justify-content:center;gap:14px;margin:16px 0 4px;font-size:12px;}
+  .legal-row a{color:var(--muted);text-decoration:underline;}
   .adm{position:fixed;inset:0;z-index:90;background:radial-gradient(circle at 15% -8%,rgba(47,123,255,0.38),transparent 52%),var(--bg);overflow:auto;padding:14px 14px 40px;display:none;}
   .adm.open{display:block;}
   .adm-head{display:flex;justify-content:space-between;align-items:center;margin:4px 2px 12px;}
@@ -252,8 +263,8 @@ const WALLET_USDT = '0xc57a0B59CC0Fad7Fc8a12fCB83F1Fc1B8E7eC951';
 const WALLET_TON = 'UQDcm7tz1hnpaVus3UzLIkeV-scuOOLbgskgm3qG2SGmj4ai';
 
 const RATE = 0.16/16000;
-const MIN_WITHDRAW = 20000;
-const FEE_PERCENT = 5;
+let MIN_WITHDRAW = 20000;
+let FEE_PERCENT = 5;
 const SLOT_CONFIG = [
   {name:"Slot 1", coins:100, ads:2},
   {name:"Slot 2", coins:100, ads:2},
@@ -262,6 +273,9 @@ const SLOT_CONFIG = [
   {name:"Slot 5", coins:100, ads:2},
 ];
 const MAX_SESSIONS = 5;
+// ---- Review mode switches. Set both to true again after an ad network approves the app. ----
+const GAME_ADS_ON = false;      // true = games show the "watch ad" steps (continue + collect)
+const NETWORK_TEST_ROWS_ON = false; // true = show the GigaPub / USL Ads rows in Tasks > Daily
 let AD_PAY = 50; // coins per ad; the server tells us the live value
 const SESSION_MS = 30*60*1000;
 let selectedMethod = 'USDT_BEP20';
@@ -285,7 +299,8 @@ function getTelegramId(){
 const TG_ID = getTelegramId();
 const TG_USER = getTelegramUser();
 const ADMIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-hub';
-const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-more';
+const LOGIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/login-hub';
+const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-pro';
 const TASK_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/task-hub';
 const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-v2';
 const BOT_APP_LINK = 'https://t.me/mineearnx_bot/mineearn';
@@ -344,7 +359,7 @@ async function handleVerify(){
 }
 
 const API_URL = SUPABASE_URL + '/functions/v1/mine-v2';
-const WD_URL = SUPABASE_URL + '/functions/v1/smart-worker';
+const WD_URL = SUPABASE_URL + '/functions/v1/smart-v2';
 // Phone clocks can be wrong, so timers use Telegram's server time (auth_date) as the reference
 let CLOCK_OFFSET = 0;
 function nowMs(){ return Date.now() + CLOCK_OFFSET; }
@@ -473,7 +488,7 @@ async function handleCollect(i){
 }
 
 // ===================== GAMES =====================
-const GAMES_URL = SUPABASE_URL + '/functions/v1/super-responder';
+const GAMES_URL = SUPABASE_URL + '/functions/v1/games-v2';
 const GAME_THUMBS = {
 snake:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><pattern id="ckS" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#1f7a4c"/><rect width="16" height="16" fill="#26925a"/><rect x="16" y="16" width="16" height="16" fill="#26925a"/></pattern></defs><rect width="160" height="124" fill="url(#ckS)"/><g fill="#7ee85a" stroke="#2f9d3e" stroke-width="1.5"><circle cx="24" cy="84" r="9"/><circle cx="42" cy="84" r="9"/><circle cx="60" cy="84" r="9"/><circle cx="60" cy="66" r="9"/><circle cx="78" cy="66" r="9"/><circle cx="96" cy="66" r="9"/></g><circle cx="114" cy="66" r="11" fill="#9bf26c" stroke="#2f9d3e" stroke-width="1.5"/><circle cx="117" cy="61" r="3.5" fill="#fff"/><circle cx="117" cy="71" r="3.5" fill="#fff"/><circle cx="118" cy="61" r="1.6" fill="#111"/><circle cx="118" cy="71" r="1.6" fill="#111"/><path d="M125 66h10m0 0l4-3m-4 3l4 3" stroke="#ff4d4d" stroke-width="2" fill="none"/><circle cx="118" cy="26" r="11" fill="#ff4d4d"/><circle cx="114" cy="23" r="3" fill="rgba(255,255,255,0.5)"/><path d="M118 15c2-6 7-8 10-7-1 5-5 8-10 7z" fill="#9be36b"/></svg>',
 runner:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="skR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4aa8ff"/><stop offset="1" stop-color="#cfeaff"/></linearGradient></defs><rect width="160" height="124" fill="#2f9a5b"/><rect width="160" height="38" fill="url(#skR)"/><polygon points="72,38 88,38 158,124 2,124" fill="#4b4f63"/><path d="M76 38L50 124M84 38L110 124" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/><rect x="92" y="70" width="22" height="9" rx="2" fill="#ff9f1a"/><rect x="40" y="58" width="16" height="22" rx="2" fill="#c0392b"/><rect x="43" y="63" width="10" height="5" fill="#ffd86b"/><ellipse cx="80" cy="116" rx="12" ry="3.5" fill="rgba(0,0,0,0.3)"/><path d="M75 108v7M85 108v7" stroke="#2b3a67" stroke-width="5" stroke-linecap="round"/><rect x="69" y="86" width="22" height="24" rx="7" fill="#e24b4b"/><rect x="73" y="90" width="14" height="14" rx="3" fill="#2f6fe0"/><path d="M68 90l-3 14M92 90l3 14" stroke="#e24b4b" stroke-width="5" stroke-linecap="round"/><circle cx="80" cy="79" r="8" fill="#2a1b14"/></svg>',
@@ -617,7 +632,7 @@ async function finishGame(score){
   try{ r = await api('gameFinish', { token:G.token, score:Math.min(score, GAME_CAP[G.id]||score) }, GAMES_URL); }
   catch(e){ res.innerHTML = '<div style="color:#ff6b6b;margin-bottom:10px;">'+esc(e.message)+'</div><button class="action btn-start" onclick="closeGameOverlay()">Back</button>'; return; }
   const coins = r.valid ? r.coins : 0;
-  const need = adsForCoinsClient(coins);
+  const need = GAME_ADS_ON ? adsForCoinsClient(coins) : 0;
   for(let i=1;i<=need;i++){
     await waitTap(res, coins, i, need);
     if(!G) return;
@@ -627,7 +642,7 @@ async function finishGame(score){
   const claimLine = !r.valid ? '<div style="color:#ff6b6b;">This result could not be verified.</div>'
     : (coins<=0 ? '<div style="color:var(--muted);">No coins this time. Try again!</div>'
     : (r.claimEnabled ? '<div style="color:var(--muted);">Claiming is opening soon.</div>'
-    : '<div style="color:var(--muted);">Ads done. Reward claiming is locked for now. Your score is saved.</div>'));
+    : '<div style="color:var(--muted);">'+(GAME_ADS_ON?'Ads done. ':'')+'Game coins are not paid out yet. Your score is saved.</div>'));
   res.innerHTML = '<div style="font-size:18px;font-weight:bold;">Game over</div>'
     + '<div style="margin:8px 0;">Score: <b>'+score+'</b></div>'
     + '<div style="font-size:22px;color:var(--gold);font-weight:bold;">'+coins+' coins</div>'
@@ -722,7 +737,7 @@ function snakeDie(){
   const left = SN.maxAtt - SN.att;
   res.innerHTML = '<div style="font-size:17px;font-weight:bold;">Oops! The snake bit itself</div>'
     + '<div style="margin:8px 0;color:var(--muted);">Score so far: <b style="color:#fff;">'+SN.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
-    + '<button class="action btn-collect" onclick="snakeContinue()">🎬 Watch ad to continue</button>'
+    + '<button class="action btn-collect" onclick="snakeContinue()">'+(GAME_ADS_ON?'🎬 Watch ad to continue':'▶️ Continue')+'</button>'
     + '<button class="action" style="margin-top:8px;" onclick="finishGame(SN.score)">Finish &amp; see result</button>';
 }
 async function snakeContinue(){
@@ -738,6 +753,7 @@ async function snakeContinue(){
 }
 // TEST ONLY: labeled 3-second stand-in for the real "continue" ad
 function continuePlaceholderAd(el){
+  if(!GAME_ADS_ON) return Promise.resolve();
   return new Promise(resolve=>{
     let n = 3;
     const draw = ()=>{ el.innerHTML = '<div style="color:var(--muted);font-size:12px;">AD PLACEHOLDER (TEST)</div><div style="font-size:40px;font-weight:bold;color:var(--gold);margin:10px 0;">'+n+'</div><div style="color:var(--muted);">Your next attempt starts after the ad...</div>'; };
@@ -887,7 +903,7 @@ function runnerDie(){
   const left = RN.maxAtt - RN.att;
   res.innerHTML = '<div style="font-size:17px;font-weight:bold;">Oops! You crashed</div>'
     + '<div style="margin:8px 0;color:var(--muted);">Score so far: <b style="color:#fff;">'+RN.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
-    + '<button class="action btn-collect" onclick="runnerContinue()">🎬 Watch ad to continue</button>'
+    + '<button class="action btn-collect" onclick="runnerContinue()">'+(GAME_ADS_ON?'🎬 Watch ad to continue':'▶️ Continue')+'</button>'
     + '<button class="action" style="margin-top:8px;" onclick="finishGame(RN.score)">Finish &amp; see result</button>';
 }
 async function runnerContinue(){
@@ -1281,7 +1297,7 @@ function shooterDie(){
   const left = SH.maxAtt - SH.att;
   res.innerHTML = '<div style="font-size:17px;font-weight:bold;">Your ship was hit!</div>'
     + '<div style="margin:8px 0;color:var(--muted);">Score so far: <b style="color:#fff;">'+SH.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
-    + '<button class="action btn-collect" onclick="shooterContinue()">🎬 Watch ad to continue</button>'
+    + '<button class="action btn-collect" onclick="shooterContinue()">'+(GAME_ADS_ON?'🎬 Watch ad to continue':'▶️ Continue')+'</button>'
     + '<button class="action" style="margin-top:8px;" onclick="finishGame(SH.score)">Finish &amp; see result</button>';
 }
 async function shooterContinue(){
@@ -1533,7 +1549,7 @@ function quizFail(timeout){
   const left = QZ.maxAtt - QZ.att;
   res.innerHTML = '<div style="font-size:17px;font-weight:bold;">'+(timeout?'Time is up!':'Wrong answer')+'</div>'
     + '<div style="margin:8px 0;color:var(--muted);">Correct so far: <b style="color:#fff;">'+QZ.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
-    + '<button class="action btn-collect" onclick="quizContinue()">🎬 Watch ad to continue</button>'
+    + '<button class="action btn-collect" onclick="quizContinue()">'+(GAME_ADS_ON?'🎬 Watch ad to continue':'▶️ Continue')+'</button>'
     + '<button class="action" style="margin-top:8px;" onclick="finishGame(QZ.score)">Finish &amp; see result</button>';
 }
 async function quizContinue(){
@@ -1734,21 +1750,21 @@ async function renderTasks(){
   document.querySelectorAll('.tk-cat').forEach(b=>b.classList.toggle('active', b.dataset.c===TK.cat));
   document.getElementById('tkViewAll').classList.toggle('active', TK.view==='all');
   document.getElementById('tkViewMine').classList.toggle('active', TK.view==='mine');
-  const pending = DAILY_ADS.reduce((n,a)=>n+(tkGet(a.id)<a.max?1:0),0);
+  const pending = !NETWORK_TEST_ROWS_ON ? 0 : DAILY_ADS.reduce((n,a)=>n+(tkGet(a.id)<a.max?1:0),0);
   const dot = document.getElementById('tkDailyDot'); if(dot) dot.style.display = pending ? 'block' : 'none';
   const nb = document.getElementById('tkNewBtn'); if(nb) nb.style.display = (IS_OWNER || TK.cat==='exclusive') ? 'block' : 'none';
   const cnt = document.getElementById('tkCount');
   if(TK.cat==='daily' && TK.view==='all'){
     cnt.textContent = 'Resets every day at 00:00 UTC';
     const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
-    let h = '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Mining ads</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
-    h += DAILY_ADS.map(a=>{
+    let h = '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Ads watched</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
+    h += (!NETWORK_TEST_ROWS_ON ? [] : DAILY_ADS).map(a=>{
       const n = tkGet(a.id), full = n>=a.max;
       return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:'+a.color+';">'+tkRing(n,a.max)+'<div class="tk-main"><div class="tk-title">'+a.name+'<span class="tk-test">TEST AD</span></div><div class="tk-meta">'+a.per+' coins per ad • '+a.max+' ads a day</div><div class="tk-actions">'
         + (full ? '<button class="tk-btn d" disabled>✓ Done today</button>' : '<button class="tk-btn f" onclick="tkAdPlaceholder(\''+a.id+'\')">▶ Watch ad '+(n+1)+'</button>')
         + '</div></div></div>';
     }).join('');
-    h += '<div class="tk-empty" style="padding:14px;font-size:12px;">These are test ads. Coin rewards for them switch on once the ad networks approve the app.</div>';
+    if(NETWORK_TEST_ROWS_ON) h += '<div class="tk-empty" style="padding:14px;font-size:12px;">These are test ads. Coin rewards for them switch on once the ad networks approve the app.</div>';
     container.innerHTML = h;
     return;
   }
@@ -1844,6 +1860,72 @@ async function handleCreateTask(){
   renderTasks();
 }
 
+
+
+// ===== Community screen: payouts proof, leaderboard, about / terms / privacy =====
+const COM = { tab:'payouts' };
+function comEnsure(){
+  let el = document.getElementById('comScreen');
+  if(!el){ el = document.createElement('div'); el.id = 'comScreen'; el.className = 'com'; document.body.appendChild(el); }
+  return el;
+}
+function comOpen(tab){ comEnsure().classList.add('open'); comTab(tab || 'payouts'); }
+function comClose(){ comEnsure().classList.remove('open'); }
+function comShell(inner){
+  const t = (k,l)=>'<button class="'+(COM.tab===k?'on':'')+'" onclick="comTab(\''+k+'\')">'+l+'</button>';
+  comEnsure().innerHTML = '<div class="adm-head"><h1>Community</h1><button class="tk-btn o" onclick="comClose()">✕ Close</button></div>'
+    + '<div class="adm-tabs">'+t('payouts','Payouts')+t('board','Leaderboard')+t('about','About')+t('terms','Terms')+t('privacy','Privacy')+'</div>'
+    + '<div id="comBody">'+inner+'</div>';
+}
+function comTab(k){
+  COM.tab = k;
+  if(k==='payouts') comPayouts();
+  else if(k==='board') comBoard();
+  else comDoc(k);
+}
+function comWhen(iso){ const d = new Date(iso); return isNaN(d) ? '' : d.toISOString().slice(0,10); }
+async function comPayouts(){
+  comShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('publicPayouts', {}, WD_URL);
+    const box = document.getElementById('comBody');
+    let h = '<div class="adm-grid"><div class="adm-stat"><b>'+Number(r.totalCount).toLocaleString('en-US')+'</b><span>Payouts sent</span></div><div class="adm-stat"><b>$'+(Number(r.totalNet)/100000).toFixed(2)+'</b><span>Total paid out</span></div></div>';
+    h += '<div class="tk-meta" style="margin:6px 2px 10px;">Latest payouts. IDs are hidden. Each payment has a transaction ID (TXID) you can look up on the blockchain.</div>';
+    h += r.rows.length ? r.rows.map(x=>'<div class="com-row"><div><b>$'+(Number(x.net)/100000).toFixed(2)+'</b> • '+esc(x.method==='TON'?'TON':'USDT BEP20')+'<small>'+esc(x.who)+' • '+esc(comWhen(x.at))+(x.txid?'<br>TXID: '+esc(x.txid):'')+'</small></div></div>').join('') : '<div class="tk-empty">No payouts yet.</div>';
+    box.innerHTML = h;
+  }catch(e){ document.getElementById('comBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function comBoard(){
+  comShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('leaderboard', {}, WD_URL);
+    document.getElementById('comBody').innerHTML = '<div class="tk-meta" style="margin:2px 2px 10px;">Top 10 balances right now. IDs are hidden.</div>'
+      + (r.rows.length ? r.rows.map(x=>'<div class="com-row"'+(x.me?' style="border-color:var(--gold);"':'')+'><div style="display:flex;align-items:center;"><span class="com-rank">'+x.rank+'</span>'+esc(x.who)+(x.me?' (you)':'')+'</div><b>'+Number(x.balance).toLocaleString('en-US')+'</b></div>').join('') : '<div class="tk-empty">No one yet.</div>');
+  }catch(e){ document.getElementById('comBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+function comDoc(k){
+  const min = Number(MIN_WITHDRAW).toLocaleString('en-US');
+  const docs = {
+    about: '<div class="com-doc"><h3>What is MineEarn?</h3><p>MineEarn is a Telegram app where you earn coins by playing games, finishing tasks, inviting friends and watching optional rewarded ads. Coins can be withdrawn as USDT (BEP20) or TON.</p>'
+      +'<h3>How you earn</h3><p><b>Mining:</b> 5 slots. Each collect needs 2 rewarded ads that you start yourself, and pays '+AD_PAY*2+' coins. Up to 5 collects per slot each day.<br><b>Games:</b> 4 games, 5 plays each per day. The first attempt of every play is free.<br><b>Tasks:</b> join a channel or follow a page, then claim your coins.<br><b>Invites:</b> 500 coins when a friend joins, and 3,000 coins when their first withdrawal is paid.</p>'
+      +'<h3>About the ads</h3><p>Ads are shown only after you tap a watch button. Coins are paid only after the ad network confirms that the ad was watched. You are never required to click an ad. Everything resets at 00:00 UTC.</p>'
+      +'<h3>Withdrawals</h3><p>Minimum '+min+' coins ($'+(MIN_WITHDRAW/100000).toFixed(2)+'). Fee '+FEE_PERCENT+'%. 100,000 coins = $1. One request per day. Every payment is reviewed by hand, and paid payouts are listed in the Payouts tab with their TXID.</p>'
+      +'<h3>Support</h3><p>Questions or problems? Message <a href="'+SUPPORT_LINK+'" target="_blank" style="color:var(--gold);">our support</a> on Telegram.</p></div>',
+    terms: '<div class="com-doc"><h3>Terms of use</h3><p>By using MineEarn you agree to these rules.</p>'
+      +'<h3>1. One account per person</h3><p>Use only your own Telegram account. Several accounts, bots, scripts and automatic tools are not allowed.</p>'
+      +'<h3>2. Fair use</h3><p>Do not cheat, fake ad views, fake task completion or fake invites. We may remove coins, suspend an account, or cancel a withdrawal if we find cheating.</p>'
+      +'<h3>3. Rewards</h3><p>Rewards depend on rules that can change, including the coins per ad, the daily limits and the withdrawal minimum and fee. Coins have no value until they are paid out. We may refuse or delay a payout that looks fraudulent.</p>'
+      +'<h3>4. Channels</h3><p>You must stay a member of our required channels to earn coins.</p>'
+      +'<h3>5. Payouts</h3><p>You are responsible for giving a correct wallet address. Payments sent to a wrong address cannot be recovered.</p>'
+      +'<h3>6. Changes</h3><p>We may update these terms or the app at any time. Continuing to use the app means you accept the changes.</p></div>',
+    privacy: '<div class="com-doc"><h3>Privacy</h3><p>What we keep: your Telegram ID and public profile name, your balance and activity in the app, your withdrawal requests and wallet address, and your invite connections.</p>'
+      +'<h3>How we use it</h3><p>To run the app, pay rewards, prevent cheating, process withdrawals, and send you messages about your account (like withdrawal updates).</p>'
+      +'<h3>Ads</h3><p>Ads are provided by ad networks, which may use their own tools to show and measure ads. We do not sell your personal data.</p>'
+      +'<h3>Public information</h3><p>The Payouts and Leaderboard pages show hidden IDs (only the last 4 digits). Blockchain payments are public by nature.</p>'
+      +'<h3>Your choices</h3><p>To ask about or delete your data, message <a href="'+SUPPORT_LINK+'" target="_blank" style="color:var(--gold);">support</a>.</p></div>'
+  };
+  comShell(docs[COM.tab] || '');
+}
 
 // ===== Admin panel (owner only; every call is re-checked on the server) =====
 const ADM = { tab:'stats', user:null };
@@ -1967,20 +2049,27 @@ async function admSettings(){
   try{
     const r = await api('settingsGet', {}, ADMIN2_URL);
     document.getElementById('admBody').innerHTML =
-      '<div class="wallet-box" style="line-height:1.5;">Change the coins paid for every mining ad. It applies within about 15 seconds. Users see the new amount the next time they open the app. A collect (2 ads) pays double this number.</div>'
+      '<div class="wallet-box" style="line-height:1.5;">Changes apply within about 15 seconds. Users see the new numbers the next time they open the app. A collect (2 ads) pays double the coins per ad.</div>'
       + '<label class="form-label">Coins per mining ad (1 to 500)</label>'
       + '<input id="admReward" class="form-input" inputmode="numeric" value="'+r.adReward+'">'
+      + '<label class="form-label" style="margin-top:10px;display:block;">Minimum withdrawal in coins (1,000 to 10,000,000)</label>'
+      + '<input id="admWdMin" class="form-input" inputmode="numeric" value="'+r.wdMin+'">'
+      + '<label class="form-label" style="margin-top:10px;display:block;">Withdrawal fee percent (0 to 30)</label>'
+      + '<input id="admWdFee" class="form-input" inputmode="numeric" value="'+r.wdFee+'">'
       + '<div id="admSetRes" class="tk-meta" style="margin:8px 0;"></div>'
       + '<button class="action btn-collect" onclick="admSaveSettings()">Save</button>'
       + '<div class="adm-user" style="margin-top:14px;"><div class="adm-row"><span>Game reward claiming</span><b>'+(r.gameClaim?'ON':'OFF (locked)')+'</b></div><div class="tk-meta">This stays locked until an ad network is approved.</div></div>';
   }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
 }
 async function admSaveSettings(){
-  const v = Number((document.getElementById('admReward').value||'').replace(/[, ]/g,''));
+  const num = id => Number((document.getElementById(id).value||'').replace(/[, ]/g,''));
+  const adReward = num('admReward'), wdMin = num('admWdMin'), wdFee = num('admWdFee');
   const res = document.getElementById('admSetRes');
-  if(!Number.isInteger(v) || v<1 || v>500){ res.textContent = 'Enter a whole number from 1 to 500.'; return; }
-  if(!confirm('Pay '+v+' coins per mining ad from now on?')) return;
-  try{ const r = await api('settingsSet', { adReward:v }, ADMIN2_URL); res.textContent = 'Saved. Coins per ad: '+r.adReward; }catch(e){ res.textContent = e.message; }
+  if(!Number.isInteger(adReward) || adReward<1 || adReward>500){ res.textContent = 'Coins per ad: whole number from 1 to 500.'; return; }
+  if(!Number.isInteger(wdMin) || wdMin<1000 || wdMin>10000000){ res.textContent = 'Minimum withdrawal: whole number from 1,000 to 10,000,000.'; return; }
+  if(!Number.isInteger(wdFee) || wdFee<0 || wdFee>30){ res.textContent = 'Fee percent: whole number from 0 to 30.'; return; }
+  if(!confirm('Save these settings?\n\nCoins per ad: '+adReward+'\nMinimum withdrawal: '+wdMin+'\nFee: '+wdFee+'%')) return;
+  try{ await api('settingsSet', { adReward, wdMin, wdFee }, ADMIN2_URL); res.textContent = 'Saved.'; }catch(e){ res.textContent = e.message; }
 }
 async function admLog(){
   admShell('<div class="tk-empty">Loading...</div>');
@@ -2036,8 +2125,36 @@ async function renderRefInfo(){
     document.getElementById('refEarned').textContent = Number(r.earned).toLocaleString();
   }catch(e){}
 }
+
+function loginDraw(v){
+  const row = document.getElementById('loginRow'); if(!row) return;
+  const R = v.rewards || [50,100,150,200,250];
+  row.innerHTML = R.map((c,i)=>{
+    const done = i < v.doneDays;
+    const cur = !v.claimedToday && i === v.nextDay-1;
+    return '<div class="day" style="'+(done?'opacity:1;border-color:var(--gold);':'')+(cur?'opacity:1;border-color:var(--gold);':'')+'"><b>Day '+(i+1)+'</b><span>'+(done?'✓':c)+'</span></div>';
+  }).join('');
+  const btn = document.getElementById('loginBtn');
+  if(btn){ btn.disabled = !!v.claimedToday; btn.textContent = v.claimedToday ? '✅ Claimed today' : '🎁 Claim daily bonus'; }
+}
+async function loginInit(){
+  try{ loginDraw(await api('loginStatus', {}, LOGIN_URL)); }catch(e){ loginDraw({doneDays:0,nextDay:1,claimedToday:false}); }
+}
+async function loginClaim(){
+  const m = document.getElementById('loginMsg'), btn = document.getElementById('loginBtn');
+  if(btn) btn.disabled = true; if(m) m.textContent = 'Checking your bio...';
+  try{
+    const r = await api('loginClaim', {}, LOGIN_URL);
+    state.balance = r.balance; render(); loginDraw(r);
+    if(m) m.textContent = '+'+r.amount+' coins added (Day '+r.day+').';
+  }catch(e){
+    if(m) m.textContent = e.message;
+    if(btn) btn.disabled = false;
+  }
+}
+
 async function renderHome(){
-  renderRefInfo();
+  renderRefInfo(); loginInit();
   try{
     const g = await api('gamesStatus', {}, GAMES_URL);
     let left = 0; for(const k of Object.keys(g.runs||{})) left += Math.max(0, g.max - g.runs[k]);
@@ -2101,6 +2218,7 @@ function render(){
 
 async function startApp(){
   try{
+    try{ const wc = await api('wdConfig', {}, WD_URL); if(wc.min) MIN_WITHDRAW = Number(wc.min); if(wc.fee!==undefined) FEE_PERCENT = Number(wc.fee); }catch(e){}
     state = await loadState();
     await splashFinish();
   }catch(e){
@@ -2138,18 +2256,20 @@ async function startApp(){
       </div>
       <div class="section-title">Today</div>
       <div class="tile-row">
-        <div class="tile"><div class="tile-num" id="homeAds">0/50</div><div class="tile-lbl">Mining ads</div></div>
+        <div class="tile"><div class="tile-num" id="homeAds">0/50</div><div class="tile-lbl">Ads watched</div></div>
         <div class="tile"><div class="tile-num" id="homePlays">–</div><div class="tile-lbl">Game plays left</div></div>
         <div class="tile"><div class="tile-num" id="homeRefs">0</div><div class="tile-lbl">Referrals</div></div>
       </div>
-      <div class="section-title">Daily login bonus <span class="soon">Coming soon</span></div>
-      <div class="login-row">
-        <div class="day"><b>Day 1</b><span>50</span></div><div class="day"><b>Day 2</b><span>100</span></div><div class="day"><b>Day 3</b><span>150</span></div><div class="day"><b>Day 4</b><span>200</span></div><div class="day"><b>Day 5</b><span>250</span></div>
-      </div>
+      <div class="section-title">Daily login bonus</div>
+      <div class="login-row" id="loginRow"></div>
+      <div style="font-size:12px;color:var(--muted);margin:4px 2px 8px;line-height:1.5;">Put your own invite link in your Telegram bio, then claim once a day. Miss a day and it restarts at Day 1. We only check that your bio contains your link.</div>
+      <button class="action btn-collect" style="width:100%;margin-bottom:6px;" id="loginBtn" onclick="loginClaim()">🎁 Claim daily bonus</button>
+      <div id="loginMsg" style="font-size:12px;color:var(--muted);margin:2px 2px 10px;min-height:16px;"></div>
       <div class="section-title">Ways to earn</div>
       <div class="earn-card" onclick="showTab('mine')"><div class="earn-ic">⛏️</div><div class="earn-tx"><b>Mining</b><span>5 slots • watch 2 ads per collect • ${AD_PAY} coins per ad</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="showTab('play')"><div class="earn-ic">🎮</div><div class="earn-tx"><b>Games</b><span>4 games • up to 250 coins per play • 5 plays each daily</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="showTab('tasks')"><div class="earn-ic">✅</div><div class="earn-tx"><b>Tasks</b><span>Join channels and follow pages for coins</span></div><div class="earn-go">›</div></div>
+      <div class="earn-card" onclick="comOpen('payouts')"><div class="earn-ic">🏆</div><div class="earn-tx"><b>Payouts &amp; leaderboard</b><span>See real payments and the top earners</span></div><div class="earn-go">›</div></div>
       <div class="section-title">Invite &amp; earn</div>
       <div class="invite-card">
         <div class="invite-top"><div class="earn-ic">👥</div><div class="earn-tx"><b>Invite friends</b><span>500 coins when a friend joins + 3,000 coins when their first withdrawal is paid</span></div></div>
@@ -2161,7 +2281,8 @@ async function startApp(){
           <div class="tile"><div class="tile-num" id="refEarned">0</div><div class="tile-lbl">Coins earned</div></div>
         </div>
       </div>
-      <a class="support-btn" href="${SUPPORT_LINK}" target="_blank">🆘 Contact Support</a>
+      <a class="support-btn" href="${SUPPORT_LINK}" target="_blank">💬 Contact Support</a>
+      <div class="legal-row"><a onclick="comOpen('about')">About</a><a onclick="comOpen('terms')">Terms</a><a onclick="comOpen('privacy')">Privacy</a></div>
         ${IS_OWNER ? '<button class="action btn-collect" style="margin-top:10px;" onclick="admOpen()">🛠 Admin panel</button>' : ''}
     </div>
     <div class="tab-content" id="tab-mine">
@@ -2239,7 +2360,8 @@ async function startApp(){
         <div class="stat-row"><span class="stat-label">Balance</span><span class="stat-value" id="profileCoins"></span></div>
         <div class="stat-row"><span class="stat-label">USD Value</span><span class="stat-value" id="profileUsd"></span></div>
         <div class="stat-row"><span class="stat-label">Referrals</span><span class="stat-value" id="profileReferrals"></span></div>
-        <a class="support-btn" href="${SUPPORT_LINK}" target="_blank">🆘 Contact Support</a>
+        <a class="support-btn" href="${SUPPORT_LINK}" target="_blank">💬 Contact Support</a>
+        <div class="legal-row"><a onclick="comOpen('about')">About</a><a onclick="comOpen('terms')">Terms</a><a onclick="comOpen('privacy')">Privacy</a></div>
       </div>
       <h1 id="wdSection" style="margin-top:24px;">Withdraw</h1>
       <div class="balance">
