@@ -211,6 +211,7 @@
   .sheet-title{font-size:18px;font-weight:800;margin-bottom:12px;}
   .adm-box{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px 16px;text-align:center;}
 </style>
+<script src="https://ad.gigapub.tech/script?id=8939"></script>
 </head>
 <body>
 <div id="app"><div class="splash" id="splash">
@@ -276,6 +277,8 @@ const MAX_SESSIONS = 5;
 // ---- Review mode switches. Set both to true again after an ad network approves the app. ----
 const GAME_ADS_ON = false;      // true = games show the "watch ad" steps (continue + collect)
 const NETWORK_TEST_ROWS_ON = false; // true = show the GigaPub / USL Ads rows in Tasks > Daily
+const GIGA_ON = true;           // real GigaPub ad row in Tasks > Daily (server-confirmed)
+let GIGA = null;
 let AD_PAY = 50; // coins per ad; the server tells us the live value
 const SESSION_MS = 30*60*1000;
 let selectedMethod = 'USDT_BEP20';
@@ -300,6 +303,7 @@ const TG_ID = getTelegramId();
 const TG_USER = getTelegramUser();
 const ADMIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-hub';
 const LOGIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/login-hub';
+const GIGA_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/giga-hub';
 const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-pro';
 const TASK_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/task-hub';
 const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-v2';
@@ -1677,7 +1681,6 @@ async function loadTasks(){
 // ---------------- Tasks tab ----------------
 const TK = { cat:'social', view:'all' };
 const DAILY_ADS = [
-  {id:'giga', name:'GigaPub', per:40, max:20, color:'#3ad17c'},
   {id:'usl', name:'USL Ads', per:70, max:20, color:'#ff9a3c'}
 ];
 function tkDay(){ return new Date().toISOString().slice(0,10); }
@@ -1728,6 +1731,35 @@ function tkRing(done,max,color){
   const C = 2*Math.PI*25, off = C*(1-Math.min(1,done/max));
   return '<div class="tk-ring"><svg viewBox="0 0 62 62"><defs><linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fdcff"/><stop offset="1" stop-color="#2f7bff"/></linearGradient></defs><circle class="bg" cx="31" cy="31" r="25"/><circle class="fg" cx="31" cy="31" r="25" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/></svg><span>'+done+'/'+max+'</span></div>';
 }
+async function gigaWatch(){
+  const btn = document.getElementById('gigaBtn');
+  const alertMsg = m => { try{ window.Telegram.WebApp.showAlert(m); }catch(e){ alert(m); } };
+  if(GIGA && GIGA.cooldownLeft > 0 && Date.now() < (GIGA.cdUntil||0)){ alertMsg('Please wait '+Math.ceil(((GIGA.cdUntil)-Date.now())/1000)+' seconds before the next ad.'); return; }
+  if(typeof window.showGiga !== 'function'){ alertMsg('Ads are not ready yet. Please try again in a moment.'); return; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading ad...'; }
+  try{
+    await window.showGiga();
+  }catch(e){
+    if(btn){ btn.disabled = false; btn.textContent = '▶ Watch ad'; }
+    alertMsg('No ad available right now. Please try again later.');
+    return;
+  }
+  if(btn) btn.textContent = 'Confirming...';
+  let res = null, lastErr = '';
+  for(let i=0;i<8;i++){
+    try{ res = await api('gigaClaim', {}, GIGA_URL); break; }
+    catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await new Promise(r=>setTimeout(r,1500)); }
+  }
+  if(res){
+    state.balance = res.balance; render();
+    GIGA = { done:res.done, max:res.max, per:res.per, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
+    alertMsg('+'+res.amount+' coins added');
+  } else {
+    alertMsg(lastErr || 'The ad was not confirmed, so no coins were added.');
+    GIGA = null;
+  }
+  renderTasks();
+}
 function tkAdPlaceholder(id){
   const a = DAILY_ADS.find(x=>x.id===id); if(!a) return;
   const n = tkGet(id); if(n >= a.max) return;
@@ -1758,6 +1790,15 @@ async function renderTasks(){
     cnt.textContent = 'Resets every day at 00:00 UTC';
     const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
     let h = '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Ads watched</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
+    if(GIGA_ON){
+      if(!GIGA){ try{ GIGA = await api('gigaStatus', {}, GIGA_URL); }catch(e){ GIGA = null; } }
+      if(GIGA){
+        const gfull = GIGA.done >= GIGA.max;
+        h += '<div class="tk-card'+(gfull?' done':'')+'" style="border-left-color:#3ad17c;">'+tkRing(GIGA.done,GIGA.max)+'<div class="tk-main"><div class="tk-title">GigaPub</div><div class="tk-meta">'+GIGA.per+' coins per ad • '+GIGA.done+'/'+GIGA.max+' today • paid after the ad is confirmed</div><div class="tk-actions">'
+          + (gfull ? '<button class="tk-btn d" disabled>✓ Done today</button>' : '<button class="tk-btn f" id="gigaBtn" onclick="gigaWatch()">▶ Watch ad '+(GIGA.done+1)+'</button>')
+          + '</div></div></div>';
+      }
+    }
     h += (!NETWORK_TEST_ROWS_ON ? [] : DAILY_ADS).map(a=>{
       const n = tkGet(a.id), full = n>=a.max;
       return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:'+a.color+';">'+tkRing(n,a.max)+'<div class="tk-main"><div class="tk-title">'+a.name+'<span class="tk-test">TEST AD</span></div><div class="tk-meta">'+a.per+' coins per ad • '+a.max+' ads a day</div><div class="tk-actions">'
@@ -2147,9 +2188,11 @@ async function loginClaim(){
     const r = await api('loginClaim', {}, LOGIN_URL);
     state.balance = r.balance; render(); loginDraw(r);
     if(m) m.textContent = '+'+r.amount+' coins added (Day '+r.day+').';
+    try{ window.Telegram.WebApp.showAlert('+'+r.amount+' coins added (Day '+r.day+')'); }catch(_e){}
   }catch(e){
-    if(m) m.textContent = e.message;
+    if(m) m.textContent = '';
     if(btn) btn.disabled = false;
+    try{ window.Telegram.WebApp.showAlert(e.message); }catch(_e){ alert(e.message); }
   }
 }
 
