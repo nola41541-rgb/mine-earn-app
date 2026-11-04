@@ -30,6 +30,19 @@
   .btn-wait{background:var(--card2)!important;color:var(--muted)!important;}
   .btn-collect{background:linear-gradient(180deg,#6fdcff,#2f86ff)!important;color:#031233!important;border:none!important;}
   .btn-done{background:#12304a!important;color:#7ecb7e!important;}
+
+  .dlg-back{position:fixed;inset:0;background:rgba(3,8,24,.72);display:flex;align-items:center;justify-content:center;z-index:300;padding:24px;backdrop-filter:blur(3px);}
+  .dlg{width:100%;max-width:330px;background:linear-gradient(180deg,#132450,#0c1736);border:1px solid var(--line);border-radius:26px;padding:26px 22px 18px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.65);animation:dlgIn .18s ease-out;}
+  @keyframes dlgIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+  .dlg-ic{font-size:44px;line-height:1;margin-bottom:10px;}
+  .dlg-t{font-size:20px;font-weight:800;color:#fff;margin-bottom:8px;}
+  .dlg-m{font-size:14px;color:#c5d3f2;line-height:1.5;white-space:pre-line;margin-bottom:18px;word-break:break-word;}
+  .dlg-ok{width:100%;border:none;border-radius:16px;padding:15px;font-size:16px;font-weight:800;background:linear-gradient(180deg,#6fdcff,#2f86ff);color:#031233;}
+  .dlg-no{width:100%;background:none;border:none;color:var(--muted);font-size:14px;font-weight:600;padding:12px 0 2px;}
+  .hw-dots{display:flex;justify-content:center;gap:6px;margin:4px 0 14px;}
+  .hw-dots i{width:7px;height:7px;border-radius:50%;background:#2a3d73;display:block;}
+  .hw-dots i.on{background:#5cc8ff;width:20px;border-radius:4px;}
+  .copy-btn{margin-top:6px;border:1px solid var(--line);background:var(--field);color:#8fdcff;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;z-index:50;}
   .modal-box{background:var(--card);border:1px solid var(--line);padding:24px;border-radius:22px;text-align:center;max-width:280px;}
   .tabbar{position:fixed;bottom:12px;left:12px;right:12px;height:66px;display:flex;align-items:center;background:rgba(15,27,61,0.97);border:1px solid var(--line);border-radius:34px;z-index:40;box-shadow:0 10px 30px rgba(0,0,0,0.6);}
@@ -266,6 +279,7 @@ const WALLET_TON = 'UQDcm7tz1hnpaVus3UzLIkeV-scuOOLbgskgm3qG2SGmj4ai';
 const RATE = 0.16/16000;
 let MIN_WITHDRAW = 20000;
 let FEE_PERCENT = 5;
+let WD_HOURS = 72, WD_CONTACT = '@boss001legend';
 const SLOT_CONFIG = [
   {name:"Slot 1", coins:100, ads:2},
   {name:"Slot 2", coins:100, ads:2},
@@ -363,7 +377,7 @@ async function handleVerify(){
 }
 
 const API_URL = SUPABASE_URL + '/functions/v1/mine-v2';
-const WD_URL = SUPABASE_URL + '/functions/v1/smart-v2';
+const WD_URL = SUPABASE_URL + '/functions/v1/smart-v3';
 // Phone clocks can be wrong, so timers use Telegram's server time (auth_date) as the reference
 let CLOCK_OFFSET = 0;
 function nowMs(){ return Date.now() + CLOCK_OFFSET; }
@@ -590,7 +604,8 @@ function closeGameOverlay(){
 function quitGame(){
   if(G && !G.over && G.capped){ finishGame(curScore()); return; }
   if(G && !G.over){
-    if(!confirm('Quit this run? It will still count as one of your 5 runs today.')) return;
+    appConfirm('It will still count as one of your 5 runs today.','Quit run','Keep playing','Quit this run?','🎮').then(y=>{ if(y) closeGameOverlay(); });
+    return;
   }
   closeGameOverlay();
 }
@@ -1650,6 +1665,7 @@ async function renderAdminWd(){
   try{ const r = await api('adminList', {}, WD_URL); rows = r.rows || []; }catch(e){ box.textContent = e.message; return; }
   const open = rows.filter(r=>r.status==='pending'||r.status==='approved');
   if(!open.length){ box.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px;">No open requests.</div>'; return; }
+  window.__wdRows = {}; open.forEach(r=>{ window.__wdRows[r.id]=r; });
   box.innerHTML = open.map(r=>{
     const btns = r.status==='pending'
       ? '<button class="action btn-start" onclick="adminSet('+r.id+',\'approved\')">Approve</button>'
@@ -1657,6 +1673,7 @@ async function renderAdminWd(){
     return '<div class="wd-item"><div class="wd-top"><span>#'+r.id+' • '+Number(r.amount).toLocaleString()+' coins</span><span>'+esc(r.status)+'</span></div>'
       +'<div class="wd-sub">User '+esc(r.telegram_id)+' • '+esc(r.method)+' • send $'+((r.net||0)*RATE).toFixed(4)+'</div>'
       +'<div class="wd-sub" style="word-break:break-all;user-select:all;">'+esc(r.wallet_address)+'</div>'
+      +'<button class="copy-btn" onclick="copyAddr('+r.id+')">📋 Copy address</button>'
       +'<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">'+btns
       +'<button class="action" style="background:#3a2230;color:#ff8a8a;" onclick="adminSet('+r.id+',\'rejected\')">Reject (refund)</button>'
       +'<button class="action" style="background:#2a2f45;color:#c7cce0;" onclick="adminSet('+r.id+',\'cancelled\')">Cancel (refund)</button></div></div>';
@@ -1733,7 +1750,7 @@ function tkRing(done,max,color){
 }
 async function gigaWatch(){
   const btn = document.getElementById('gigaBtn');
-  const alertMsg = m => { try{ window.Telegram.WebApp.showAlert(m); }catch(e){ alert(m); } };
+  const alertMsg = m => { try{ window.alert(m); }catch(e){ alert(m); } };
   if(GIGA && GIGA.cooldownLeft > 0 && Date.now() < (GIGA.cdUntil||0)){ alertMsg('Please wait '+Math.ceil(((GIGA.cdUntil)-Date.now())/1000)+' seconds before the next ad.'); return; }
   if(typeof window.showGiga !== 'function'){ alertMsg('Ads are not ready yet. Please try again in a moment.'); return; }
   if(btn){ btn.disabled = true; btn.textContent = 'Loading ad...'; }
@@ -2188,11 +2205,11 @@ async function loginClaim(){
     const r = await api('loginClaim', {}, LOGIN_URL);
     state.balance = r.balance; render(); loginDraw(r);
     if(m) m.textContent = '+'+r.amount+' coins added (Day '+r.day+').';
-    try{ window.Telegram.WebApp.showAlert('+'+r.amount+' coins added (Day '+r.day+')'); }catch(_e){}
+    try{ window.alert('+'+r.amount+' coins added (Day '+r.day+')'); }catch(_e){}
   }catch(e){
     if(m) m.textContent = '';
     if(btn) btn.disabled = false;
-    try{ window.Telegram.WebApp.showAlert(e.message); }catch(_e){ alert(e.message); }
+    try{ window.alert(e.message); }catch(_e){ alert(e.message); }
   }
 }
 
@@ -2259,11 +2276,58 @@ function render(){
   });
 }
 
+
+/* ===== App-style dialogs ===== */
+function appDialog(o){
+  return new Promise(res=>{
+    const d=document.createElement('div'); d.className='dlg-back';
+    const ic=o.icon||'ℹ️';
+    d.innerHTML='<div class="dlg"><div class="dlg-ic">'+ic+'</div><div class="dlg-t">'+esc(o.title||'MineEarn')+'</div><div class="dlg-m">'+esc(o.text||'')+'</div><button class="dlg-ok">'+esc(o.ok||'OK')+'</button>'+(o.cancel?'<button class="dlg-no">'+esc(o.cancel)+'</button>':'')+'</div>';
+    const done=v=>{ try{d.remove();}catch(e){} res(v); };
+    d.querySelector('.dlg-ok').onclick=()=>done(true);
+    const n=d.querySelector('.dlg-no'); if(n) n.onclick=()=>done(false);
+    document.body.appendChild(d);
+  });
+}
+function appConfirm(text,ok,cancel,title,icon){ return appDialog({title:title||'Please confirm',text,ok:ok||'Yes',cancel:cancel||'Cancel',icon:icon||'❓'}); }
+window.alert = function(m){ const t=String(m==null?'':m); const bad=/error|could not|cannot|can't|failed|invalid|not enough|too|wait|limit|already|enter |must/i.test(t); appDialog({title:bad?'Heads up':'Done',text:t,icon:bad?'⚠️':'✅'}); };
+function copyText(t,btn){
+  const ok=()=>{ if(btn){ const o=btn.textContent; btn.textContent='✅ Copied'; setTimeout(()=>{btn.textContent=o;},1500); } };
+  try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(ok).catch(()=>fb()); return; } }catch(e){}
+  fb();
+  function fb(){ try{ const a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); ok(); }catch(e){ appDialog({title:'Copy',text:t,icon:'📋'}); } }
+}
+function copyAddr(id){ const r=(window.__wdRows||{})[id]; if(r) copyText(r.wallet_address, event && event.target); }
+
+/* ===== How it works ===== */
+function howSlides(){
+  const usd=(MIN_WITHDRAW/100000).toFixed(2);
+  return [
+    ['⛏️','Welcome to MineEarn','Watch short ads, collect coins and cash them out. It is free to use.'],
+    ['🪙','Earn coins','Mine with 5 slots, claim the daily login bonus, join tasks and invite friends. Ads pay '+AD_PAY+' coins each.'],
+    ['💱','What coins are worth','100,000 coins = $1. Withdraw from '+MIN_WITHDRAW.toLocaleString()+' coins ($'+usd+'), one request per day, '+FEE_PERCENT+'% fee.'],
+    ['💸','How withdrawals work','Send a request with your TON or USDT (BEP20) address. Every request is checked by hand and approved within '+WD_HOURS+' hours. Paid requests show in the Payouts channel. Not paid after '+WD_HOURS+' hours? Contact '+WD_CONTACT+'.'],
+    ['🔒','Play fair','One account per person. Fake or cheating activity gets the account suspended.']
+  ];
+}
+function howOpen(i){
+  i=i||0; const S=howSlides(); const last=i>=S.length-1;
+  const old=document.getElementById('howBox'); if(old) old.remove();
+  const d=document.createElement('div'); d.className='dlg-back'; d.id='howBox';
+  d.innerHTML='<div class="dlg"><div class="dlg-ic">'+S[i][0]+'</div><div class="dlg-t">'+esc(S[i][1])+'</div><div class="dlg-m">'+esc(S[i][2])+'</div><div class="hw-dots">'+S.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join('')+'</div><button class="dlg-ok">'+(last?'Got it, let\'s earn':'Next')+'</button>'+(last?'':'<button class="dlg-no">Skip</button>')+'</div>';
+  d.querySelector('.dlg-ok').onclick=()=>{ if(last){ d.remove(); } else howOpen(i+1); };
+  const n=d.querySelector('.dlg-no'); if(n) n.onclick=()=>d.remove();
+  document.body.appendChild(d);
+  if(last){ try{ localStorage.setItem('me_how_seen','1'); }catch(e){} }
+}
+function howMaybe(){ let seen=false; try{ seen=localStorage.getItem('me_how_seen')==='1'; }catch(e){} if(!seen){ howOpen(0); try{ localStorage.setItem('me_how_seen','1'); }catch(e){} } }
+
 async function startApp(){
   try{
-    try{ const wc = await api('wdConfig', {}, WD_URL); if(wc.min) MIN_WITHDRAW = Number(wc.min); if(wc.fee!==undefined) FEE_PERCENT = Number(wc.fee); }catch(e){}
+    try{ const wc = await api('wdConfig', {}, WD_URL); if(wc.min) MIN_WITHDRAW = Number(wc.min); if(wc.fee!==undefined) FEE_PERCENT = Number(wc.fee); if(wc.hours) WD_HOURS = Number(wc.hours); if(wc.contact) WD_CONTACT = String(wc.contact); }catch(e){}
     state = await loadState();
     await splashFinish();
+    setTimeout(howMaybe, 700);
   }catch(e){
     await splashFinish();
     document.getElementById('app').innerHTML = '<div style="text-align:center;padding:40px 16px;color:#ff6b6b;">Could not load your data: '+(e && e.message ? e.message : 'unknown error')+'<br><br>Please close and reopen the app from Telegram.</div>';
@@ -2313,6 +2377,7 @@ async function startApp(){
       <div class="earn-card" onclick="showTab('play')"><div class="earn-ic">🎮</div><div class="earn-tx"><b>Games</b><span>4 games • up to 250 coins per play • 5 plays each daily</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="showTab('tasks')"><div class="earn-ic">✅</div><div class="earn-tx"><b>Tasks</b><span>Join channels and follow pages for coins</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="comOpen('payouts')"><div class="earn-ic">🏆</div><div class="earn-tx"><b>Payouts &amp; leaderboard</b><span>See real payments and the top earners</span></div><div class="earn-go">›</div></div>
+      <div class="earn-card" onclick="howOpen(0)"><div class="earn-ic">📖</div><div class="earn-tx"><b>How it works</b><span>Earning, coins and withdrawals explained</span></div><div class="earn-go">›</div></div>
       <div class="section-title">Invite &amp; earn</div>
       <div class="invite-card">
         <div class="invite-top"><div class="earn-ic">👥</div><div class="earn-tx"><b>Invite friends</b><span>500 coins when a friend joins + 3,000 coins when their first withdrawal is paid</span></div></div>
@@ -2412,6 +2477,7 @@ async function startApp(){
         <div class="usd">Available balance</div>
       </div>
       <div class="form-group">
+        <div class="wallet-box" style="line-height:1.5;margin-bottom:10px;font-size:12px;">Requests are approved within <b>${WD_HOURS} hours</b>. If yours is not approved by then, contact the owner of Boss Crypto Hub: <b>${WD_CONTACT}</b>.</div>
         <label class="form-label">Amount (min ${MIN_WITHDRAW.toLocaleString()} coins)</label>
         <input type="number" id="wdAmount" class="form-input" placeholder="e.g. 20000" oninput="wdPreview()">
         <div class="task-sub" id="wdPreview" style="margin-top:6px;"></div>
