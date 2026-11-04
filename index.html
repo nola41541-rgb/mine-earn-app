@@ -31,6 +31,7 @@
   .btn-collect{background:linear-gradient(180deg,#6fdcff,#2f86ff)!important;color:#031233!important;border:none!important;}
   .btn-done{background:#12304a!important;color:#7ecb7e!important;}
 
+  .rv #btn-home,.rv #btn-mine{display:none!important;}
   .dlg-back{position:fixed;inset:0;background:rgba(3,8,24,.72);display:flex;align-items:center;justify-content:center;z-index:300;padding:24px;backdrop-filter:blur(3px);}
   .dlg{width:100%;max-width:330px;background:linear-gradient(180deg,#132450,#0c1736);border:1px solid var(--line);border-radius:26px;padding:26px 22px 18px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.65);animation:dlgIn .18s ease-out;}
   @keyframes dlgIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
@@ -279,6 +280,8 @@ const WALLET_TON = 'UQDcm7tz1hnpaVus3UzLIkeV-scuOOLbgskgm3qG2SGmj4ai';
 const RATE = 0.16/16000;
 let MIN_WITHDRAW = 20000;
 let FEE_PERCENT = 5;
+let REVIEW = false;
+const FLAGS_URL = SUPABASE_URL + '/functions/v1/app-flags';
 let WD_HOURS = 72, WD_CONTACT = '@boss001legend';
 const SLOT_CONFIG = [
   {name:"Slot 1", coins:100, ads:2},
@@ -315,6 +318,7 @@ function getTelegramId(){
 }
 const TG_ID = getTelegramId();
 const TG_USER = getTelegramUser();
+const STATS_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-stats';
 const ADMIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-hub';
 const LOGIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/login-hub';
 const GIGA_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/giga-hub';
@@ -1682,9 +1686,9 @@ async function renderAdminWd(){
 async function adminSet(id, status){
   let txid = '';
   if(status==='paid'){
-    txid = prompt('Paste the transaction ID (TXID):') || '';
+    txid = (await appPrompt('Paste the transaction ID (TXID) of the payment.','Mark as paid','TXID')) || '';
     if(!txid.trim()) return;
-  } else if(!confirm('Set request #'+id+' to '+status+'?')) return;
+  } else if(!(await appConfirm('Set request #'+id+' to '+status+'?','Yes','Cancel','Confirm','❓'))) return;
   try{
     await api('adminSet', { id, status, txid }, WD_URL);
   }catch(e){ alert(e.message); }
@@ -1739,7 +1743,7 @@ async function renderManage(){
   }catch(e){ box.innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
 }
 async function adminTask(id, field, value){
-  if(value==='deleted' && !confirm('Delete this task?')) return;
+  if(value==='deleted' && !(await appConfirm('Delete this task?','Delete','Cancel','Delete task','🗑️'))) return;
   try{ const p = { id }; p[field] = value; await api('adminSet', p, TASK_URL); }catch(e){ alert(e.message); }
   renderManage(); renderTasks();
 }
@@ -1806,8 +1810,8 @@ async function renderTasks(){
   if(TK.cat==='daily' && TK.view==='all'){
     cnt.textContent = 'Resets every day at 00:00 UTC';
     const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
-    let h = '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Ads watched</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
-    if(GIGA_ON){
+    let h = REVIEW ? '' : '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Ads watched</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
+    if(GIGA_ON && !REVIEW){
       if(!GIGA){ try{ GIGA = await api('gigaStatus', {}, GIGA_URL); }catch(e){ GIGA = null; } }
       if(GIGA){
         const gfull = GIGA.done >= GIGA.max;
@@ -1823,6 +1827,7 @@ async function renderTasks(){
         + '</div></div></div>';
     }).join('');
     if(NETWORK_TEST_ROWS_ON) h += '<div class="tk-empty" style="padding:14px;font-size:12px;">These are test ads. Coin rewards for them switch on once the ad networks approve the app.</div>';
+    if(REVIEW && !h) h = '<div class="tk-empty">No daily tasks right now. Check the other lists.</div>';
     container.innerHTML = h;
     return;
   }
@@ -2050,24 +2055,42 @@ async function admUsers(q){
       + '<div class="adm-row"><span>Referrals</span>'+u.referrals+'</div>'
       + '<div class="adm-row"><span>Tasks done</span>'+u.tasks+'</div>'
       + '<div class="adm-row"><span>Invited by</span>'+esc(u.referredBy||'-')+'</div>'
-      + '<div style="display:flex;gap:8px;margin-top:8px;"><button class="tk-btn f" style="flex:1;" onclick="admCoins('+i+')">± Coins</button><button class="tk-btn o" style="flex:1;" onclick="admBan('+i+')">'+(u.banned?'Unsuspend':'Suspend')+'</button></div></div>').join('');
+      + '<div style="display:flex;gap:8px;margin-top:8px;"><button class="tk-btn f" style="flex:1;" onclick="admCoins('+i+')">± Coins</button><button class="tk-btn o" style="flex:1;" onclick="admBan('+i+')">'+(u.banned?'Unsuspend':'Suspend')+'</button></div><button class="tk-btn o" style="width:100%;margin-top:8px;" onclick="admActivity('+i+')">📅 Daily activity</button></div>').join('');
   }catch(e){ document.getElementById('admList').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
 }
 async function admCoins(i){
   const u = ADM.rows[i]; if(!u) return;
-  const a = prompt('User '+u.id+'\nBalance: '+u.balance+'\n\nCoins to ADD (use a minus sign to remove, e.g. -500):');
+  const a = await appPrompt('User '+u.id+'\nBalance: '+u.balance+'\n\nCoins to ADD (use a minus sign to remove, e.g. -500)','Add or remove coins','e.g. 500 or -500');
   if(a===null) return;
   const amount = Number(String(a).replace(/[, ]/g,''));
   if(!Number.isInteger(amount) || amount===0){ alert('Enter a whole number, not 0.'); return; }
-  const reason = prompt('Short reason (saved in the Log):','');
+  const reason = await appPrompt('Short reason (saved in the Log)','Reason','Reason','');
   if(reason===null) return;
-  if(!confirm((amount>0?'Add ':'Remove ')+Math.abs(amount)+' coins '+(amount>0?'to':'from')+' user '+u.id+'?')) return;
+  if(!(await appConfirm((amount>0?'Add ':'Remove ')+Math.abs(amount)+' coins '+(amount>0?'to':'from')+' user '+u.id+'?','Yes','Cancel','Confirm','🪙'))) return;
   try{ const r = await api('userAdjust', { id:u.id, amount, reason }, ADMIN_URL); alert('Done. New balance: '+r.balance); }catch(e){ alert(e.message); }
   admUsers(u.id);
 }
+const KIND_NAMES = {mining:'Mining',ad_reward:'Ad rewards',giga_ad:'GigaPub ads',login_bonus:'Login bonus',game:'Games',task:'Tasks',ref_join:'Referral (join)',admin_adjust:'Owner adjustment',withdraw:'Withdrawal',withdraw_refund:'Withdrawal refund'};
+async function admActivity(i){
+  const u = ADM.rows[i]; if(!u) return;
+  const today = new Date().toISOString().slice(0,10);
+  const d = await appPrompt('User '+u.id+'\nDate in UTC, like '+today+'\n(days change at 00:00 UTC)','Daily activity','YYYY-MM-DD',today);
+  if(d===null) return;
+  try{
+    const r = await api('userActivity', { id:u.id, date:String(d).trim() }, STATS_URL);
+    let t = 'Date: '+r.date+' (UTC)\nBalance now: '+Number(r.balance).toLocaleString()+' coins'+(r.banned?' (suspended)':'')+'\n\n';
+    const ks = Object.keys(r.totals||{});
+    if(!ks.length) t += 'No activity recorded that day.';
+    else{
+      t += ks.map(k=>(KIND_NAMES[k]||k)+': '+r.totals[k].count+' x = '+(r.totals[k].coins>0?'+':'')+Number(r.totals[k].coins).toLocaleString()).join('\n');
+      t += '\n\nNet that day: '+(r.net>0?'+':'')+Number(r.net).toLocaleString()+' coins in '+r.count+' entries'+(r.truncated?' (first 500 only)':'');
+    }
+    appDialog({title:'Activity of '+u.id,text:t,icon:'📅'});
+  }catch(e){ appDialog({title:'Could not load',text:e.message,icon:'⚠️'}); }
+}
 async function admBan(i){
   const u = ADM.rows[i]; if(!u) return;
-  if(!confirm((u.banned?'Unsuspend':'Suspend')+' user '+u.id+'?\n\nA suspended user cannot earn coins or request withdrawals.')) return;
+  if(!(await appConfirm((u.banned?'Unsuspend':'Suspend')+' user '+u.id+'?\n\nA suspended user cannot earn coins or request withdrawals.','Yes','Cancel','Confirm','🚫'))) return;
   try{ await api('userBan', { id:u.id, banned:!u.banned }, ADMIN_URL); }catch(e){ alert(e.message); }
   admUsers(u.id);
 }
@@ -2082,7 +2105,7 @@ async function admSend(test){
   const text = (document.getElementById('admMsg').value||'').trim();
   const res = document.getElementById('admAnnRes');
   if(text.length<3){ res.textContent = 'Write at least 3 characters.'; return; }
-  if(!test && !confirm('Send this message to ALL users now?')) return;
+  if(!test && !(await appConfirm('Send this message to ALL users now?','Send to all','Cancel','Send message','📣'))) return;
   res.textContent = test ? 'Sending test...' : 'Sending to everyone, please wait...';
   try{
     const r = await api('announce', { text, test }, ADMIN_URL);
@@ -2126,7 +2149,7 @@ async function admSaveSettings(){
   if(!Number.isInteger(adReward) || adReward<1 || adReward>500){ res.textContent = 'Coins per ad: whole number from 1 to 500.'; return; }
   if(!Number.isInteger(wdMin) || wdMin<1000 || wdMin>10000000){ res.textContent = 'Minimum withdrawal: whole number from 1,000 to 10,000,000.'; return; }
   if(!Number.isInteger(wdFee) || wdFee<0 || wdFee>30){ res.textContent = 'Fee percent: whole number from 0 to 30.'; return; }
-  if(!confirm('Save these settings?\n\nCoins per ad: '+adReward+'\nMinimum withdrawal: '+wdMin+'\nFee: '+wdFee+'%')) return;
+  if(!(await appConfirm('Coins per ad: '+adReward+'\nMinimum withdrawal: '+wdMin+'\nFee: '+wdFee+'%','Save','Cancel','Save these settings?','⚙️'))) return;
   try{ await api('settingsSet', { adReward, wdMin, wdFee }, ADMIN2_URL); res.textContent = 'Saved.'; }catch(e){ res.textContent = e.message; }
 }
 async function admLog(){
@@ -2138,6 +2161,7 @@ async function admLog(){
 }
 
 function showTab(tab){
+  if(REVIEW && (tab==='home'||tab==='mine')) tab = 'play';
   if(tab==='withdraw') tab = 'profile';
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
@@ -2289,6 +2313,17 @@ function appDialog(o){
     document.body.appendChild(d);
   });
 }
+function appPrompt(text,title,ph,def){
+  return new Promise(res=>{
+    const d=document.createElement('div'); d.className='dlg-back';
+    d.innerHTML='<div class="dlg"><div class="dlg-ic">✏️</div><div class="dlg-t">'+esc(title||'Enter value')+'</div><div class="dlg-m" style="margin-bottom:12px;">'+esc(text||'')+'</div><input class="form-input dlg-in" style="width:100%;margin-bottom:14px;text-align:center;" placeholder="'+esc(ph||'')+'" value="'+esc(def||'')+'"><button class="dlg-ok">OK</button><button class="dlg-no">Cancel</button></div>';
+    const done=v=>{ try{d.remove();}catch(e){} res(v); };
+    d.querySelector('.dlg-ok').onclick=()=>done(d.querySelector('.dlg-in').value);
+    d.querySelector('.dlg-no').onclick=()=>done(null);
+    document.body.appendChild(d);
+    setTimeout(()=>{ try{ d.querySelector('.dlg-in').focus(); }catch(e){} },50);
+  });
+}
 function appConfirm(text,ok,cancel,title,icon){ return appDialog({title:title||'Please confirm',text,ok:ok||'Yes',cancel:cancel||'Cancel',icon:icon||'❓'}); }
 window.alert = function(m){ const t=String(m==null?'':m); const bad=/error|could not|cannot|can't|failed|invalid|not enough|too|wait|limit|already|enter |must/i.test(t); appDialog({title:bad?'Heads up':'Done',text:t,icon:bad?'⚠️':'✅'}); };
 function copyText(t,btn){
@@ -2304,7 +2339,7 @@ function howSlides(){
   const usd=(MIN_WITHDRAW/100000).toFixed(2);
   return [
     ['⛏️','Welcome to MineEarn','Watch short ads, collect coins and cash them out. It is free to use.'],
-    ['🪙','Earn coins','Mine with 5 slots, claim the daily login bonus, join tasks and invite friends. Ads pay '+AD_PAY+' coins each.'],
+    ['🪙','Earn coins',REVIEW?'Play the games and complete tasks. Your score and progress are saved on your account.':'Mine with 5 slots, claim the daily login bonus, join tasks and invite friends. Ads pay '+AD_PAY+' coins each.'],
     ['💱','What coins are worth','100,000 coins = $1. Withdraw from '+MIN_WITHDRAW.toLocaleString()+' coins ($'+usd+'), one request per day, '+FEE_PERCENT+'% fee.'],
     ['💸','How withdrawals work','Send a request with your TON or USDT (BEP20) address. Every request is checked by hand and approved within '+WD_HOURS+' hours. Paid requests show in the Payouts channel. Not paid after '+WD_HOURS+' hours? Contact '+WD_CONTACT+'.'],
     ['🔒','Play fair','One account per person. Fake or cheating activity gets the account suspended.']
@@ -2325,6 +2360,7 @@ function howMaybe(){ let seen=false; try{ seen=localStorage.getItem('me_how_seen
 async function startApp(){
   try{
     try{ const wc = await api('wdConfig', {}, WD_URL); if(wc.min) MIN_WITHDRAW = Number(wc.min); if(wc.fee!==undefined) FEE_PERCENT = Number(wc.fee); if(wc.hours) WD_HOURS = Number(wc.hours); if(wc.contact) WD_CONTACT = String(wc.contact); }catch(e){}
+    try{ const fl = await api('flags', {}, FLAGS_URL); REVIEW = !!fl.review; }catch(e){}
     state = await loadState();
     await splashFinish();
     setTimeout(howMaybe, 700);
@@ -2505,6 +2541,7 @@ async function startApp(){
   setInterval(render, 1000);
   render();
   renderTasks();
+  if(REVIEW){ document.body.classList.add('rv'); showTab('play'); }
 }
 
 async function init(){
