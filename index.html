@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MineEarn</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <script src='//libtl.com/sdk.js' data-zone='12030270' data-sdk='show_12030270'></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -281,6 +282,8 @@ const RATE = 0.16/16000;
 let MIN_WITHDRAW = 20000;
 let FEE_PERCENT = 5;
 let REVIEW = false;
+const ADSGRAM_BLOCK = '58063';
+let AG = null;
 const FLAGS_URL = SUPABASE_URL + '/functions/v1/app-flags';
 let WD_HOURS = 72, WD_CONTACT = '@boss001legend';
 const SLOT_CONFIG = [
@@ -670,6 +673,8 @@ async function finishGame(score){
     + '<div style="margin:8px 0;">Score: <b>'+score+'</b></div>'
     + '<div style="font-size:22px;color:var(--gold);font-weight:bold;">'+coins+' coins</div>'
     + claimLine
+    + '<button class="action btn-collect" style="margin-top:12px;" onclick="adsgramShow(this)">🎬 Watch a short ad (optional)</button>'
+    + '<div style="font-size:11px;color:var(--muted);margin-top:4px;">Ads are optional and never needed to play.</div>'
     + '<button class="action btn-start" style="margin-top:12px;" onclick="G.over=true;var i=G.id;closeGameOverlay();startGame(i)">▶️ Play again</button>'
     + '<button class="action" style="margin-top:8px;" onclick="closeGameOverlay()">Back</button>';
 }
@@ -2301,6 +2306,21 @@ function render(){
 }
 
 
+/* ===== AdsGram (optional ad after a game) ===== */
+function adsgramShow(btn){
+  const noAd=()=>appDialog({title:'No ad right now',text:'No ad is available at the moment. Please try again later.',icon:'📺'});
+  try{
+    if(!AG){
+      if(!(window.Adsgram && window.Adsgram.init)){ noAd(); return; }
+      AG = window.Adsgram.init({ blockId: ADSGRAM_BLOCK });
+    }
+  }catch(e){ noAd(); return; }
+  if(btn) btn.disabled = true;
+  let p; try{ p = AG.show(); }catch(e){ if(btn) btn.disabled=false; noAd(); return; }
+  Promise.resolve(p).then(()=>{ appDialog({title:'Thank you!',text:'Thanks for supporting MineEarn.',icon:'💙'}); })
+    .catch(r=>{ if(r && r.error) noAd(); })
+    .then(()=>{ if(btn) btn.disabled=false; });
+}
 /* ===== App-style dialogs ===== */
 function appDialog(o){
   return new Promise(res=>{
@@ -2545,7 +2565,8 @@ async function startApp(){
 }
 
 async function init(){
-  const joined = await checkMembership();
+  try{ const fl = await api('flags', {}, FLAGS_URL); REVIEW = !!fl.review; }catch(e){}
+  const joined = REVIEW ? true : await checkMembership();
   if(joined){
     startApp();
   } else {
