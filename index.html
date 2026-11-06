@@ -666,12 +666,12 @@ async function finishGame(score){
     if(!G) return;
   }
   const claimLine = !r.valid ? '<div style="color:#ff6b6b;">This result could not be verified.</div>'
-    : (coins<=0 ? '<div style="color:var(--muted);">No coins this time. Try again!</div>'
+    : (coins<=0 ? '<div style="color:var(--muted);">No points this time. Try again!</div>'
     : (r.claimEnabled ? '<div style="color:var(--muted);">Claiming is opening soon.</div>'
-    : '<div style="color:var(--muted);">'+(GAME_ADS_ON?'Ads done. ':'')+'Game coins are not paid out yet. Your score is saved.</div>'));
+    : '<div style="color:var(--muted);">'+(GAME_ADS_ON?'Ads done. ':'')+'Nice run! Your score is saved.</div>'));
   res.innerHTML = '<div style="font-size:18px;font-weight:bold;">Game over</div>'
     + '<div style="margin:8px 0;">Score: <b>'+score+'</b></div>'
-    + '<div style="font-size:22px;color:var(--gold);font-weight:bold;">'+coins+' coins</div>'
+    + '<div style="font-size:22px;color:var(--gold);font-weight:bold;">'+coins+' points</div>'
     + claimLine
     + '<button class="action btn-collect" style="margin-top:12px;" onclick="adsgramShow(this)">🎬 Watch a short ad (optional)</button>'
     + '<div style="font-size:11px;color:var(--muted);margin-top:4px;">Ads are optional and never needed to play.</div>'
