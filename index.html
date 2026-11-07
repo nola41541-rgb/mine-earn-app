@@ -33,6 +33,13 @@
   .btn-done{background:#12304a!important;color:#7ecb7e!important;}
 
   .rv #btn-home,.rv #btn-mine{display:none!important;}
+  .rv .tab-center .orb{width:auto;height:auto;margin-top:0;background:none;border:none;box-shadow:none;border-radius:0;}
+  .rv .tab-center .orb svg{width:24px;height:24px;stroke:currentColor;stroke-width:1.8;fill:none;}
+  .rv .tab-center.active .orb{box-shadow:none;}
+  .rv .tab-center .orb svg *{fill:none;stroke:currentColor;}
+  .rv .tab-center.active .orb svg *{stroke:var(--gold);}
+  .rv .tab-center{color:#6f86b8;}
+  .rv .tab-center.active{color:var(--gold);}
   .dlg-back{position:fixed;inset:0;background:rgba(3,8,24,.72);display:flex;align-items:center;justify-content:center;z-index:300;padding:24px;backdrop-filter:blur(3px);}
   .dlg{width:100%;max-width:330px;background:linear-gradient(180deg,#132450,#0c1736);border:1px solid var(--line);border-radius:26px;padding:26px 22px 18px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.65);animation:dlgIn .18s ease-out;}
   @keyframes dlgIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
@@ -282,7 +289,7 @@ const RATE = 0.16/16000;
 let MIN_WITHDRAW = 20000;
 let FEE_PERCENT = 5;
 let REVIEW = false;
-const ADSGRAM_BLOCK = '58251';
+const ADSGRAM_BLOCK = '58588';
 let AG = null;
 const FLAGS_URL = SUPABASE_URL + '/functions/v1/app-flags';
 let WD_HOURS = 72, WD_CONTACT = '@boss001legend';
@@ -543,7 +550,7 @@ async function renderPlay(){
       + '<div class="gname">'+g.name+'</div>'
       + '<div class="gmeta"><div class="greward"><span class="coin"></span>250</div><div class="gpips">'+pips+'<span>'+left+'/'+gameStatus.max+'</span></div></div>'
       + '</div>';
-  }).join('') + '</div>';
+  }).join('') + '</div>' + (REVIEW ? '<div class="gcard" style="margin-top:14px;display:flex;align-items:center;gap:12px;padding:14px;"><div style="font-size:28px;">🎬</div><div style="flex:1;"><div class="gname">Sponsored ad</div><div class="gmeta" style="display:block;font-size:12px;opacity:.8;">Watch a short ad from our partner AdsGram. Optional.</div></div><button class="action btn-collect" style="width:auto;padding:10px 14px;margin:0;" onclick="adsgramShow(this)">▶ Watch</button></div>' : '');
 }
 
 let G = null;
@@ -1832,7 +1839,7 @@ async function renderTasks(){
         + '</div></div></div>';
     }).join('');
     if(NETWORK_TEST_ROWS_ON) h += '<div class="tk-empty" style="padding:14px;font-size:12px;">These are test ads. Coin rewards for them switch on once the ad networks approve the app.</div>';
-    if(REVIEW) h += '<div class="tk-card" style="border-left-color:#2f7bff;"><div class="tk-main"><div class="tk-title">Sponsored ad</div><div class="tk-meta">Watch a short ad from our partner AdsGram. Optional, it helps keep MineEarn free.</div><div class="tk-actions"><button class="tk-btn f" onclick="adsgramShow(this)">▶ Watch ad</button></div></div></div>';
+    if(REVIEW && !h) h = '<div class="tk-empty">No daily tasks right now. Check the other lists.</div>';
     container.innerHTML = h;
     return;
   }
