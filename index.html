@@ -1832,7 +1832,7 @@ async function renderTasks(){
         + '</div></div></div>';
     }).join('');
     if(NETWORK_TEST_ROWS_ON) h += '<div class="tk-empty" style="padding:14px;font-size:12px;">These are test ads. Coin rewards for them switch on once the ad networks approve the app.</div>';
-    if(REVIEW && !h) h = '<div class="tk-empty">No daily tasks right now. Check the other lists.</div>';
+    if(REVIEW) h += '<div class="tk-card" style="border-left-color:#2f7bff;"><div class="tk-main"><div class="tk-title">Sponsored ad</div><div class="tk-meta">Watch a short ad from our partner AdsGram. Optional, it helps keep MineEarn free.</div><div class="tk-actions"><button class="tk-btn f" onclick="adsgramShow(this)">▶ Watch ad</button></div></div></div>';
     container.innerHTML = h;
     return;
   }
