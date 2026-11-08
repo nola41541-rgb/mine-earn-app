@@ -1,0 +1,2894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MineEarn</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<script src='//libtl.com/sdk.js' data-zone='12030270' data-sdk='show_12030270'></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#070d24;--card:#0f1b3d;--card2:#0a1432;--line:rgba(90,170,255,0.2);--gold:#5cc8ff;--gold2:#2f7bff;--text:#fff;--muted:#8fa6d6;--field:#18295c;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(circle at 15% -8%,rgba(47,123,255,0.38),transparent 52%),radial-gradient(circle at 95% 8%,rgba(92,200,255,0.2),transparent 46%),var(--bg);background-attachment:fixed;color:var(--text);padding:14px 14px 118px 14px;min-height:100vh;}
+  h1{text-align:left;margin:6px 4px 14px;font-size:26px;font-weight:800;letter-spacing:-0.3px;}
+  .loading{text-align:center;padding:60px 20px;color:var(--muted);}
+  .balance{background:linear-gradient(145deg,#1a3a7a,#0f1b3d 60%);border:1px solid rgba(92,200,255,0.35);border-radius:24px;padding:20px;margin-bottom:14px;text-align:center;box-shadow:0 8px 30px rgba(47,123,255,0.08);}
+  .balance .coins{font-size:32px;font-weight:800;color:var(--gold);}
+  .balance .usd{color:var(--muted);font-size:13px;margin-top:4px;}
+  .slot{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:12px;}
+  .slot-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .slot-name{font-weight:800;font-size:17px;display:flex;align-items:center;gap:10px;}
+  .slot-badge{width:30px;height:30px;border-radius:10px;background:linear-gradient(145deg,#6fdcff,#2f7bff);color:#031233;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;}
+  .slot-rate{color:var(--gold);font-size:13px;font-weight:700;}
+  .slot-progress{font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .bar{background:var(--field);border-radius:8px;height:8px;overflow:hidden;margin-bottom:12px;}
+  .bar-fill{background:linear-gradient(90deg,#6fdcff,#2f7bff);height:100%;border-radius:8px;}
+  button.action{width:100%;padding:13px;border:1px solid var(--line);border-radius:14px;font-size:15px;font-weight:700;background:var(--field);color:#fff;}
+  button.action:active{transform:scale(0.98);}
+  .btn-start{background:linear-gradient(180deg,#2fd36f,#17a24a)!important;color:#05240f!important;border:none!important;}
+  .btn-wait{background:var(--card2)!important;color:var(--muted)!important;}
+  .btn-collect{background:linear-gradient(180deg,#6fdcff,#2f86ff)!important;color:#031233!important;border:none!important;}
+  .btn-done{background:#12304a!important;color:#7ecb7e!important;}
+
+  .rv #btn-home,.rv #btn-mine{display:none!important;}
+  .rv .tk-cats,.rv .tk-sub{display:none!important;}
+  .rv .tab-center .orb{width:auto;height:auto;margin-top:0;background:none;border:none;box-shadow:none;border-radius:0;}
+  .rv .tab-center .orb svg{width:24px;height:24px;stroke:currentColor;stroke-width:1.8;fill:none;}
+  .rv .tab-center.active .orb{box-shadow:none;}
+  .rv .tab-center .orb svg *{fill:none;stroke:currentColor;}
+  .rv .tab-center.active .orb svg *{stroke:var(--gold);}
+  .rv .tab-center{color:#6f86b8;}
+  .rv .tab-center.active{color:var(--gold);}
+  .dlg-back{position:fixed;inset:0;background:rgba(3,8,24,.72);display:flex;align-items:center;justify-content:center;z-index:300;padding:24px;backdrop-filter:blur(3px);}
+  .dlg{width:100%;max-width:330px;background:linear-gradient(180deg,#132450,#0c1736);border:1px solid var(--line);border-radius:26px;padding:26px 22px 18px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.65);animation:dlgIn .18s ease-out;}
+  @keyframes dlgIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+  .dlg-ic{font-size:44px;line-height:1;margin-bottom:10px;}
+  .dlg-t{font-size:20px;font-weight:800;color:#fff;margin-bottom:8px;}
+  .dlg-m{font-size:14px;color:#c5d3f2;line-height:1.5;white-space:pre-line;margin-bottom:18px;word-break:break-word;}
+  .dlg-ok{width:100%;border:none;border-radius:16px;padding:15px;font-size:16px;font-weight:800;background:linear-gradient(180deg,#6fdcff,#2f86ff);color:#031233;}
+  .dlg-no{width:100%;background:none;border:none;color:var(--muted);font-size:14px;font-weight:600;padding:12px 0 2px;}
+  .hw-dots{display:flex;justify-content:center;gap:6px;margin:4px 0 14px;}
+  .hw-dots i{width:7px;height:7px;border-radius:50%;background:#2a3d73;display:block;}
+  .hw-dots i.on{background:#5cc8ff;width:20px;border-radius:4px;}
+  .copy-btn{margin-top:6px;border:1px solid var(--line);background:var(--field);color:#8fdcff;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;z-index:50;}
+  .modal-box{background:var(--card);border:1px solid var(--line);padding:24px;border-radius:22px;text-align:center;max-width:280px;}
+  .tabbar{position:fixed;bottom:12px;left:12px;right:12px;height:66px;display:flex;align-items:center;background:rgba(15,27,61,0.97);border:1px solid var(--line);border-radius:34px;z-index:40;box-shadow:0 10px 30px rgba(0,0,0,0.6);}
+  .tab-btn{flex:1;background:none;border:none;color:#6f86b8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;height:100%;padding:0;}
+  .tab-btn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .tab-btn.active{color:var(--gold);}
+  .tab-center{position:relative;}
+  .tab-center .orb{width:68px;height:68px;border-radius:50%;margin-top:-38px;background:radial-gradient(circle at 50% 35%,#1a2c66,#070d24);border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;box-shadow:0 0 22px rgba(60,160,255,0.45),0 6px 14px rgba(0,0,0,0.6);}
+  .tab-center .orb svg{width:34px;height:34px;fill:var(--gold);stroke:none;}
+  .tab-center.active .orb{box-shadow:0 0 30px rgba(60,160,255,0.8),0 6px 14px rgba(0,0,0,0.6);}
+  .tab-center span.lbl{margin-top:2px;}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+  .profile-card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;text-align:center;margin-bottom:16px;}
+  .profile-avatar{width:76px;height:76px;border-radius:50%;background:var(--field);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 10px;overflow:hidden;}
+  .profile-avatar img{width:100%;height:100%;object-fit:cover;}
+  .profile-name{font-size:19px;font-weight:800;}
+  .profile-username{color:var(--muted);font-size:13px;margin-bottom:14px;}
+  .stat-row{display:flex;justify-content:space-between;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:13px 16px;margin-bottom:8px;}
+  .stat-label{color:var(--muted);font-size:13px;}
+  .stat-value{font-weight:800;color:var(--gold);}
+  .form-group{margin-bottom:12px;}
+  .form-label{font-size:13px;color:var(--muted);margin-bottom:6px;display:block;}
+  .form-input{width:100%;padding:13px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:#fff;font-size:15px;}
+  .method-row{display:flex;gap:8px;margin-bottom:12px;}
+  .method-btn{flex:1;padding:11px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:var(--muted);font-size:13px;text-align:center;}
+  .method-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(92,200,255,0.08);}
+  .wd-item{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:8px;}
+  .wd-top{display:flex;justify-content:space-between;font-weight:700;}
+  .wd-sub{color:var(--muted);font-size:12px;margin-top:4px;}
+  .badge-pending{color:#f0a500;font-size:12px;}
+  .badge-approved{color:#7ecb7e;font-size:12px;}
+  .error-msg{color:#ff6b6b;font-size:13px;margin-bottom:8px;min-height:16px;}
+  .success-msg{color:#7ecb7e;font-size:13px;margin-bottom:8px;min-height:16px;}
+  .section-title{font-size:15px;font-weight:800;margin:18px 4px 10px;}
+  .task-item{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:15px;margin-bottom:10px;}
+  .task-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .task-title{font-weight:700;font-size:15px;}
+  .task-reward{color:var(--gold);font-size:13px;font-weight:700;}
+  .task-sub{color:var(--muted);font-size:12px;margin-bottom:10px;}
+  .task-btn-row{display:flex;gap:8px;}
+  .task-btn{flex:1;padding:11px;border-radius:12px;border:none;font-size:13px;font-weight:700;}
+  .btn-open{background:var(--field);color:#fff;border:1px solid var(--line);}
+  .btn-claim{background:linear-gradient(180deg,#6fdcff,#2f86ff);color:#031233;}
+  .btn-full{background:var(--card2);color:var(--muted);}
+  .wallet-box{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--muted);word-break:break-all;}
+  .wallet-box b{color:#fff;}
+  .support-btn{display:block;text-align:center;background:var(--card2);border:1px solid var(--line);color:var(--gold);padding:13px;border-radius:14px;text-decoration:none;font-weight:700;margin-top:10px;}
+  .gate-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:20px;}
+  .gate-icon{font-size:48px;margin-bottom:16px;}
+  .gate-title{font-size:20px;font-weight:800;margin-bottom:8px;}
+  .gate-sub{color:var(--muted);font-size:14px;margin-bottom:24px;}
+  .gate-channel-btn{display:block;width:100%;max-width:320px;background:var(--card);border:1px solid var(--line);color:#fff;padding:14px;border-radius:14px;text-decoration:none;font-weight:700;margin-bottom:10px;}
+  .gate-verify-btn{width:100%;max-width:320px;background:linear-gradient(180deg,#6fdcff,#2f86ff);color:#031233;padding:14px;border:none;border-radius:14px;font-weight:800;font-size:15px;margin-top:10px;}
+  .gate-error{color:#ff6b6b;font-size:13px;margin-top:12px;min-height:16px;}
+  .chip-row{display:flex;gap:8px;margin:0 4px 14px;flex-wrap:wrap;}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:7px 12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .chip b{color:var(--gold);font-size:13px;}
+  .coin{display:inline-block;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe27a,#ff9d00);border:1.5px solid #ffcf4a;position:relative;flex:none;}
+  .coin::after{content:"";position:absolute;left:4px;top:3px;width:5px;height:8px;background:#7a4500;clip-path:polygon(60% 0,15% 55%,50% 55%,35% 100%,90% 40%,52% 40%);}
+  .game-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .gcard{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:9px 9px 13px;position:relative;}
+  .gcard:active{transform:scale(0.98);}
+  .gthumb{height:124px;border-radius:17px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,0.08);}
+  .gthumb svg{width:100%;height:100%;display:block;}
+  .gplay{position:absolute;right:8px;bottom:8px;width:44px;height:44px;border-radius:50%;background:linear-gradient(180deg,#6fdcff,#2f86ff);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.5);}
+  .gplay svg{width:18px;height:18px;fill:#031233;margin-left:2px;}
+  .gcat{font-size:11px;font-weight:800;letter-spacing:1.2px;margin:12px 4px 2px;}
+  .gname{font-size:18px;font-weight:800;margin:0 4px 10px;}
+  .gmeta{display:flex;justify-content:space-between;align-items:center;margin:0 4px;}
+  .greward{display:flex;align-items:center;gap:6px;font-weight:800;color:var(--gold);font-size:17px;}
+  .gpips{display:flex;align-items:center;gap:3px;color:var(--muted);font-size:12px;font-weight:700;}
+  .gpip{width:6px;height:15px;border-radius:3px;background:#223566;}
+  .gpip.on{background:linear-gradient(180deg,#6fdcff,#2f7bff);}
+  .gpips span{margin-left:4px;}
+  .gdim{opacity:0.5;}
+
+  .balance{position:relative;}
+  .rcoin{position:absolute;top:-36px;right:-12px;width:78px;height:78px;perspective:300px;pointer-events:none;z-index:2;animation:coinFloat 2.4s ease-in-out infinite;}
+  .rcoin i{position:relative;display:flex;align-items:center;justify-content:center;width:78px;height:78px;border-radius:50%;font-style:normal;font-weight:900;font-size:38px;color:#8a5a00;text-shadow:0 1px 0 rgba(255,255,255,.55);background:radial-gradient(circle at 32% 28%,#fffbd0 0%,#ffe27a 22%,#ffc928 52%,#d98f00 100%);box-shadow:0 0 0 4px #f5b800,0 0 0 7px rgba(255,236,150,.55),inset 0 0 0 7px rgba(190,120,0,.35),0 0 34px 8px rgba(255,200,40,.6);overflow:hidden;animation:coinSpin 3.2s linear infinite,coinGlow 1.6s ease-in-out infinite;}
+  .rcoin i:before{content:'';position:absolute;top:-20%;left:-60%;width:40%;height:140%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);transform:rotate(20deg);animation:coinShine 2.2s ease-in-out infinite;}
+  .rcoin b{position:absolute;color:#fff6c2;font-size:14px;animation:twinkle 1.4s ease-in-out infinite;}
+  .rcoin b.t1{left:-6px;top:12px;} .rcoin b.t2{right:-4px;bottom:10px;animation-delay:.7s;}
+  @keyframes coinSpin{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
+  @keyframes coinFloat{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(7px) rotate(6deg)}}
+  @keyframes coinGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}
+  @keyframes coinShine{0%{left:-60%}60%,100%{left:130%}}
+  @keyframes twinkle{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.2)}}
+  .adf-r{font-size:34px;font-weight:900;color:var(--gold);margin:0 0 8px;}
+  .gf{position:relative;height:236px;border-radius:24px;overflow:hidden;margin-bottom:6px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.45);}
+  .gf .gfbg,.gf .gfbg svg{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .gf .gfsh{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,10,30,.15) 0%,rgba(4,10,30,.35) 45%,rgba(4,10,30,.92) 100%);}
+  .gf .gftag{position:absolute;left:14px;top:14px;background:rgba(0,0,0,.45);border-radius:12px;padding:4px 10px;font-size:11px;font-weight:800;letter-spacing:.8px;color:#ffd24d;}
+  .gf .gfin{position:absolute;left:16px;right:16px;bottom:14px;}
+  .gf .gfn{font-size:26px;font-weight:900;}
+  .gf .gfm{font-size:12px;color:#c5d3f2;margin:3px 0 12px;font-weight:700;}
+  .gf .gfm b{color:var(--gold);}
+  .gf .gfplay{width:150px;border:none;border-radius:14px;padding:12px;font-size:15px;font-weight:900;background:linear-gradient(#ffd24d,#f5a300);color:#222;}
+  .gf.gdim{opacity:.55;}
+  .gmore{font-size:13px;font-weight:800;color:var(--muted);margin:20px 2px 14px;letter-spacing:.5px;}
+  .grow2{display:grid;grid-template-columns:repeat(3,1fr);gap:20px 8px;justify-items:center;}
+  .gic{text-align:center;width:100%;max-width:112px;}
+  .gic .gicc{width:100%;aspect-ratio:1/1;border-radius:50%;overflow:hidden;margin:auto;border:4px solid rgba(255,210,77,.4);box-shadow:0 6px 16px rgba(0,0,0,.5);}
+  .gic .gicc svg{width:100%;height:100%;display:block;}
+  .gic.sel .gicc{border-color:#ffd24d;box-shadow:0 0 18px rgba(255,210,77,.7);}
+  .gic .gicn{margin-top:8px;font-size:12px;font-weight:800;line-height:1.2;}
+  .gic.gdim{opacity:.5;}
+  .grow{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,var(--card),var(--card2));border:1px solid var(--line);border-left-width:5px;border-radius:18px;padding:10px 12px 10px 10px;margin-bottom:11px;position:relative;}
+  .grow:active{transform:scale(0.985);}
+  .grow .gt{width:86px;height:68px;border-radius:14px;overflow:hidden;flex:none;border:1px solid rgba(255,255,255,0.1);}
+  .grow .gt svg{width:100%;height:100%;display:block;}
+  .grow .gi{flex:1;min-width:0;}
+  .grow .gc{font-size:10px;font-weight:800;letter-spacing:1.4px;}
+  .grow .gn{font-size:17px;font-weight:800;margin:1px 0 5px;}
+  .grow .gm{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);font-weight:700;}
+  .grow .gm b{color:var(--gold);}
+  .grow .gb{width:42px;height:42px;border-radius:14px;flex:none;background:linear-gradient(180deg,#6fdcff,#2f86ff);display:flex;align-items:center;justify-content:center;}
+  .grow .gb svg{width:17px;height:17px;fill:#031233;margin-left:2px;}
+  .grow.gdim{opacity:0.5;}
+  .gdim .gplay{background:#223566;}
+  .gdim .gplay svg{fill:#6f86b8;}
+  .splash{min-height:92vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;}
+  .splash-logo{width:104px;height:104px;border-radius:30px;background:linear-gradient(145deg,#6fdcff,#2f7bff 60%,#1a3fa8);display:flex;align-items:center;justify-content:center;box-shadow:0 0 50px rgba(60,150,255,0.55);animation:pulse 1.6s ease-in-out infinite;}
+  .splash-logo svg{width:58px;height:58px;stroke:#fff;fill:rgba(255,255,255,0.18);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.07);}}
+  .splash-title{font-size:30px;font-weight:800;margin-top:22px;letter-spacing:-0.4px;}
+  .splash-sub{color:var(--muted);font-size:14px;margin-top:4px;}
+  .splash-bar{width:78%;max-width:300px;height:10px;border-radius:8px;background:var(--field);margin-top:34px;overflow:hidden;}
+  .splash-fill{height:100%;width:0%;background:linear-gradient(90deg,#2f7bff,#6fdcff);border-radius:8px;box-shadow:0 0 14px rgba(80,180,255,0.7);transition:width .15s linear;}
+  .splash-msg{color:var(--muted);font-size:13px;margin-top:12px;}
+  .splash-pct{font-size:22px;font-weight:800;color:var(--gold);margin-top:6px;}
+  .home-head{display:flex;align-items:center;gap:12px;margin:4px 4px 14px;}
+  .home-avatar{width:54px;height:54px;border-radius:50%;background:var(--field);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex:none;}
+  .home-avatar img{width:100%;height:100%;object-fit:cover;}
+  .home-hi{color:var(--muted);font-size:13px;}
+  .home-name{font-size:20px;font-weight:800;}
+  .tile-row{display:flex;gap:8px;margin-bottom:6px;}
+  .tile{flex:1;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 8px;text-align:center;}
+  .tile-num{font-size:20px;font-weight:800;color:var(--gold);}
+  .tile-lbl{font-size:11px;color:var(--muted);margin-top:3px;}
+  .soon{font-size:10px;font-weight:700;color:var(--muted);background:var(--field);border-radius:10px;padding:3px 8px;margin-left:6px;vertical-align:middle;}
+  .login-row{display:flex;gap:6px;margin-bottom:6px;}
+  .day{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 2px;text-align:center;opacity:0.75;}
+  .day b{display:block;font-size:10px;color:var(--muted);font-weight:600;}
+  .day span{display:block;font-size:15px;font-weight:800;color:var(--gold);margin-top:4px;}
+  .earn-card{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:10px;}
+  .earn-card:active{transform:scale(0.98);}
+  .earn-card.dim{opacity:0.6;}
+  .earn-ic{width:44px;height:44px;border-radius:14px;background:linear-gradient(145deg,#2c4a9a,#17285a);display:flex;align-items:center;justify-content:center;font-size:22px;flex:none;}
+  .earn-tx{flex:1;}
+  .earn-tx b{display:block;font-size:15px;}
+  .earn-tx span{display:block;font-size:12px;color:var(--muted);margin-top:2px;}
+  .earn-go{color:var(--gold);font-size:26px;}
+  .invite-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px;margin-bottom:12px;}
+  .invite-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+  .invite-link{background:var(--card2);border:1px dashed var(--line);border-radius:12px;padding:10px;font-size:12px;color:var(--gold);word-break:break-all;margin-bottom:10px;text-align:center;}
+  .tk-sub{color:var(--muted);font-size:13px;margin:-8px 4px 14px;}
+  .tk-cats{display:flex;gap:4px;background:var(--card2);border:1px solid var(--line);border-radius:22px;padding:5px;margin-bottom:12px;}
+  .tk-cat{flex:1;position:relative;background:none;border:none;color:var(--muted);border-radius:18px;padding:9px 2px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:700;}
+  .tk-cat svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .tk-cat.active{background:linear-gradient(160deg,#2f7bff,#1b3f9e);color:#fff;box-shadow:0 4px 14px rgba(47,123,255,0.4);}
+  .tk-dot{position:absolute;top:4px;right:10px;width:9px;height:9px;border-radius:50%;background:#ff5d6c;display:none;}
+  .tk-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .tk-view{display:flex;gap:18px;padding-left:4px;}
+  .tk-view button{background:none;border:none;color:var(--muted);font-size:15px;font-weight:700;padding:6px 0;border-bottom:3px solid transparent;}
+  .tk-view button.active{color:#fff;border-bottom-color:var(--gold);}
+  .tk-new{background:none;border:1.5px solid var(--gold);color:var(--gold);border-radius:20px;padding:7px 14px;font-weight:800;font-size:13px;}
+  .tk-count{color:var(--muted);font-size:12px;margin:0 4px 10px;}
+  .tk-card{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--gold2);border-radius:18px;padding:12px;margin-bottom:10px;align-items:stretch;}
+  .tk-card.done{opacity:0.62;border-left-color:#31d17c;}
+  .tk-badge{width:62px;flex:none;border-radius:14px;background:linear-gradient(170deg,#18295c,#0d1738);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+  .tk-badge b{font-size:17px;color:var(--gold);font-weight:800;}
+  .tk-badge small{font-size:9px;color:var(--muted);letter-spacing:1px;}
+  .tk-main{flex:1;min-width:0;}
+  .tk-title{font-weight:800;font-size:15px;word-break:break-word;}
+  .tk-meta{color:var(--muted);font-size:12px;margin:3px 0 9px;}
+  .tk-actions{display:flex;gap:8px;}
+  .tk-btn{border:none;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:800;}
+  .tk-btn.o{background:transparent;border:1.5px solid var(--line);color:#fff;}
+  .tk-btn.f{background:linear-gradient(180deg,#6fdcff,#2f86ff);color:#031233;}
+  .tk-btn.d{background:#12304a;color:#7ecb7e;}
+  .tk-empty{text-align:center;color:var(--muted);padding:34px 14px;font-size:14px;}
+  .tk-ring{width:62px;height:62px;flex:none;position:relative;}
+  .tk-ring svg{width:62px;height:62px;transform:rotate(-90deg);}
+  .tk-ring circle{fill:none;stroke-width:6;}
+  .tk-ring .bg{stroke:#18295c;}
+  .tk-ring .fg{stroke:url(#ringG);stroke-linecap:round;transition:stroke-dashoffset .4s;}
+  .tk-ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
+  .tk-test{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.8px;color:#ffd24d;background:rgba(255,210,77,0.12);border-radius:8px;padding:2px 6px;margin-left:6px;vertical-align:middle;}
+
+
+  .com{position:fixed;inset:0;z-index:88;background:radial-gradient(circle at 15% -8%,rgba(47,123,255,0.38),transparent 52%),var(--bg);overflow:auto;padding:14px 14px 40px;display:none;}
+  .com.open{display:block;}
+  .com-row{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:8px;font-size:13px;}
+  .com-row b{color:var(--gold);}
+  .com-row small{display:block;color:var(--muted);font-size:11px;margin-top:2px;word-break:break-all;}
+  .com-rank{width:28px;height:28px;border-radius:9px;background:linear-gradient(145deg,#6fdcff,#2f7bff);color:#031233;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-right:10px;flex:none;}
+  .com-doc h3{margin:16px 2px 6px;font-size:15px;}
+  .com-doc p{margin:0 2px 8px;color:var(--muted);font-size:13px;line-height:1.55;}
+  .legal-row{display:flex;justify-content:center;gap:14px;margin:16px 0 4px;font-size:12px;}
+  .legal-row a{color:var(--muted);text-decoration:underline;}
+  .adm{position:fixed;inset:0;z-index:90;background:radial-gradient(circle at 15% -8%,rgba(47,123,255,0.38),transparent 52%),var(--bg);overflow:auto;padding:14px 14px 40px;display:none;}
+  .adm.open{display:block;}
+  .adm-head{display:flex;justify-content:space-between;align-items:center;margin:4px 2px 12px;}
+  .adm-head h1{margin:0;font-size:22px;}
+  .adm-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+  .adm-tabs button{flex:1 1 28%;padding:10px 4px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--muted);font-size:13px;font-weight:800;}
+  .adm-tabs button.on{background:linear-gradient(180deg,#6fdcff,#2f86ff);color:#031233;border:none;}
+  .adm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .adm-stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;}
+  .adm-stat b{display:block;font-size:20px;color:var(--gold);margin-bottom:2px;}
+  .adm-stat span{font-size:12px;color:var(--muted);}
+  .adm-user{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:8px;}
+  .adm-row{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin:3px 0;}
+  .adm-row span{color:var(--muted);}
+  .adm-log{font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);padding:8px 2px;word-break:break-word;}
+  .adm-log b{color:#fff;}
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:70;display:none;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;background:var(--card);border-top:1px solid var(--line);border-radius:26px 26px 0 0;padding:10px 16px 24px;z-index:71;transform:translateY(105%);transition:transform .25s;}
+  .sheet.open{transform:none;}
+  .sheet-grip{width:44px;height:5px;border-radius:3px;background:var(--field);margin:0 auto 12px;}
+  .sheet-title{font-size:18px;font-weight:800;margin-bottom:12px;}
+  .adm-box{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px 16px;text-align:center;}
+</style>
+<script src="https://ad.gigapub.tech/script?id=8939"></script>
+</head>
+<body>
+<div id="app"><div class="splash" id="splash">
+  <div class="splash-logo"><svg viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M9 3l-2 6 5 12 5-12-2-6"/></svg></div>
+  <div class="splash-title">MineEarn</div>
+  <div class="splash-sub">Watch • Play • Earn</div>
+  <div class="splash-bar"><div class="splash-fill" id="splFill"></div></div>
+  <div class="splash-pct" id="splPct">0%</div>
+  <div class="splash-msg" id="splMsg">Preparing your mine...</div>
+</div></div>
+
+<nav class="tabbar" id="tabbar" style="display:none;">
+  <button class="tab-btn active" id="btn-home" onclick="showTab('home')"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg><span>Home</span></button>
+  <button class="tab-btn" id="btn-mine" onclick="showTab('mine')"><svg viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M9 3l-2 6 5 12 5-12-2-6"/></svg><span>Mine</span></button>
+  <button class="tab-btn tab-center" id="btn-play" onclick="showTab('play')"><span class="orb"><svg viewBox="0 0 24 24"><path d="M7 7h10a5 5 0 015 5v2a3.2 3.2 0 01-5.4 2.3L15 15H9l-1.6 1.3A3.2 3.2 0 012 14v-2a5 5 0 015-5z"/><path d="M7.5 10v4M5.5 12h4" stroke="#0f1b3d" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="15.7" cy="11" r="1.1" fill="#0f1b3d"/><circle cx="18.3" cy="13" r="1.1" fill="#0f1b3d"/></svg></span><span class="lbl">Play</span></button>
+  <button class="tab-btn" id="btn-tasks" onclick="showTab('tasks')"><svg viewBox="0 0 24 24"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg><span>Tasks</span></button>
+  <button class="tab-btn" id="btn-profile" onclick="showTab('profile')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><span>Profile</span></button>
+</nav>
+
+<div class="modal" id="adModal" style="display:none;">
+  <div class="modal-box">
+    <div id="adText">Loading ad...</div>
+  </div>
+</div>
+
+<script>
+let SPL = { pct:0, t:null };
+function splashPaint(){
+  const f = document.getElementById('splFill'); if(!f) return;
+  const p = Math.round(SPL.pct);
+  f.style.width = p+'%';
+  document.getElementById('splPct').textContent = p+'%';
+  document.getElementById('splMsg').textContent = p<25 ? 'Preparing your mine...' : p<50 ? 'Connecting to MineEarn...' : p<75 ? 'Counting your coins...' : p<100 ? 'Almost ready...' : 'Ready!';
+}
+SPL.t = setInterval(()=>{ SPL.pct = Math.min(92, SPL.pct + Math.max(0.35,(92-SPL.pct)*0.05)); splashPaint(); }, 100);
+function splashFinish(){ return new Promise(r=>{ clearInterval(SPL.t); SPL.pct = 100; splashPaint(); setTimeout(r, 500); }); }
+const SUPABASE_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0YXFyYWhpcWpma2RmY3JiZXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4NDgwMjMsImV4cCI6MjEwNTQyNDAyM30.2DcbBtWcrbWYOAgyanz9-CsFdoK6Ynwu-CMn9w9bZcc';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CHECK_MEMBERSHIP_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/gate-check';
+const CHANNELS_TO_JOIN = [
+  { name: 'Boss Crypto Hub', link: 'https://t.me/bosscryptohub' },
+  { name: 'MineEarn Announcement', link: 'https://t.me/mineearnhub' },
+];
+
+const OWNER_TG_ID = '8756903037';
+const SUPPORT_LINK = 'https://t.me/mineearnsupport';
+const WALLET_USDT = '0xc57a0B59CC0Fad7Fc8a12fCB83F1Fc1B8E7eC951';
+const WALLET_TON = 'UQDcm7tz1hnpaVus3UzLIkeV-scuOOLbgskgm3qG2SGmj4ai';
+
+const RATE = 0.16/16000;
+let MIN_WITHDRAW = 20000;
+let FEE_PERCENT = 5;
+let REVIEW = false;
+const ADSGRAM_BLOCK = '58588';
+let AG = null;
+const FLAGS_URL = SUPABASE_URL + '/functions/v1/app-flags';
+let WD_HOURS = 72, WD_CONTACT = '@boss001legend';
+const SLOT_CONFIG = [
+  {name:"Slot 1", coins:100, ads:2},
+  {name:"Slot 2", coins:100, ads:2},
+  {name:"Slot 3", coins:100, ads:2},
+  {name:"Slot 4", coins:100, ads:2},
+  {name:"Slot 5", coins:100, ads:2},
+];
+const MAX_SESSIONS = 5;
+// ---- Review mode switches. Set both to true again after an ad network approves the app. ----
+const GAME_ADS_ON = false;      // true = games show the "watch ad" steps (continue + collect)
+const NETWORK_TEST_ROWS_ON = false; // true = show the GigaPub / USL Ads rows in Tasks > Daily
+const GIGA_ON = true;           // real GigaPub ad row in Tasks > Daily (server-confirmed)
+let GIGA = null;
+let AD_PAY = 50; // coins per ad; the server tells us the live value
+const SESSION_MS = 30*60*1000;
+let selectedMethod = 'USDT_BEP20';
+
+function getTelegramUser(){
+  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user){
+    return window.Telegram.WebApp.initDataUnsafe.user;
+  }
+  return null;
+}
+function getTelegramId(){
+  const u = getTelegramUser();
+  if(u) return String(u.id);
+  let testId = localStorage.getItem('testTelegramId');
+  if(!testId){
+    testId = 'test_' + Math.random().toString(36).slice(2,10);
+    localStorage.setItem('testTelegramId', testId);
+  }
+  return testId;
+}
+const TG_ID = getTelegramId();
+const TG_USER = getTelegramUser();
+const STATS_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-stats';
+const ADMIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-hub';
+const LOGIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/login-hub';
+const GIGA_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/giga-hub';
+const MT_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/monetag-hub';
+let MTS = null;
+const AG_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/adsgram-hub';
+let AGS = null;
+const CAT_LABEL = {social:'Social',daily:'Daily Wins',exclusive:'Special',partner:'Featured'};
+const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-pro';
+const TASK_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/task-hub';
+const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-v2';
+const BOT_APP_LINK = 'https://t.me/mineearnx_bot/mineearn';
+function myRefLink(){ return BOT_APP_LINK + '?startapp=' + TG_ID; }
+const IS_OWNER = TG_ID === OWNER_TG_ID;
+let state = null;
+
+function defaultSlots(){
+  return SLOT_CONFIG.map(()=>({sessions:0, state:'idle', endTime:null, adsWatched:0}));
+}
+
+async function checkMembership(){
+  if(IS_OWNER) return true;
+  try{
+    const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
+    const res = await fetch(CHECK_MEMBERSHIP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ initData })
+    });
+    const data = await res.json();
+    window.lastGateInfo = data.ok ? (data.joined ? 'joined' : 'not joined yet') : (data.error || 'could not check');
+    return !!(data.ok && data.joined);
+  }catch(e){
+    console.error('Membership check failed', e);
+    window.lastGateInfo = 'network error, try again';
+    return false;
+  }
+}
+
+function renderGate(){
+  const channelsHtml = CHANNELS_TO_JOIN.map(c=>
+    '<a class="gate-channel-btn" href="'+c.link+'" target="_blank">🔗 Join '+c.name+'</a>'
+  ).join('');
+  document.getElementById('app').innerHTML = `
+    <div class="gate-screen">
+      <div class="gate-icon">🔒</div>
+      <div class="gate-title">Join our channels to continue</div>
+      <div class="gate-sub">You must be a member of both channels below to use MineEarn.</div>
+      ${channelsHtml}
+      <button class="gate-verify-btn" onclick="handleVerify()">✅ I've Joined - Verify</button>
+      <div class="gate-error" id="gateError"></div>
+    </div>
+  `;
+}
+
+async function handleVerify(){
+  const errBox = document.getElementById('gateError');
+  errBox.textContent = 'Checking...';
+  const ok = await checkMembership();
+  if(ok){
+    startApp();
+  } else {
+    errBox.textContent = 'Not verified yet. Join both channels, then tap verify again. (' + (window.lastGateInfo||'no response') + ')';
+  }
+}
+
+const API_URL = SUPABASE_URL + '/functions/v1/mine-v2';
+const WD_URL = SUPABASE_URL + '/functions/v1/smart-v3';
+// Phone clocks can be wrong, so timers use Telegram's server time (auth_date) as the reference
+let CLOCK_OFFSET = 0;
+function nowMs(){ return Date.now() + CLOCK_OFFSET; }
+(function(){
+  try{
+    const ad = Number(window.Telegram.WebApp.initDataUnsafe.auth_date);
+    if(ad > 0){
+      const off = ad*1000 - Date.now();
+      if(Math.abs(off) < 12*3600*1000) CLOCK_OFFSET = off;
+    }
+  }catch(e){}
+})();
+// After the server sets a fresh 30-minute timer, use it to correct the offset precisely
+function calibrate(slot){
+  if(slot && slot.endTime && slot.state==='mining'){
+    const off = (Number(slot.endTime) - SESSION_MS) - Date.now();
+    if(Math.abs(off) < 12*3600*1000) CLOCK_OFFSET = off;
+  }
+}
+async function api(action, payload, url){
+  const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
+  const res = await fetch(url || API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY },
+    body: JSON.stringify(Object.assign({ action, initData }, payload || {}))
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+function applyServerState(s){
+  state.balance = s.balance;
+  state.slots = s.slots;
+  state.referralCount = s.referralCount;
+  state.tasksCompleted = s.tasksCompleted;
+}
+async function loadState(){
+  const r = await api('load');
+  if(r.reward) AD_PAY = Number(r.reward) || 50;
+  const s = r.state;
+  s.slots.forEach(sl=>{ if(sl.state==='watching') sl.state='mining'; });
+  return s;
+}
+// All saving now happens on the server; kept as a no-op so old calls are harmless
+async function saveState(){}
+
+function fmtTime(ms){
+  if(ms<0) ms=0;
+  const totalSec = Math.floor(ms/1000);
+  const h = Math.floor(totalSec/3600);
+  const m = Math.floor((totalSec%3600)/60);
+  const s = totalSec%60;
+  return String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
+}
+
+// Monetag rewarded interstitial (zone 12030270)
+function preloadAd(){
+  try{
+    if(typeof show_12030270==='function'){
+      show_12030270({ type:'preload' }).catch(()=>{});
+    }
+  }catch(e){}
+}
+window.addEventListener('load', ()=>setTimeout(preloadAd, 1500));
+
+// Resolves true only if the ad finished without error
+async function watchAd(ymid){
+  if(typeof show_12030270!=='function'){
+    alert('Ads are not available right now. Please try again in a moment.');
+    return false;
+  }
+  try{
+    await show_12030270({ ymid:String(ymid) });
+    preloadAd();
+    return true;
+  }catch(e){
+    console.error('Ad error', e);
+    alert('Ad failed or none is available right now. Please try again.');
+    return false;
+  }
+}
+
+// One ad per tap: the user must press "Watch ad" before every single ad (no auto-chaining)
+async function handleCollect(i){
+  const cfg = SLOT_CONFIG[i];
+  const slot = state.slots[i];
+  if(slot.busy) return;
+  if(slot.state!=='ready' && slot.state!=='watching') return;
+  if(slot.state==='ready'){ slot.state='watching'; slot.adsWatched=0; slot.ymids=[]; }
+  if(!slot.ymids) slot.ymids = [];
+  slot.busy = true; render();
+  if(slot.adsWatched < cfg.ads){
+    let ymid = null;
+    try{ ymid = (await api('adStart')).ymid; }
+    catch(e){
+      alert(e.message);
+      slot.busy = false;
+      if(slot.adsWatched===0) slot.state='ready';
+      render(); return;
+    }
+    const watched = await watchAd(ymid);
+    if(!watched){ slot.busy = false; render(); return; }
+    slot.ymids.push(ymid);
+    slot.adsWatched++;
+    if(slot.adsWatched < cfg.ads){ slot.busy = false; render(); adFinished({ progress:'Ad '+slot.adsWatched+' of '+cfg.ads+' done. Watch the next ad to collect your coins.' }); return; }
+  }
+  // all required ads watched -> collect (retry while Monetag confirms)
+  let done = false, lastErr = '';
+  for(let t=0; t<8 && !done; t++){
+    try{
+      const r = await api('collect', { i, ymids: slot.ymids });
+      applyServerState(r.state);
+      calibrate(state.slots[i]);
+      done = true;
+    }catch(e){
+      lastErr = e.message;
+      if(lastErr.indexOf('not confirmed yet')===-1) break;
+      await new Promise(res=>setTimeout(res, 2500));
+    }
+  }
+  const cur = state.slots[i];
+  cur.busy = false;
+  if(!done){ alert(lastErr); }
+  else { cur.ymids = []; }
+  render();
+  if(done) adFinished({ reward:AD_PAY*cfg.ads, progress:'Mining reward collected' });
+}
+
+// ===================== GAMES =====================
+const GAMES_URL = SUPABASE_URL + '/functions/v1/games-v3';
+const GAME_THUMBS = {
+snake:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><pattern id="ckS" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#1f7a4c"/><rect width="16" height="16" fill="#26925a"/><rect x="16" y="16" width="16" height="16" fill="#26925a"/></pattern></defs><rect width="160" height="124" fill="url(#ckS)"/><g fill="#7ee85a" stroke="#2f9d3e" stroke-width="1.5"><circle cx="24" cy="84" r="9"/><circle cx="42" cy="84" r="9"/><circle cx="60" cy="84" r="9"/><circle cx="60" cy="66" r="9"/><circle cx="78" cy="66" r="9"/><circle cx="96" cy="66" r="9"/></g><circle cx="114" cy="66" r="11" fill="#9bf26c" stroke="#2f9d3e" stroke-width="1.5"/><circle cx="117" cy="61" r="3.5" fill="#fff"/><circle cx="117" cy="71" r="3.5" fill="#fff"/><circle cx="118" cy="61" r="1.6" fill="#111"/><circle cx="118" cy="71" r="1.6" fill="#111"/><path d="M125 66h10m0 0l4-3m-4 3l4 3" stroke="#ff4d4d" stroke-width="2" fill="none"/><circle cx="118" cy="26" r="11" fill="#ff4d4d"/><circle cx="114" cy="23" r="3" fill="rgba(255,255,255,0.5)"/><path d="M118 15c2-6 7-8 10-7-1 5-5 8-10 7z" fill="#9be36b"/></svg>',
+runner:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="skR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4aa8ff"/><stop offset="1" stop-color="#cfeaff"/></linearGradient></defs><rect width="160" height="124" fill="#2f9a5b"/><rect width="160" height="38" fill="url(#skR)"/><polygon points="72,38 88,38 158,124 2,124" fill="#4b4f63"/><path d="M76 38L50 124M84 38L110 124" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/><rect x="92" y="70" width="22" height="9" rx="2" fill="#ff9f1a"/><rect x="40" y="58" width="16" height="22" rx="2" fill="#c0392b"/><rect x="43" y="63" width="10" height="5" fill="#ffd86b"/><ellipse cx="80" cy="116" rx="12" ry="3.5" fill="rgba(0,0,0,0.3)"/><path d="M75 108v7M85 108v7" stroke="#2b3a67" stroke-width="5" stroke-linecap="round"/><rect x="69" y="86" width="22" height="24" rx="7" fill="#e24b4b"/><rect x="73" y="90" width="14" height="14" rx="3" fill="#2f6fe0"/><path d="M68 90l-3 14M92 90l3 14" stroke="#e24b4b" stroke-width="5" stroke-linecap="round"/><circle cx="80" cy="79" r="8" fill="#2a1b14"/></svg>',
+shooter:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="spG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a0626"/><stop offset="1" stop-color="#25187a"/></linearGradient><radialGradient id="plG"><stop offset="0" stop-color="#7a58d8"/><stop offset="1" stop-color="#2a1a6a"/></radialGradient></defs><rect width="160" height="124" fill="url(#spG)"/><circle cx="118" cy="38" r="26" fill="url(#plG)"/><ellipse cx="118" cy="38" rx="44" ry="9" fill="none" stroke="rgba(170,150,255,0.5)" stroke-width="3" transform="rotate(-20 118 38)"/><g fill="#fff"><circle cx="20" cy="20" r="1.2"/><circle cx="48" cy="52" r="1"/><circle cx="140" cy="96" r="1.2"/><circle cx="30" cy="96" r="1"/><circle cx="76" cy="14" r="1.2"/></g><path d="M42 24l9 14 9-14-5 3-4-8-4 8z" fill="#b0245d" stroke="#ff7fb0"/><polygon points="110,62 118,58 126,62 126,72 118,76 110,72" fill="#6a2bd9" stroke="#b58cff" stroke-width="1.5"/><circle cx="118" cy="67" r="4" fill="#e3d1ff"/><rect x="73" y="52" width="2.5" height="18" fill="#fff"/><rect x="85" y="52" width="2.5" height="18" fill="#fff"/><path d="M76 118l-3 6h14l-3-6" fill="#ff8c2a"/><path d="M80 80l9 22 -3 8h-12l-3-8z" fill="#eef2fb"/><path d="M62 112l14-16h8l14 16-8 4h-20z" fill="#9aa7c4"/><ellipse cx="80" cy="96" rx="3.5" ry="7" fill="#3aa8ff"/></svg>',
+quiz:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="qzG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d3a74"/><stop offset="1" stop-color="#0a1a3f"/></linearGradient></defs><rect width="160" height="124" fill="url(#qzG)"/><g fill="rgba(255,255,255,0.18)" font-family="sans-serif" font-weight="800" font-size="22"><text x="12" y="30">+</text><text x="130" y="36">÷</text><text x="124" y="110">−</text><text x="14" y="108">×</text></g><circle cx="80" cy="46" r="26" fill="#eaf6ff"/><circle cx="80" cy="46" r="26" fill="none" stroke="#3aa8ff" stroke-width="5" stroke-dasharray="120 60" transform="rotate(-90 80 46)"/><text x="80" y="57" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="34" fill="#0d3a74">?</text><rect x="22" y="88" width="34" height="20" rx="10" fill="#3aa8ff"/><rect x="63" y="88" width="34" height="20" rx="10" fill="#22c55e"/><rect x="104" y="88" width="34" height="20" rx="10" fill="#ffb81c"/></svg>'
+};
+const GAME_LIST = [
+  {id:'snake', name:'Snake', cat:'ARCADE', col:'#31d17c', ready:true},
+  {id:'runner', name:'Endless Runner', cat:'ARCADE', col:'#2bd1c9', ready:true},
+  {id:'shooter', name:'Star Patrol', cat:'ACTION', col:'#ff8a3c', ready:true},
+  {id:'quiz', name:'Timed Quiz', cat:'BRAIN', col:'#3aa8ff', ready:true}
+];
+let gameStatus = null;
+let GP_SEL = null;
+function gpDay(){ return GAME_LIST[Math.floor(Date.now()/86400000) % GAME_LIST.length]; }
+function gpLeft(g){ const used = (gameStatus.runs && gameStatus.runs[g.id]) || 0; return Math.max(0, gameStatus.max - used); }
+function gpClick(g){ return gpLeft(g)>0 ? 'startGame(\''+g.id+'\')' : 'alert(\'No plays left for this game today. It resets at 00:00 UTC.\')'; }
+function gpPick(id){ GP_SEL = id; drawPicker(); }
+function drawPicker(){
+  const box = document.getElementById('playList');
+  if(!box || !gameStatus) return;
+  const day = gpDay();
+  const sel = GAME_LIST.find(g=>g.id===GP_SEL) || day;
+  const left = gpLeft(sel);
+  const banner = '<div class="gf'+(left<=0?' gdim':'')+'">'
+    + '<div class="gfbg">'+GAME_THUMBS[sel.id]+'</div><div class="gfsh"></div>'
+    + '<div class="gftag">'+(sel.id===day.id ? '⭐ GAME OF THE DAY' : sel.cat)+'</div>'
+    + '<div class="gfin"><div class="gfn">'+sel.name+'</div><div class="gfm"><b>'+left+'/'+gameStatus.max+'</b> plays left • Up to <b>250</b> coins</div>'
+    + '<button class="gfplay" onclick="'+gpClick(sel)+'">▶ Play</button></div></div>';
+  box.innerHTML = banner
+    + '<div class="gmore">All games</div><div class="grow2">'
+    + GAME_LIST.map(g=>'<div class="gic'+(gpLeft(g)<=0?' gdim':'')+(g.id===sel.id?' sel':'')+'" onclick="gpPick(\''+g.id+'\')"><div class="gicc">'+GAME_THUMBS[g.id]+'</div><div class="gicn">'+g.name+'</div></div>').join('')
+    + '</div>';
+}
+async function renderPlay(){
+  const box = document.getElementById('playList');
+  if(!box) return;
+  const bal = document.getElementById('playBal'); if(bal) bal.textContent = state.balance.toLocaleString();
+  try{ gameStatus = await api('gamesStatus', {}, GAMES_URL); }catch(e){ box.textContent = e.message; return; }
+  drawPicker();
+}
+
+let G = null;
+function gEl(id){ return document.getElementById(id); }
+function ensureGameOverlay(){
+  if(gEl('gameOverlay')) return;
+  const d = document.createElement('div');
+  d.id = 'gameOverlay';
+  d.style.cssText = 'display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:#070d24;z-index:60;flex-direction:column;align-items:center;padding:10px;overflow:auto;';
+  d.innerHTML = '<div style="width:100%;max-width:380px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+    + '<button class="action" style="width:auto;padding:8px 14px;margin:0;" id="gQuitBtn" onclick="quitGame()">✕ Quit</button>'
+    + '<button class="action" style="width:auto;padding:8px 12px;margin:0;" id="gMute" onclick="sndToggle()">🔊</button>'
+    + '<div id="gScore" style="font-weight:bold;color:var(--gold);">Score 0</div></div>'
+    + '<canvas id="gCanvas" style="touch-action:none;background:#1f7a4c;border-radius:18px;box-shadow:0 0 0 4px rgba(255,255,255,0.08);"></canvas>'
+    + '<div id="gPad" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,52px);gap:6px;justify-content:center;">'
+    + '<span></span><button class="action" style="margin:0;" onclick="snakeTurn(0,-1)">▲</button><span></span>'
+    + '<button class="action" style="margin:0;" onclick="snakeTurn(-1,0)">◀</button><button class="action" style="margin:0;" onclick="snakeTurn(0,1)">▼</button><button class="action" style="margin:0;" onclick="snakeTurn(1,0)">▶</button></div>'
+    + '<div id="gPad2" style="display:none;margin-top:10px;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,52px);gap:6px;justify-content:center;"><span></span><button class="action" style="margin:0;" onclick="runnerMove(0,\'jump\')">▲</button><span></span><button class="action" style="margin:0;" onclick="runnerMove(-1)">◀</button><button class="action" style="margin:0;" onclick="runnerMove(0,\'slide\')">▼</button><button class="action" style="margin:0;" onclick="runnerMove(1)">▶</button></div>'
+    + '<div id="gPad3" style="display:none;margin-top:10px;grid-template-columns:repeat(2,110px);gap:12px;justify-content:center;"><button class="action" style="margin:0;height:56px;font-size:22px;" onpointerdown="shooterPress(-1)" onpointerup="SH.move=0" onpointerleave="SH.move=0" onpointercancel="SH.move=0">◀</button><button class="action" style="margin:0;height:56px;font-size:22px;" onpointerdown="shooterPress(1)" onpointerup="SH.move=0" onpointerleave="SH.move=0" onpointercancel="SH.move=0">▶</button></div>'
+    + '<div id="gQuiz" style="display:none;width:100%;max-width:380px;"></div>'
+    + '<div id="gResult" style="display:none;width:100%;max-width:380px;text-align:center;background:var(--card);border-radius:14px;padding:16px;margin-top:12px;"></div>';
+  document.body.appendChild(d);
+}
+const GAME_CAP = { snake:25, runner:1000, shooter:50, quiz:10 };
+function checkCap(score){
+  if(!G || G.capped || !GAME_CAP[G.id] || score < GAME_CAP[G.id]) return;
+  G.capped = true;
+  const q = gEl('gQuitBtn'); if(q) q.textContent = '✓ Finish';
+  let t = gEl('gToast');
+  if(!t){ t = document.createElement('div'); t.id = 'gToast'; t.style.cssText = 'position:fixed;left:50%;top:64px;transform:translateX(-50%);background:#ffd24d;color:#222;font-weight:bold;padding:10px 14px;border-radius:12px;z-index:80;text-align:center;max-width:90%;'; document.body.appendChild(t); }
+  t.textContent = '🏆 250 coins reached! You can keep playing, or tap Finish.'; t.style.display = 'block';
+  setTimeout(()=>{ t.style.display = 'none'; }, 3500);
+}
+function curScore(){ if(!G) return 0; return G.id==='snake'?SN.score:G.id==='runner'?RN.score:G.id==='shooter'?SH.score:QZ.score; }
+function lockSwipes(on){
+  try{
+    const w = window.Telegram.WebApp;
+    if(on && w.disableVerticalSwipes) w.disableVerticalSwipes();
+    if(!on && w.enableVerticalSwipes) w.enableVerticalSwipes();
+  }catch(e){}
+}
+async function startGame(id){
+  if(G && !G.over) return;
+  let r;
+  try{ r = await api('gameStart', { game:id }, GAMES_URL); }catch(e){ alert(e.message); renderPlay(); return; }
+  ensureGameOverlay();
+  G = { id, token:r.token, over:false, timer:null, capped:false };
+  gEl('gQuitBtn').textContent = '✕ Quit';
+  gEl('gameOverlay').style.display = 'flex';
+  gEl('gResult').style.display = 'none';
+  gEl('gPad').style.display = 'none'; gEl('gPad2').style.display = 'none'; gEl('gPad3').style.display = 'none'; gEl('gQuiz').style.display = 'none';
+  { const cv = gEl('gCanvas'); cv.style.display = 'block'; cv.ontouchstart = cv.ontouchmove = cv.ontouchend = cv.onmousedown = null; }
+  lockSwipes(true);
+  sndInit(); musicStart(id);
+  if(id==='snake') snakeInit();
+  if(id==='runner') runnerInit();
+  if(id==='shooter') shooterInit();
+  if(id==='quiz') quizInit();
+}
+function closeGameOverlay(){
+  musicStop();
+  if(G && G.timer) clearTimeout(G.timer);
+  const o = gEl('gameOverlay'); if(o) o.style.display = 'none';
+  lockSwipes(false);
+  G = null;
+  renderPlay();
+}
+function quitGame(){
+  if(G && G.over){ gameLeave('back'); return; }
+  if(G && !G.over && G.capped){ finishGame(curScore()); return; }
+  if(G && !G.over){
+    appConfirm('It will still count as one of your 5 runs today.','Quit run','Keep playing','Quit this run?','🎮').then(y=>{ if(y) closeGameOverlay(); });
+    return;
+  }
+  closeGameOverlay();
+}
+// TEST ONLY: a labeled 3-second stand-in for a real ad. Replace with a real rewarded ad before enabling claims.
+const GAME_AD_PLACEHOLDER = true;
+function placeholderAd(el){
+  return new Promise(resolve=>{
+    if(!GAME_AD_PLACEHOLDER){ el.innerHTML = 'Checking your result...'; return resolve(); }
+    let n = 3;
+    const draw = ()=>{ el.innerHTML = '<div style="color:var(--muted);font-size:12px;">AD PLACEHOLDER (TEST)</div><div style="font-size:40px;font-weight:bold;color:var(--gold);margin:10px 0;">'+n+'</div><div style="color:var(--muted);">Your result is on the way...</div>'; };
+    draw();
+    const t = setInterval(()=>{ n--; if(n<=0){ clearInterval(t); resolve(); } else draw(); }, 1000);
+  });
+}
+function adsForCoinsClient(c){ return c<=0 ? 0 : (c<=100 ? 1 : (c<=200 ? 2 : 3)); }
+// TEST ONLY: a labeled 3-second stand-in for a real rewarded ad
+function adCountdown(el, msg){
+  return new Promise(resolve=>{
+    let n = 3;
+    const draw = ()=>{ el.innerHTML = '<div style="color:var(--muted);font-size:12px;">AD PLACEHOLDER (TEST)</div><div style="font-size:40px;font-weight:bold;color:var(--gold);margin:10px 0;">'+n+'</div><div style="color:var(--muted);">'+msg+'</div>'; };
+    draw();
+    const t = setInterval(()=>{ n--; if(n<=0){ clearInterval(t); resolve(); } else draw(); }, 1000);
+  });
+}
+function waitTap(el, coins, i, n){
+  return new Promise(resolve=>{
+    el.innerHTML = '<div style="font-size:18px;font-weight:bold;">Game over</div>'
+      + '<div style="font-size:22px;color:var(--gold);font-weight:bold;margin:8px 0;">'+coins+' coins earned</div>'
+      + '<div style="color:var(--muted);margin-bottom:10px;">Watch '+n+' ad'+(n>1?'s':'')+' to collect them ('+(i-1)+'/'+n+' done)</div>'
+      + '<button class="action btn-collect" id="adTapBtn">🎬 Watch ad '+i+' of '+n+'</button>';
+    gEl('adTapBtn').onclick = ()=>resolve();
+  });
+}
+async function finishGame(score){
+  if(!G || G.over) return;
+  G.over = true;
+  if(G.timer) clearTimeout(G.timer);
+  const res = gEl('gResult');
+  gEl('gPad').style.display = 'none'; gEl('gPad2').style.display = 'none'; gEl('gPad3').style.display = 'none'; gEl('gQuiz').style.display = 'none';
+  res.style.display = 'block';
+  res.innerHTML = '<div style="color:var(--muted);">Checking your result...</div>';
+  let r;
+  try{ r = await api('gameFinish', { token:G.token, score:Math.min(score, GAME_CAP[G.id]||score) }, GAMES_URL); }
+  catch(e){ res.innerHTML = '<div style="color:#ff6b6b;margin-bottom:10px;">'+esc(e.message)+'</div><button class="action btn-start" onclick="closeGameOverlay()">Back</button>'; return; }
+  const coins = r.valid ? r.coins : 0;
+  G.score = score; G.valid = r.valid; G.coins = coins; G.collected = false; G.busy = false; G.done = 0;
+  G.need = (r.claimEnabled && coins>0) ? (Number(r.adsNeeded) || adsForCoinsClient(coins)) : 0;
+  musicStop(); sfx(coins>0 ? 'win' : 'over');
+  gameResultDraw();
+}
+function gameResultDraw(){
+  const res = gEl('gResult'); if(!G || !res) return;
+  const coins = G.coins, need = G.need;
+  let mid;
+  if(!G.valid) mid = '<div style="color:#ff6b6b;">This result could not be verified.</div>';
+  else if(coins<=0) mid = '<div style="color:var(--muted);">No coins this time. Try again!</div>';
+  else if(G.collected) mid = '<div style="color:#7ecb7e;font-weight:bold;">✅ '+coins+' coins collected!</div>';
+  else if(need>0 && G.done>=need) mid = '<button class="action btn-collect" id="gAdBtn" style="margin-top:10px;" onclick="gameClaimNow()">🎁 Collect '+coins+' coins</button>';
+  else if(need>0) mid = '<div style="color:var(--muted);margin:6px 0 10px;">Watch '+need+' ad'+(need>1?'s':'')+' to collect your coins ('+G.done+'/'+need+' done)</div>'
+    + '<button class="action btn-collect" id="gAdBtn" onclick="gameWatchAd()">🎬 Watch ad '+(G.done+1)+' of '+need+' to collect</button>';
+  else mid = '<div style="color:var(--muted);">Nice run! Your score is saved.</div>';
+  res.innerHTML = '<div style="font-size:18px;font-weight:bold;">Game over</div>'
+    + '<div style="margin:8px 0;">Score: <b>'+G.score+'</b></div>'
+    + '<div style="font-size:22px;color:var(--gold);font-weight:bold;">'+coins+' coins earned</div>'
+    + mid
+    + '<button class="action btn-start" style="margin-top:12px;" onclick="gameLeave(\'again\')">▶️ Play again</button>'
+    + '<button class="action" style="margin-top:8px;" onclick="gameLeave(\'back\')">Back</button>';
+}
+async function gameLeave(act){
+  if(G && G.valid && G.coins>0 && G.need>0 && !G.collected){
+    const y = await appConfirm('If you leave now you lose the '+G.coins+' coins from this run. Watch the ad to collect them.','Leave anyway','Stay','Leave without coins?','⚠️');
+    if(!y) return;
+  }
+  if(!G) return;
+  if(act==='again'){ G.over = true; const i = G.id; closeGameOverlay(); startGame(i); }
+  else closeGameOverlay();
+}
+async function gameClaimNow(){
+  if(!G || G.busy) return; G.busy = true;
+  const btn = gEl('gAdBtn'); if(btn){ btn.disabled = true; btn.textContent = 'Collecting…'; }
+  try{
+    const c = await api('gameClaim', { token:G.token }, GAMES_URL);
+    state.balance = c.balance; render();
+    if(!G) return;
+    G.collected = true; G.busy = false; gameResultDraw();
+    adFinished({ title:'Coins collected', reward:c.coins, progress:'Added to your balance' });
+  }catch(e){
+    if(!G) return;
+    G.busy = false; gameResultDraw();
+    warnPop(e.message+'\nTap the button to try again.');
+  }
+}
+async function gameWatchAd(){
+  if(!G || G.busy) return; G.busy = true;
+  const btn = gEl('gAdBtn'); if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  const r = await agShowRaw();
+  if(!G) return;
+  if(r==='none'){ G.busy = false; gameResultDraw(); noAdPop(); return; }
+  if(r==='skipped'){ G.busy = false; gameResultDraw(); appDialog({title:'Watch the full ad',text:'Watch the full ad to collect your coins.',icon:'📺'}); return; }
+  if(btn) btn.textContent = 'Confirming…';
+  let ok = false, last = '';
+  for(let i=0;i<10;i++){
+    try{ const c = await api('gameAdConfirm', { token:G.token }, GAMES_URL); if(!G) return; G.done = c.adsDone; ok = true; break; }
+    catch(e){ last = e.message; if(!/not confirmed|try again/i.test(last)) break; await sleep(1500); if(!G) return; }
+  }
+  if(!G) return;
+  G.busy = false;
+  if(!ok){ gameResultDraw(); warnPop(last || 'The ad was not confirmed. Please try again.'); return; }
+  if(G.done >= G.need){ gameClaimNow(); return; }
+  gameResultDraw();
+  adFinished({ progress:'Ad '+G.done+' of '+G.need+' done. Watch the next ad to collect your coins.' });
+}
+
+/* ===== Game sound (generated in the browser, no audio files) ===== */
+const SND = { ctx:null, master:null, muted:false, step:0, mus:null, watch:null, lastScore:0, lastAtt:1, lastDead:false };
+try{ SND.muted = localStorage.getItem('sndMuted')==='1'; }catch(e){}
+function sndInit(){
+  try{
+    if(!SND.ctx){
+      const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
+      SND.ctx = new AC(); SND.master = SND.ctx.createGain(); SND.master.gain.value = SND.muted ? 0 : 0.5; SND.master.connect(SND.ctx.destination);
+    }
+    if(SND.ctx.state==='suspended') SND.ctx.resume();
+  }catch(e){}
+  const m = gEl('gMute'); if(m) m.textContent = SND.muted ? '🔇' : '🔊';
+}
+function sndToggle(){
+  SND.muted = !SND.muted;
+  try{ localStorage.setItem('sndMuted', SND.muted?'1':'0'); }catch(e){}
+  if(SND.master) SND.master.gain.value = SND.muted ? 0 : 0.5;
+  const m = gEl('gMute'); if(m) m.textContent = SND.muted ? '🔇' : '🔊';
+}
+function tone(f,dur,type,vol,delay){
+  if(!SND.ctx || SND.muted) return;
+  try{
+    const t = SND.ctx.currentTime + (delay||0);
+    const o = SND.ctx.createOscillator(), g = SND.ctx.createGain();
+    o.type = type||'sine'; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol||0.2, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(SND.master); o.start(t); o.stop(t+dur+0.05);
+  }catch(e){}
+}
+function sfx(n){
+  if(!SND.ctx || SND.muted) return;
+  if(n==='coin'){ tone(880,0.09,'square',0.12); tone(1320,0.14,'square',0.12,0.07); }
+  else if(n==='hit'){ tone(220,0.18,'sawtooth',0.22); tone(140,0.25,'sawtooth',0.22,0.1); }
+  else if(n==='win'){ [523,659,784,1047].forEach((f,i)=>tone(f,0.18,'triangle',0.2,i*0.1)); }
+  else if(n==='over'){ [392,330,262].forEach((f,i)=>tone(f,0.22,'triangle',0.2,i*0.15)); }
+}
+// Original looping tune: a short pentatonic melody over a bass line, a different mood per game
+const MUS = {
+  snake:{ bpm:128, lead:[0,2,4,2,5,4,2,0,0,2,4,7,5,4,2,4], bass:[0,0,-5,-5], root:261.6 },
+  runner:{ bpm:150, lead:[4,4,2,4,7,4,2,0,4,4,5,7,9,7,5,4], bass:[0,0,-3,-3], root:293.7 },
+  shooter:{ bpm:140, lead:[0,3,5,3,7,5,3,0,0,3,5,8,7,5,3,5], bass:[-12,-12,-9,-7], root:220 },
+  quiz:{ bpm:110, lead:[0,4,7,4,9,7,4,2,0,4,7,9,12,9,7,4], bass:[0,-5,-3,-5], root:329.6 }
+};
+const PENT = [0,2,4,7,9,12,14];
+function nf(root,semi){ return root*Math.pow(2,semi/12); }
+function musicStart(id){
+  musicStop();
+  const m = MUS[id] || MUS.snake;
+  SND.step = 0; SND.lastScore = 0; SND.lastAtt = 1; SND.lastDead = false;
+  SND.mus = setInterval(()=>{
+    if(!SND.ctx || SND.muted) return;
+    const i = SND.step++;
+    const L = m.lead[i % m.lead.length];
+    if(i%2===0 || m.bpm>135) tone(nf(m.root, L+12), 0.16, 'triangle', 0.07);
+    if(i%4===0) tone(nf(m.root, m.bass[(i/4|0)%m.bass.length]-12), 0.45, 'sine', 0.16);
+  }, 60000/m.bpm/2);
+  SND.watch = setInterval(()=>{
+    if(!G) return;
+    let sc = 0, dead = false;
+    try{ sc = curScore(); dead = G.id==='snake' ? !!SN.dead : G.id==='runner' ? !!RN.dead : G.id==='shooter' ? !!SH.dead : false; }catch(e){}
+    if(sc > SND.lastScore) sfx('coin');
+    if(dead && !SND.lastDead) sfx('hit');
+    SND.lastScore = sc; SND.lastDead = dead;
+  }, 150);
+}
+function musicStop(){ if(SND.mus){ clearInterval(SND.mus); SND.mus = null; } if(SND.watch){ clearInterval(SND.watch); SND.watch = null; } }
+
+// ---- Snake (round snake, walls wrap around, 5 attempts per play) ----
+const SN = { N:12, maxAtt:5 };
+function snakeInit(){
+  const cv = gEl('gCanvas');
+  const size = Math.floor(Math.min(window.innerWidth-20, 400)/SN.N)*SN.N;
+  cv.width = size; cv.height = size;
+  SN.cell = size/SN.N;
+  SN.score = 0; SN.att = 1;
+  let sx=0, sy=0;
+  cv.ontouchstart = e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; e.preventDefault(); };
+  cv.ontouchend = e=>{
+    const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Math.max(Math.abs(dx),Math.abs(dy))<20) return;
+    if(Math.abs(dx)>Math.abs(dy)) snakeTurn(dx>0?1:-1,0); else snakeTurn(0,dy>0?1:-1);
+    e.preventDefault();
+  };
+  snakeSpawn();
+}
+function snakeLabel(){ gEl('gScore').textContent = 'Score '+SN.score+' • Attempt '+SN.att+'/'+SN.maxAtt;  checkCap(SN.score); }
+function snakeSpawn(){
+  SN.body = [{x:5,y:6},{x:4,y:6},{x:3,y:6}];
+  SN.dir = {x:1,y:0}; SN.next = {x:1,y:0};
+  SN.started = false; SN.dead = false; SN.resumed = false;
+  SN.food = snakeFood();
+  gEl('gResult').style.display = 'none';
+  gEl('gPad').style.display = 'grid';
+  snakeLabel();
+  snakeDraw();
+}
+function snakeFood(){
+  while(true){
+    const f = {x:Math.floor(Math.random()*SN.N), y:Math.floor(Math.random()*SN.N)};
+    if(!SN.body.some(p=>p.x===f.x&&p.y===f.y)) return f;
+  }
+}
+function snakeTurn(x,y){
+  if(!G || G.over || G.id!=='snake' || SN.dead) return;
+  if(!SN.started){
+    if(SN.resumed){
+      // continuing after an ad: ignore a swipe that would run straight into the body
+      const N = SN.N, hd = SN.body[0];
+      const tx = (hd.x+x+N)%N, ty = (hd.y+y+N)%N;
+      const blocked = SN.body.slice(0,-1).some(p=>p.x===tx&&p.y===ty);
+      if(blocked) return;
+    } else if(x===-SN.dir.x && y===-SN.dir.y){
+      // first input of a fresh attempt pointing backwards: turn the snake around
+      SN.body.reverse();
+    }
+    SN.dir = {x,y}; SN.next = {x,y};
+    SN.started = true;
+    G.timer = setTimeout(snakeStep, 200);
+    return;
+  }
+  if(x===-SN.dir.x && y===-SN.dir.y) return;
+  SN.next = {x,y};
+}
+function snakeStep(){
+  if(!G || G.over || G.id!=='snake' || SN.dead) return;
+  SN.dir = SN.next;
+  const N = SN.N;
+  const h = { x:(SN.body[0].x+SN.dir.x+N)%N, y:(SN.body[0].y+SN.dir.y+N)%N };
+  const ate = h.x===SN.food.x && h.y===SN.food.y;
+  const tail = ate ? SN.body : SN.body.slice(0,-1);
+  if(tail.some(p=>p.x===h.x&&p.y===h.y)){ snakeDie(); return; }
+  SN.body.unshift(h);
+  if(ate){
+    SN.score++;
+    snakeLabel();
+    if(SN.body.length >= SN.N*SN.N - 1){ snakeDraw(); finishGame(SN.score); return; }
+    SN.food = snakeFood();
+  } else SN.body.pop();
+  snakeDraw();
+  const delay = Math.max(120, 260 - SN.score*5);
+  G.timer = setTimeout(snakeStep, delay);
+}
+function snakeDie(){
+  SN.dead = true;
+  if(G.timer) clearTimeout(G.timer);
+  snakeDraw();
+  const res = gEl('gResult');
+  gEl('gPad').style.display = 'none';
+  res.style.display = 'block';
+  if(SN.att >= SN.maxAtt){ finishGame(SN.score); return; }
+  const left = SN.maxAtt - SN.att;
+  res.innerHTML = '<div style="font-size:17px;font-weight:bold;">Oops! The snake bit itself</div>'
+    + '<div style="margin:8px 0;color:var(--muted);">Score so far: <b style="color:#fff;">'+SN.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
+    + '<button class="action btn-collect" onclick="snakeContinue()">'+(GAME_ADS_ON?'🎬 Watch ad to continue':'▶️ Continue')+'</button>'
+    + '<button class="action" style="margin-top:8px;" onclick="finishGame(SN.score)">Finish &amp; see result</button>';
+}
+async function snakeContinue(){
+  const res = gEl('gResult');
+  await continuePlaceholderAd(res);
+  if(!G || G.over) return;
+  SN.att++;
+  SN.dead = false; SN.started = false; SN.resumed = true;
+  gEl('gResult').style.display = 'none';
+  gEl('gPad').style.display = 'grid';
+  snakeLabel();
+  snakeDraw();
+}
+// TEST ONLY: labeled 3-second stand-in for the real "continue" ad
+function continuePlaceholderAd(el){
+  if(!GAME_ADS_ON) return Promise.resolve();
+  return new Promise(resolve=>{
+    let n = 3;
+    const draw = ()=>{ el.innerHTML = '<div style="color:var(--muted);font-size:12px;">AD PLACEHOLDER (TEST)</div><div style="font-size:40px;font-weight:bold;color:var(--gold);margin:10px 0;">'+n+'</div><div style="color:var(--muted);">Your next attempt starts after the ad...</div>'; };
+    draw();
+    const t = setInterval(()=>{ n--; if(n<=0){ clearInterval(t); resolve(); } else draw(); }, 1000);
+  });
+}
+function snakeDraw(){
+  const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const k = SN.cell;
+  for(let y=0;y<SN.N;y++){ for(let x=0;x<SN.N;x++){ c.fillStyle = (x+y)%2 ? '#1f7a4c' : '#248a56'; c.fillRect(x*k,y*k,k,k); } }
+  // food: a red apple with a small leaf
+  const fx = SN.food.x*k+k/2, fy = SN.food.y*k+k/2;
+  c.fillStyle = '#ff4d4d'; c.beginPath(); c.arc(fx, fy+k*0.04, k*0.34, 0, Math.PI*2); c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.45)'; c.beginPath(); c.arc(fx-k*0.12, fy-k*0.08, k*0.08, 0, Math.PI*2); c.fill();
+  c.fillStyle = '#9be36b'; c.beginPath(); c.ellipse(fx+k*0.08, fy-k*0.32, k*0.12, k*0.06, -0.5, 0, Math.PI*2); c.fill();
+  for(let i=SN.body.length-1;i>=0;i--){
+    const p = SN.body[i];
+    c.fillStyle = i===0 ? '#ffe27a' : (i%2 ? '#ffd23c' : '#f5c518');
+    c.beginPath(); c.arc(p.x*k+k/2, p.y*k+k/2, k*(i===0?0.46:0.4), 0, Math.PI*2); c.fill();
+  }
+  const h = SN.body[0];
+  const ex = SN.dir.x, ey = SN.dir.y, cx = h.x*k+k/2, cy = h.y*k+k/2;
+  const px = -ey, py = ex;
+  [-1,1].forEach(sgn=>{
+    const x = cx + ex*k*0.14 + px*sgn*k*0.17, y = cy + ey*k*0.14 + py*sgn*k*0.17;
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(x,y,k*0.12,0,Math.PI*2); c.fill();
+    c.fillStyle = '#111'; c.beginPath(); c.arc(x+ex*k*0.04,y+ey*k*0.04,k*0.06,0,Math.PI*2); c.fill();
+  });
+  if(!SN.started && !SN.dead){
+    c.fillStyle = 'rgba(255,255,255,0.9)'; c.font = 'bold '+Math.round(k*0.9)+'px sans-serif'; c.textAlign = 'center';
+    c.fillText(SN.resumed ? 'Swipe to continue' : 'Swipe to start', cv.width/2, cv.height*0.72);
+  }
+}
+document.addEventListener('keyup', e=>{ if(G && G.id==='shooter' && (e.key==='ArrowLeft'||e.key==='ArrowRight')) SH.move = 0; });
+document.addEventListener('keydown', e=>{
+  const m = {ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];
+  if(G && !G.over && G.id==='runner'){
+    if(e.key==='ArrowLeft') runnerMove(-1); else if(e.key==='ArrowRight') runnerMove(1);
+    else if(e.key==='ArrowUp'||e.key===' ') runnerMove(0,'jump'); else if(e.key==='ArrowDown') runnerMove(0,'slide'); else return;
+    e.preventDefault(); return; }
+  if(G && !G.over && G.id==='shooter'){ if(e.key==='ArrowLeft'){ shooterPress(-1); e.preventDefault(); } else if(e.key==='ArrowRight'){ shooterPress(1); e.preventDefault(); } return; }
+  if(m && G && !G.over){ snakeTurn(m[0],m[1]); e.preventDefault(); }
+});
+// ---- Endless Runner (3 lanes: swipe left/right to switch lane, up to jump, down to slide) ----
+const RN = { maxAtt:5, W:360, H:340 };
+function runnerInit(){
+  const cv = gEl('gCanvas');
+  RN.W = Math.min(window.innerWidth-20, 400); RN.H = 340;
+  cv.width = RN.W; cv.height = RN.H;
+  RN.hy = RN.H*0.22; RN.py = RN.H-56; RN.laneW = RN.W*0.27;
+  RN.score = 0; RN.att = 1; RN.speed = 14; RN.dist = 0;
+  let sx=0, sy=0;
+  cv.ontouchstart = e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; e.preventDefault(); };
+  cv.ontouchend = e=>{
+    const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Math.max(Math.abs(dx),Math.abs(dy))<18){ runnerStart(); }
+    else if(Math.abs(dx)>Math.abs(dy)) runnerMove(dx>0?1:-1);
+    else runnerMove(0, dy<0?'jump':'slide');
+    e.preventDefault();
+  };
+  cv.onmousedown = null;
+  runnerSpawn();
+}
+function runnerLabel(){ gEl('gScore').textContent = 'Score '+RN.score+' • Attempt '+RN.att+'/'+RN.maxAtt;  checkCap(RN.score); }
+function runnerSpawn(){
+  RN.lane = 0; RN.x = 0; RN.h = 0; RN.vy = 0; RN.slide = 0;
+  RN.obs = []; RN.nextZ = 45; RN.parts = []; RN.shake = 0; RN.dust = 0;
+  RN.started = false; RN.dead = false; RN.last = 0;
+  gEl('gResult').style.display = 'none';
+  gEl('gPad').style.display = 'none';
+  gEl('gPad2').style.display = 'grid';
+  runnerLabel();
+  runnerDraw();
+}
+function runnerStart(){
+  if(!G || G.over || G.id!=='runner' || RN.dead || RN.started) return false;
+  RN.started = true; RN.last = Date.now(); runnerLoop(); return true;
+}
+function runnerMove(dir, act){
+  if(!G || G.over || G.id!=='runner' || RN.dead) return;
+  if(!RN.started){ runnerStart(); }
+  if(act==='jump'){ if(RN.h===0){ RN.vy = 6.2; } }
+  else if(act==='slide'){ RN.slide = 0.7; if(RN.h>0) RN.vy = -10; }
+  else if(dir){ RN.lane = Math.max(-1, Math.min(1, RN.lane+dir)); }
+}
+function runnerLoop(){
+  if(!G || G.over || RN.dead) return;
+  const now = Date.now(); let dt = (now - RN.last)/1000; RN.last = now;
+  if(dt > 0.05) dt = 0.05;
+  RN.speed = Math.min(30, RN.speed + 0.25*dt);
+  RN.dist += RN.speed*dt;
+  const sc = Math.floor(RN.dist*0.6);
+  if(sc !== RN.score){ RN.score = sc; runnerLabel(); }
+  // player
+  RN.x += (RN.lane - RN.x)*Math.min(1, dt*14);
+  RN.dust += dt;
+  if(RN.onGround && RN.h===0 && RN.dust > 0.05){ RN.dust = 0; RN.parts.push({x:RN.W/2+RN.x*RN.laneW+(Math.random()-0.5)*14, y:RN.py+1, vx:(Math.random()-0.5)*30, vy:-15-Math.random()*25, life:0.45, t:0, c:'rgba(235,225,205,1)', r:3, dust:true}); }
+  for(const p of RN.parts){ p.t += dt; p.x += p.vx*dt; p.y += p.vy*dt; if(!p.dust) p.vy += 420*dt; }
+  RN.parts = RN.parts.filter(p=>p.t<p.life);
+  if(RN.h>0 || RN.vy>0){ RN.vy -= 20*dt; RN.h += RN.vy*dt; if(RN.h<=0){ RN.h = 0; RN.vy = 0; } }
+  if(RN.slide>0) RN.slide -= dt;
+  // obstacles
+  for(const o of RN.obs) o.z -= RN.speed*dt;
+  RN.obs = RN.obs.filter(o=>o.z > -3);
+  RN.nextZ -= RN.speed*dt;
+  if(RN.nextZ <= 0){
+    // a row: never block every lane with something that can't be jumped or slid
+    const lanes = [-1,0,1].sort(()=>Math.random()-0.5);
+    const count = RN.speed>20 && Math.random()<0.5 ? 2 : 1;
+    let blocks = 0;
+    for(let i=0;i<count;i++){
+      let type = ['low','high','block'][Math.floor(Math.random()*3)];
+      if(type==='block'){ if(blocks>=1 && count===2) type='low'; else blocks++; }
+      RN.obs.push({z:60, lane:lanes[i], type});
+    }
+    RN.nextZ = RN.speed*0.95 + 9 + Math.random()*6;
+  }
+  // collision
+  for(const o of RN.obs){
+    if(o.z > 0.8 || o.z < -0.9) continue;
+    if(Math.abs(RN.x - o.lane) > 0.55) continue;
+    if(o.type==='block' || (o.type==='low' && RN.h < 0.55) || (o.type==='high' && RN.slide<=0)){ runnerDie(); return; }
+  }
+  runnerDraw();
+  G.timer = setTimeout(runnerLoop, 16);
+}
+function rnFx(){
+  if(!G || G.over || G.id!=='runner') return;
+  const now = Date.now(); let dt = (now - (RN.fxLast||now))/1000; RN.fxLast = now; if(dt>0.05) dt = 0.05;
+  RN.shake = Math.max(0, RN.shake - dt*2.2);
+  for(const p of RN.parts){ p.t += dt; p.x += p.vx*dt; p.y += p.vy*dt; if(!p.dust) p.vy += 420*dt; }
+  RN.parts = RN.parts.filter(p=>p.t<p.life);
+  runnerDraw();
+  if(RN.parts.length || RN.shake>0.02) G.timer = setTimeout(rnFx, 16);
+}
+function runnerDie(){
+  RN.dead = true;
+  const dx = RN.W/2 + RN.x*RN.laneW;
+  for(let i=0;i<26;i++){ const a = Math.random()*6.283, v = 60+Math.random()*200; RN.parts.push({x:dx,y:RN.py-30,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,life:0.9,t:0,c:['#ffb347','#ff5a36','#ffe14d','#fff'][i%4],r:2+Math.random()*3}); }
+  RN.shake = 1;
+  if(G.timer) clearTimeout(G.timer);
+  RN.fxLast = Date.now(); rnFx();
+  const res = gEl('gResult');
+  gEl('gPad2').style.display = 'none';
+  res.style.display = 'block';
+  if(RN.att >= RN.maxAtt){ finishGame(RN.score); return; }
+  const left = RN.maxAtt - RN.att;
+  res.innerHTML = '<div style="font-size:17px;font-weight:bold;">Oops! You crashed</div>'
+    + '<div style="margin:8px 0;color:var(--muted);">Score so far: <b style="color:#fff;">'+RN.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
+    + '<button class="action btn-collect" onclick="runnerContinue()">'+(GAME_ADS_ON?'🎬 Watch ad to continue':'▶️ Continue')+'</button>'
+    + '<button class="action" style="margin-top:8px;" onclick="finishGame(RN.score)">Finish &amp; see result</button>';
+}
+async function runnerContinue(){
+  const res = gEl('gResult');
+  await continuePlaceholderAd(res);
+  if(!G || G.over) return;
+  RN.att++;
+  RN.dead = false; RN.started = false;
+  RN.obs = []; RN.parts = []; RN.nextZ = 40; RN.h = 0; RN.vy = 0; RN.slide = 0;   // clear the path, keep score and speed
+  gEl('gResult').style.display = 'none';
+  gEl('gPad2').style.display = 'grid';
+  runnerLabel();
+  runnerDraw();
+}
+function rnLimb(c, x0,y0, x1,y1, x2,y2, w0,w1,w2, c0, c1){
+  // two tapered segments (upper, lower) with rounded joints and a soft highlight
+  const seg = (ax,ay,bx,by,wa,wb,col)=>{
+    const dx = bx-ax, dy = by-ay, L = Math.hypot(dx,dy)||1, nx = -dy/L, ny = dx/L;
+    const g = c.createLinearGradient(ax-nx*wa,ay-ny*wa,ax+nx*wa,ay+ny*wa);
+    g.addColorStop(0,col[0]); g.addColorStop(0.55,col[1]); g.addColorStop(1,col[2]);
+    c.fillStyle = g; c.beginPath();
+    c.moveTo(ax+nx*wa,ay+ny*wa); c.lineTo(bx+nx*wb,by+ny*wb);
+    c.arc(bx,by,wb,Math.atan2(ny,nx),Math.atan2(-ny,-nx),true);
+    c.lineTo(ax-nx*wa,ay-ny*wa); c.arc(ax,ay,wa,Math.atan2(-ny,-nx),Math.atan2(ny,nx),true);
+    c.closePath(); c.fill();
+  };
+  seg(x0,y0,x1,y1,w0,w1,c0); seg(x1,y1,x2,y2,w1,w2,c1||c0);
+}
+function runnerHuman(c, px, gy){
+  const air = RN.h>0, sl = RN.slide>0;
+  const ph = RN.dist*1.15;                       // run-cycle phase
+  const run = !air && !sl;
+  const s0 = Math.sin(ph), s1 = Math.sin(ph+Math.PI), c0 = Math.cos(ph);
+  const bounce = run ? Math.abs(Math.sin(ph))*3 : 0;
+  const crouch = sl ? 15 : 0;
+  gy = gy - 0;
+  const hipY = gy - 37 + crouch - bounce*0.6, hipX = px;
+  const sway = run ? c0*1.6 : 0;
+  // ---------- legs (grey joggers + running shoes) ----------
+  const pants = ['#4a5163','#6d768c','#3a4052'], pantsLow = ['#3f4557','#5d667c','#2f3446'];
+  const legPose = (side, sn)=>{
+    const lift = air ? 0.85 : (sl ? 0.0 : Math.max(0, sn));
+    const hx = hipX + side*7, ax = px + side*(6 + (air?7:2*Math.max(0,-sn)) - lift*2.5), ay = gy - lift*(air?16:19) - (sl?0:0);
+    const kx = (hx+ax)/2 + side*(sl?9:3.5) + (lift>0?side*2.5:0), ky = (hipY+ay)/2 - (lift*5) + (sl?-3:0);
+    return {hx,ax,ay,kx,ky,lift};
+  };
+  const L = legPose(-1,s0), R = legPose(1,s1);
+  const drawLeg = (P, side)=>{
+    rnLimb(c,P.hx,hipY,P.kx,P.ky,P.ax,P.ay-3,6.4,5.2,3.8,pants,pantsLow);
+    // knee fold
+    c.strokeStyle = 'rgba(0,0,0,0.18)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(P.kx-4,P.ky+1); c.lineTo(P.kx+4,P.ky+1); c.stroke();
+    // reflective side stripe
+    c.strokeStyle = 'rgba(235,240,255,0.55)'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(P.hx+side*5.5,hipY+3); c.lineTo(P.kx+side*4.5,P.ky); c.lineTo(P.ax+side*3,P.ay-5); c.stroke();
+    // shoe: heel counter, midsole, sole (sole visible when kicked back)
+    const sx = P.ax, sy = P.ay;
+    if(P.lift>0.35){
+      c.fillStyle = '#f3f5fa'; c.beginPath(); c.roundRect(sx-5.5,sy-6,11,8,3); c.fill();
+      c.fillStyle = '#2b2f3a'; c.beginPath(); c.roundRect(sx-5,sy-1,10,6,2.5); c.fill();
+      c.strokeStyle='#ff6a3d'; c.lineWidth=1.4; c.beginPath(); c.moveTo(sx-4,sy+1.5); c.lineTo(sx+4,sy+1.5); c.stroke();
+    } else {
+      c.fillStyle = '#f3f5fa'; c.beginPath(); c.roundRect(sx-6,sy-7,12,8,3.5); c.fill();
+      c.fillStyle = '#ff6a3d'; c.fillRect(sx-5,sy-3,10,2.2);
+      c.fillStyle = '#2b2f3a'; c.beginPath(); c.roundRect(sx-6.5,sy,13,3.4,1.7); c.fill();
+    }
+  };
+  // draw the lifted leg first (farther), then the planted one
+  if(L.lift < R.lift){ drawLeg(R,1); drawLeg(L,-1); } else { drawLeg(L,-1); drawLeg(R,1); }
+  // ---------- torso ----------
+  const torsoH = sl ? 22 : 30, tw = 27 + (run ? c0*2.2 : 0);
+  const ty = hipY - torsoH + 3, tx = px + sway;
+  // backpack (swings slightly against the torso)
+  const bpx = tx - (run ? c0*1.2 : 0);
+  const bg = c.createLinearGradient(bpx-10,0,bpx+10,0); bg.addColorStop(0,'#2d5fd6'); bg.addColorStop(0.5,'#4b86ff'); bg.addColorStop(1,'#1f3f9c');
+  // hoodie
+  const hg = c.createLinearGradient(tx-tw/2,0,tx+tw/2,0); hg.addColorStop(0,'#c93a3a'); hg.addColorStop(0.45,'#f0605a'); hg.addColorStop(0.8,'#d2423f'); hg.addColorStop(1,'#a82f2f');
+  c.fillStyle = hg; c.beginPath(); c.moveTo(tx-tw/2+3,ty); c.quadraticCurveTo(tx,ty-3,tx+tw/2-3,ty); c.lineTo(tx+tw/2,ty+torsoH*0.78); c.quadraticCurveTo(tx+tw/2-1,ty+torsoH+3,tx+tw/2-5,ty+torsoH+4); c.lineTo(tx-tw/2+5,ty+torsoH+4); c.quadraticCurveTo(tx-tw/2+1,ty+torsoH+3,tx-tw/2,ty+torsoH*0.78); c.closePath(); c.fill();
+  // fabric wrinkles
+  c.strokeStyle = 'rgba(80,10,10,0.28)'; c.lineWidth = 1.1;
+  c.beginPath(); c.moveTo(tx-8,ty+torsoH*0.55); c.quadraticCurveTo(tx-3,ty+torsoH*0.6,tx-9,ty+torsoH*0.85); c.moveTo(tx+9,ty+torsoH*0.5); c.quadraticCurveTo(tx+4,ty+torsoH*0.62,tx+9,ty+torsoH*0.82); c.stroke();
+  // hem
+  c.fillStyle = 'rgba(70,10,10,0.35)'; c.fillRect(tx-tw/2+5,ty+torsoH+1,tw-10,3);
+  // backpack body, straps, pocket
+  c.fillStyle = bg; c.beginPath(); c.roundRect(bpx-9.5,ty+4,19,torsoH-6,5); c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.2)'; c.fillRect(bpx-7.5,ty+6,3,torsoH-10);
+  c.fillStyle = 'rgba(0,0,0,0.22)'; c.beginPath(); c.roundRect(bpx-6.5,ty+torsoH*0.5,13,torsoH*0.32,3); c.fill();
+  c.strokeStyle = '#142a63'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(bpx-6.5,ty+torsoH*0.5+4); c.lineTo(bpx+6.5,ty+torsoH*0.5+4); c.stroke();
+  c.strokeStyle = '#1a1d28'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(tx-8,ty+1); c.quadraticCurveTo(tx-11,ty+8,tx-9.5,ty+torsoH*0.7); c.moveTo(tx+8,ty+1); c.quadraticCurveTo(tx+11,ty+8,tx+9.5,ty+torsoH*0.7); c.stroke();
+  // ---------- arms ----------
+  const shY = ty + 6, shL = tx - tw/2 + 1, shR = tx + tw/2 - 1;
+  const arm = (side, sn)=>{
+    const sx = side<0 ? shL : shR;
+    let ex, ey, hx, hy;
+    if(air){ ex = sx + side*9; ey = shY - 6; hx = sx + side*12; hy = shY - 17; }
+    else if(sl){ ex = sx + side*10; ey = shY + 6; hx = sx + side*5; hy = shY + 14; }
+    else { ex = sx + side*(9 + 1.5*sn); ey = shY + 9 - sn*3; hx = sx + side*(7 + 3*(-sn)); hy = shY + 14 - sn*9; }
+    const sleeve = ['#b83636','#e8564f','#9a2a2a'];
+    rnLimb(c,sx,shY,ex,ey,hx,hy,5.2,4.4,3.6,sleeve,sleeve);
+    c.fillStyle = 'rgba(70,10,10,0.35)'; c.beginPath(); c.arc(hx,hy,3.9,0,7); c.fill();       // cuff
+    const sk = c.createRadialGradient(hx-1,hy-1,0.5,hx,hy,4.4); sk.addColorStop(0,'#f0c29a'); sk.addColorStop(1,'#c58b62');
+    c.fillStyle = sk; c.beginPath(); c.arc(hx,hy+0.8,3.4,0,7); c.fill();
+  };
+  // far arm behind torso edge, near arm in front
+  if(s0>0){ arm(-1,-s0); arm(1,-s1); } else { arm(1,-s1); arm(-1,-s0); }
+  // ---------- neck, head, hair ----------
+  const hy2 = ty - 9 + (run ? Math.sin(ph*2)*0.9 : 0) + (sl?3:0), hx2 = tx + (run ? c0*0.8 : 0);
+  c.fillStyle = '#b87f58'; c.fillRect(hx2-4.6,ty-5,9.2,8);
+  c.fillStyle = '#c98f66'; c.beginPath(); c.arc(hx2-10,hy2+2,2.8,0,7); c.arc(hx2+10,hy2+2,2.8,0,7); c.fill();
+  // hood bunched behind the neck
+  c.fillStyle = '#b53737'; c.beginPath(); c.ellipse(hx2,ty-1,11,4.2,0,0,7); c.fill();
+  const hr = c.createRadialGradient(hx2-3,hy2-5,1.5,hx2,hy2,12); hr.addColorStop(0,'#5e4030'); hr.addColorStop(0.6,'#2c1d15'); hr.addColorStop(1,'#140c08');
+  c.fillStyle = hr; c.beginPath(); c.arc(hx2,hy2,10.6,0,7); c.fill();
+  // fade at the nape + hair strands
+  c.fillStyle = 'rgba(190,140,105,0.38)'; c.beginPath(); c.ellipse(hx2,hy2+7.6,7.5,3,0,0,7); c.fill();
+  c.strokeStyle = 'rgba(255,230,200,0.22)'; c.lineWidth = 1;
+  for(let i=-3;i<=3;i++){ c.beginPath(); c.moveTo(hx2+i*2.4,hy2-9); c.quadraticCurveTo(hx2+i*2.9,hy2-2,hx2+i*2.2,hy2+5); c.stroke(); }
+  c.fillStyle = 'rgba(255,255,255,0.16)'; c.beginPath(); c.ellipse(hx2-3.4,hy2-6,4.4,2.2,-0.5,0,7); c.fill();
+  // warm rim light from the sun on the right
+  c.strokeStyle = 'rgba(255,230,170,0.5)'; c.lineWidth = 1.4; c.beginPath(); c.arc(hx2,hy2,10.4,-0.9,0.7); c.stroke();
+}
+function rnProj(z){ return 1/(1+z/7); }
+function rnHash(n){ const x = Math.sin(n*78.233)*43758.5453; return x - Math.floor(x); }
+function rnSkyline(c, color, hMax, off, seed, W, hy, windows){
+  c.fillStyle = color;
+  for(let i=-1;i<W/20+2;i++){
+    const h = 10 + rnHash(i*3.1+seed)*hMax, w = 18 + rnHash(i+seed*7)*10;
+    const x = i*22 + off;
+    c.fillRect(x, hy-h, w, h+2);
+    if(windows){ c.fillStyle = 'rgba(255,240,170,0.35)'; for(let wy=hy-h+4; wy<hy-4; wy+=7) for(let wx=x+3; wx<x+w-4; wx+=6) if(rnHash(wx*0.7+wy)>0.55) c.fillRect(wx,wy,2,3); c.fillStyle = color; }
+  }
+}
+function runnerDraw(){
+  const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const W = RN.W, H = RN.H, hy = RN.hy, py = RN.py, cx = W/2, L = RN.laneW;
+  const f80 = rnProj(80);
+  const yOf = z => hy + (py-hy)*(rnProj(Math.max(z,0))-f80)/(1-f80);
+  c.save();
+  const bob = RN.started && !RN.dead && RN.onGround ? Math.sin(RN.dist*1.1*2)*1.6 : 0;
+  c.translate(0,bob);
+  if(RN.shake) c.translate((Math.random()-0.5)*RN.shake*14, (Math.random()-0.5)*RN.shake*10);
+  // sky, sun, clouds, skyline
+  const sk = c.createLinearGradient(0,0,0,hy+4); sk.addColorStop(0,'#1d5fd0'); sk.addColorStop(0.6,'#6bb6ff'); sk.addColorStop(1,'#fde9c8');
+  c.fillStyle = sk; c.fillRect(-20,-20,W+40,hy+24);
+  const sg = c.createRadialGradient(W*0.74,hy-6,2,W*0.74,hy-6,70); sg.addColorStop(0,'rgba(255,250,215,1)'); sg.addColorStop(0.25,'rgba(255,236,170,0.55)'); sg.addColorStop(1,'rgba(255,236,170,0)');
+  c.fillStyle = sg; c.fillRect(0,0,W,hy+10);
+  c.fillStyle = 'rgba(255,255,255,0.8)';
+  for(let i=0;i<3;i++){ const x = (((i*150 - RN.dist*0.4) % (W+120)) + (W+120)) % (W+120) - 60; const y = 18+i*16; c.beginPath(); c.arc(x,y,12,0,7); c.arc(x+14,y+3,10,0,7); c.arc(x-13,y+4,9,0,7); c.arc(x+2,y-5,9,0,7); c.fill(); }
+  rnSkyline(c,'#7ea3d6',34,-RN.x*6,1.3,W,hy,false);
+  rnSkyline(c,'#4d74b4',24,-RN.x*12,5.1,W,hy,true);
+  // grass with moving bands
+  const gg = c.createLinearGradient(0,hy,0,H); gg.addColorStop(0,'#69b95d'); gg.addColorStop(1,'#2a7a3c');
+  c.fillStyle = gg; c.fillRect(-20,hy,W+40,H-hy+20);
+  const bz = 6, bo = RN.dist % bz, bi = Math.floor(RN.dist/bz);
+  for(let k=0;k<16;k++){
+    const z0 = k*bz - bo, z1 = z0 + bz; if(z1<=0) continue;
+    const y1 = yOf(z0), y0 = yOf(z1);
+    c.fillStyle = ((k+bi)%2) ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.04)';
+    c.fillRect(-20, y0, W+40, y1-y0+1);
+  }
+  // road: shoulder, asphalt, edge lines
+  const sw = L*1.62, rw = L*1.5;
+  c.fillStyle = '#c8ccd6';
+  c.beginPath(); c.moveTo(cx-sw*f80,hy); c.lineTo(cx+sw*f80,hy); c.lineTo(cx+sw,H); c.lineTo(cx-sw,H); c.fill();
+  const ag = c.createLinearGradient(0,hy,0,H); ag.addColorStop(0,'#555b72'); ag.addColorStop(1,'#2a2e3f');
+  c.fillStyle = ag;
+  c.beginPath(); c.moveTo(cx-rw*f80,hy); c.lineTo(cx+rw*f80,hy); c.lineTo(cx+rw,H); c.lineTo(cx-rw,H); c.fill();
+  for(let k=0;k<16;k++){
+    const z0 = k*bz - bo, z1 = z0 + bz; if(z1<=0) continue;
+    if((k+bi)%2){ const y1 = yOf(z0), y0 = yOf(z1), f1 = rnProj(Math.max(z0,0)), f0 = rnProj(z1);
+      c.fillStyle = 'rgba(255,255,255,0.035)'; c.beginPath(); c.moveTo(cx-rw*f0,y0); c.lineTo(cx+rw*f0,y0); c.lineTo(cx+rw*f1,y1); c.lineTo(cx-rw*f1,y1); c.fill(); }
+  }
+  c.strokeStyle = '#fff'; c.lineWidth = 3;
+  for(const s of [-1,1]){ c.beginPath(); c.moveTo(cx+s*rw*f80,hy); c.lineTo(cx+s*rw,H); c.stroke(); }
+  // asphalt grain (moves with the road)
+  for(let i=0;i<70;i++){
+    const zz = ((i*2.713 - RN.dist) % 78 + 78) % 78, f = rnProj(zz), y = yOf(zz);
+    const xx = (rnHash(i*5.3)-0.5)*2*rw*f; c.fillStyle = (i%2)?'rgba(255,255,255,0.12)':'rgba(0,0,0,0.18)';
+    c.fillRect(cx+xx, y, Math.max(1,3*f), Math.max(1,2*f));
+  }
+  // dashed lane dividers
+  const dz = 5, dofs = RN.dist % dz;
+  c.fillStyle = 'rgba(255,255,255,0.85)';
+  for(const lx of [-0.5,0.5]){
+    for(let k=0;k<18;k++){
+      const z0 = k*dz - dofs, z1 = z0 + 2.2; if(z1<=0) continue;
+      const fa = rnProj(Math.max(z0,0)), fb = rnProj(z1), ya = yOf(z0), yb = yOf(z1);
+      c.beginPath(); c.moveTo(cx+lx*L*fb-2.2*fb,yb); c.lineTo(cx+lx*L*fb+2.2*fb,yb); c.lineTo(cx+lx*L*fa+2.2*fa,ya); c.lineTo(cx+lx*L*fa-2.2*fa,ya); c.fill();
+    }
+  }
+  // roadside trees and lamp posts scrolling toward the player
+  const sz = 8, so = RN.dist % sz, si = Math.floor(RN.dist/sz);
+  for(let k=13;k>=0;k--){
+    const z = k*sz - so + 1; if(z<=0.3) continue;
+    const f = rnProj(z), y = yOf(z), u = L*f;
+    for(const side of [-1,1]){
+      const id = si + k, r = rnHash(id*2.7 + (side>0?11:0));
+      if(r > 0.4){
+        const x = cx + side*(L*2.3 + r*L*0.5)*f;
+        c.fillStyle = 'rgba(0,0,0,0.18)'; c.beginPath(); c.ellipse(x,y,u*0.5,u*0.12,0,0,7); c.fill();
+        c.fillStyle = '#6b4423'; c.fillRect(x-u*0.07, y-u*0.7, u*0.14, u*0.7);
+        const tg = c.createRadialGradient(x-u*0.15,y-u*1.3,u*0.05,x,y-u*1.15,u*0.7); tg.addColorStop(0,'#5fcf6a'); tg.addColorStop(1,'#1f7a3a');
+        c.fillStyle = tg; c.beginPath(); c.arc(x,y-u*1.05,u*0.5,0,7); c.arc(x-u*0.32,y-u*0.8,u*0.36,0,7); c.arc(x+u*0.32,y-u*0.8,u*0.36,0,7); c.fill();
+      } else {
+        const x = cx + side*(L*1.82)*f;
+        c.fillStyle = '#5b6479'; c.fillRect(x-u*0.04, y-u*1.9, u*0.08, u*1.9);
+        c.fillRect(x - (side>0?u*0.35:0), y-u*1.9, u*0.35, u*0.06);
+        c.fillStyle = '#fff3b0'; c.beginPath(); c.arc(x - side*u*0.3, y-u*1.84, u*0.1, 0, 7); c.fill();
+      }
+    }
+  }
+  // distance haze
+  const hz = c.createLinearGradient(0,hy-4,0,hy+70); hz.addColorStop(0,'rgba(235,242,255,0.55)'); hz.addColorStop(1,'rgba(235,242,255,0)');
+  c.fillStyle = hz; c.fillRect(-20,hy-4,W+40,74);
+  // obstacles, far to near
+  const list = RN.obs.slice().sort((a,b)=>b.z-a.z);
+  for(const o of list){
+    if(o.z > 80) continue;
+    const z = Math.max(o.z,0), f = rnProj(z), x = cx + o.lane*L*f*(1), y = yOf(z), u = L*0.82*f;
+    c.fillStyle = 'rgba(0,0,0,0.28)'; c.beginPath(); c.ellipse(x,y+1,u*0.58,u*0.12,0,0,7); c.fill();
+    if(o.type==='block'){
+      const h = u*1.55, bg = c.createLinearGradient(x-u/2,0,x+u/2,0); bg.addColorStop(0,'#c63a30'); bg.addColorStop(0.5,'#e5584a'); bg.addColorStop(1,'#a82c25');
+      c.fillStyle = '#8f231e'; c.beginPath(); c.moveTo(x-u*0.5,y-h); c.lineTo(x-u*0.4,y-h-u*0.22); c.lineTo(x+u*0.4,y-h-u*0.22); c.lineTo(x+u*0.5,y-h); c.fill();
+      c.fillStyle = '#f0796b'; c.beginPath(); c.moveTo(x-u*0.5,y-h); c.lineTo(x-u*0.4,y-h-u*0.22); c.lineTo(x+u*0.4,y-h-u*0.22); c.lineTo(x+u*0.5,y-h); c.closePath(); c.globalAlpha = 0.5; c.fill(); c.globalAlpha = 1;
+      c.fillStyle = bg; c.fillRect(x-u/2, y-h, u, h);
+      c.fillStyle = '#1b2a44'; c.beginPath(); c.roundRect(x-u*0.4, y-h+u*0.12, u*0.8, u*0.5, u*0.06); c.fill();
+      c.fillStyle = 'rgba(140,200,255,0.5)'; c.fillRect(x-u*0.36, y-h+u*0.16, u*0.3, u*0.12);
+      c.fillStyle = '#ffe9a0'; c.beginPath(); c.arc(x-u*0.3,y-u*0.4,u*0.09,0,7); c.arc(x+u*0.3,y-u*0.4,u*0.09,0,7); c.fill();
+      c.fillStyle = '#ffd24d'; c.fillRect(x-u/2, y-u*0.18, u, u*0.1); c.fillStyle = '#222'; c.fillRect(x-u/2, y-u*0.08, u, u*0.08);
+    } else if(o.type==='low'){
+      const h = u*0.55;
+      c.fillStyle = '#9aa0ad'; c.beginPath(); c.moveTo(x-u*0.55,y); c.lineTo(x-u*0.42,y-h); c.lineTo(x+u*0.42,y-h); c.lineTo(x+u*0.55,y); c.fill();
+      c.fillStyle = '#c9ced9'; c.fillRect(x-u*0.42,y-h,u*0.84,h*0.22);
+      c.save(); c.beginPath(); c.moveTo(x-u*0.55,y); c.lineTo(x-u*0.42,y-h); c.lineTo(x+u*0.42,y-h); c.lineTo(x+u*0.55,y); c.clip();
+      c.fillStyle = '#ff9f1a'; for(let i=-4;i<5;i++){ c.beginPath(); c.moveTo(x+i*u*0.22,y-h*0.7); c.lineTo(x+i*u*0.22+u*0.11,y-h*0.7); c.lineTo(x+i*u*0.22-u*0.05,y-h*0.1); c.lineTo(x+i*u*0.22-u*0.16,y-h*0.1); c.fill(); }
+      c.restore();
+      c.fillStyle = '#ff3b3b'; c.beginPath(); c.arc(x-u*0.3,y-h*0.88,u*0.04,0,7); c.arc(x+u*0.3,y-h*0.88,u*0.04,0,7); c.fill();
+    } else {
+      const top = u*1.5;
+      c.fillStyle = '#7f8aa3'; c.fillRect(x-u*0.52, y-top, u*0.08, top); c.fillRect(x+u*0.44, y-top, u*0.08, top);
+      c.fillStyle = '#a7b2c9'; c.fillRect(x-u*0.52, y-top, u*0.03, top);
+      const bg2 = c.createLinearGradient(0,y-top,0,y-top+u*0.5); bg2.addColorStop(0,'#ff5d6c'); bg2.addColorStop(1,'#c9283f');
+      c.fillStyle = bg2; c.beginPath(); c.roundRect(x-u*0.56, y-top, u*1.12, u*0.5, u*0.06); c.fill();
+      c.fillStyle = '#fff'; c.fillRect(x-u*0.4, y-top+u*0.2, u*0.8, u*0.1);
+      c.fillStyle = '#ffd24d'; for(let i=-2;i<=2;i++) c.fillRect(x+i*u*0.2-u*0.04, y-top+u*0.34, u*0.08, u*0.1);
+    }
+  }
+  // dust and crash particles
+  for(const p of RN.parts){ const a = 1 - p.t/p.life; c.globalAlpha = Math.max(0,a)*0.8; c.fillStyle = p.c; c.beginPath(); c.arc(p.x,p.y,p.r*(p.dust?(1+p.t*3):1),0,7); c.fill(); }
+  c.globalAlpha = 1;
+  // player
+  const px = cx + RN.x*L; const lift = RN.h*60; const sl = RN.slide>0;
+  c.fillStyle = 'rgba(0,0,0,0.3)'; c.beginPath(); c.ellipse(px, py+2, 24-RN.h*9, 6.5, 0, 0, 7); c.fill();
+  const lean = (RN.lane - RN.x) * 0.35;
+  c.save(); c.translate(px, py-lift); c.rotate(lean); c.translate(-px, -(py-lift));
+  if(RN.started && RN.speed>16 && !RN.dead){ c.globalAlpha = 0.18; runnerHuman(c, px, py - lift + 7); c.globalAlpha = 1; }
+  runnerHuman(c, px, py - lift);
+  c.restore();
+  // speed lines
+  if(RN.started && RN.speed > 17){
+    c.strokeStyle = 'rgba(255,255,255,'+Math.min(0.2,(RN.speed-17)*0.015)+')'; c.lineWidth = 1.5;
+    for(let i=0;i<9;i++){ const a = (i*53 + RN.dist*9) % 100/100; const sx = a<0.5 ? a*0.5*W*0.5 : W - (1-a)*W*0.25; const sy = hy + (RN.dist*3 + i*37) % (H-hy); c.beginPath(); c.moveTo(sx,sy); c.lineTo(sx+(sx<cx?-6:6),sy+26); c.stroke(); }
+  }
+  // sun glare
+  const gl = c.createRadialGradient(W*0.74,hy-6,0,W*0.74,hy-6,150); gl.addColorStop(0,'rgba(255,245,200,0.28)'); gl.addColorStop(1,'rgba(255,245,200,0)');
+  c.fillStyle = gl; c.fillRect(0,0,W,H);
+  // vignette
+  const vg = c.createRadialGradient(cx,H*0.55,H*0.35,cx,H*0.55,H*0.85); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,10,40,0.38)');
+  c.fillStyle = vg; c.fillRect(-20,-20,W+40,H+40);
+  c.restore();
+  if(!RN.started && !RN.dead){
+    c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(0,H/2-40,W,70);
+    c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center';
+    c.fillText(RN.att>1 ? 'Tap to continue' : 'Tap to start', W/2, H/2-10);
+    c.font = '13px sans-serif'; c.fillText('Swipe ◀ ▶ lanes • ▲ jump • ▼ slide', W/2, H/2+14);
+  }
+}
+
+// ---- Star Patrol: drag your ship anywhere in the lower field, auto-fire, shield bar, groups, asteroids, power-ups and bosses ----
+const SH = { maxAtt:5, W:360, H:440, move:0 };
+function shClamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function shooterInit(){
+  const cv = gEl('gCanvas');
+  SH.W = Math.min(window.innerWidth-20, 400); SH.H = 440;
+  cv.width = SH.W; cv.height = SH.H;
+  SH.score = 0; SH.att = 1; SH.t = 0; SH.shake = 0; SH.boss = 0;
+  let tx=0, ty=0, sx=0, sy=0;
+  cv.ontouchstart = e=>{ const t = e.touches[0]; tx = t.clientX; ty = t.clientY; sx = SH.x; sy = SH.y; shooterStart(); e.preventDefault(); };
+  cv.ontouchmove = e=>{ const t = e.touches[0]; SH.x = shClamp(sx+(t.clientX-tx)*1.2,26,SH.W-26); SH.y = shClamp(sy+(t.clientY-ty)*1.2,SH.H*0.3,SH.H-46); e.preventDefault(); };
+  cv.onmousedown = ()=>{ shooterStart(); };
+  SH.stars = Array.from({length:70},()=>({x:Math.random()*SH.W,y:Math.random()*SH.H,s:Math.random()*0.9+0.1}));
+  shooterSpawn();
+}
+function shooterLabel(){ gEl('gScore').textContent = 'Score '+SH.score+' • ≈'+Math.min(250,SH.score*5)+' coins'; checkCap(SH.score); }
+function shooterSpawn(){
+  SH.x = SH.W/2; SH.y = SH.H-80; SH.en = []; SH.bu = []; SH.eb = []; SH.caps = []; SH.parts = []; SH.pops = [];
+  SH.fire = 0; SH.gap = 1.2; SH.move = 0; SH.lvl = 1; SH.hp = 100; SH.shield = 0; SH.inv = 0; SH.hurt = 0;
+  SH.started = false; SH.dead = false; SH.last = 0; SH.boss = SH.boss||0;
+  gEl('gResult').style.display = 'none';
+  gEl('gPad').style.display = 'none'; gEl('gPad2').style.display = 'none'; gEl('gPad3').style.display = 'grid';
+  shooterLabel(); shooterDraw();
+}
+function shooterStart(){
+  if(!G || G.over || G.id!=='shooter' || SH.dead || SH.started) return;
+  SH.started = true; SH.last = Date.now(); shooterLoop();
+}
+function shooterPress(d){ shooterStart(); SH.move = d; }
+function shBoom(x,y,big){
+  const n = big?34:18;
+  for(let i=0;i<n;i++){ const a=Math.random()*6.283, v=40+Math.random()*(big?300:200); SH.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:0.4+Math.random()*0.5,t:0,c:['#ffe27a','#ff9a2e','#ff5a36','#fff'][i%4],r:1.3+Math.random()*(big?3.6:2.6)}); }
+  for(let i=0;i<(big?8:4);i++){ const a=Math.random()*6.283, v=30+Math.random()*120; SH.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:0.9+Math.random()*0.5,t:0,c:'#8a90a8',r:2+Math.random()*3,deb:true}); }
+  SH.parts.push({x,y,vx:0,vy:0,life:big?0.6:0.4,t:0,c:'#fff',r:big?46:24,fire:true});
+  SH.parts.push({x,y,vx:0,vy:0,life:big?0.55:0.35,t:0,c:'#fff',r:big?30:14,ring:true});
+  SH.shake = Math.max(SH.shake||0, big?1:0.22);
+}
+function shHurt(dmg){
+  if(SH.shield>0 || SH.inv>0) return false;
+  SH.hp -= dmg; SH.inv = 0.7; SH.hurt = 0.3; SH.lvl = Math.max(1,SH.lvl-1); SH.shake = Math.max(SH.shake,0.6);
+  return true;
+}
+function shKill(e){
+  const pts = e.k==='boss'?3:(e.k==='rock'&&e.sz<2?0:1);
+  SH.score += pts; if(pts) shooterLabel();
+  shBoom(e.x,e.y,e.k==='boss'||e.k==='bomber'||e.k==='rock'&&e.sz>=3);
+  if(pts) SH.pops.push({x:e.x,y:e.y,t:0,text:'+'+(pts*5)});
+  if(e.k==='rock' && e.sz>=3){ for(const s of [-1,1]) SH.en.push({k:'rock',sz:1,x:e.x+s*12,y:e.y,vx:s*55,vy:70+Math.random()*30,hp:1,r:13,rot:Math.random()*6,spin:(Math.random()-0.5)*3,seed:Math.random()}); }
+  if(e.k==='boss') SH.boss++;
+  if(pts && Math.random() < (e.k==='boss'?1:0.13)){ const r = Math.random(); SH.caps.push({x:e.x,y:e.y,t: SH.hp<55 && r<0.5 ? 'R' : (r<0.6?'P':(r<0.85?'R':'S'))}); }
+}
+function shSpawnGroup(){
+  const s = SH.score, W = SH.W, r = Math.random();
+  if(s>=20 && SH.boss<1 && !SH.en.some(e=>e.k==='boss')){ SH.en.push({k:'boss',x:W/2,y:-60,hp:40,hp0:40,r:44,ph:0,shoot:1.5}); SH.gap = 4; return; }
+  if(s>=42 && SH.boss<2 && !SH.en.some(e=>e.k==='boss')){ SH.en.push({k:'boss',x:W/2,y:-60,hp:55,hp0:55,r:44,ph:0,shoot:1.2}); SH.gap = 4; return; }
+  if(SH.en.some(e=>e.k==='boss')){ SH.gap = 3; return; }
+  if(r<0.3 || s<3){          // asteroid field
+    const n = 1+(s>8?1:0); for(let i=0;i<n;i++) SH.en.push({k:'rock',sz:3,x:40+Math.random()*(W-80),y:-40-i*50,vx:(Math.random()-0.5)*40,vy:55+Math.random()*30+Math.min(s,40),hp:3,r:26,rot:Math.random()*6,spin:(Math.random()-0.5)*1.6,seed:Math.random()});
+  } else if(r<0.62 || s<6){  // scouts in a V
+    const n = 5, cx = 60+Math.random()*(W-120);
+    for(let i=0;i<n;i++){ const o = i-2; SH.en.push({k:'scout',x:cx+o*34,y:-20-Math.abs(o)*26,bx:cx+o*34,hp:1,r:15,sp:105+Math.min(s,40),ph:i*0.5}); }
+  } else if(r<0.88 || s<14){ // gunships that fire aimed shots
+    const n = s>25?3:2; for(let i=0;i<n;i++) SH.en.push({k:'gun',x:50+Math.random()*(W-100),y:-30-i*60,bx:0,hp:2,r:18,sp:48,shoot:1+Math.random()*1.5,ph:Math.random()*6});
+    for(const e of SH.en) if(e.k==='gun' && !e.bx) e.bx = e.x;
+  } else {                   // heavy bomber
+    SH.en.push({k:'bomber',x:60+Math.random()*(W-120),y:-40,hp:6,hp0:6,r:28,sp:34,shoot:1.4,ph:0});
+  }
+  SH.gap = Math.max(1.1, 2.6-s*0.025);
+}
+function shooterLoop(){
+  if(!G || G.over || SH.dead) return;
+  const now = Date.now(); let dt = (now - SH.last)/1000; SH.last = now; if(dt>0.05) dt = 0.05;
+  SH.t += dt;
+  SH.x = shClamp(SH.x + SH.move*320*dt, 26, SH.W-26);
+  if(SH.inv>0) SH.inv -= dt; if(SH.shield>0) SH.shield -= dt; if(SH.hurt>0) SH.hurt -= dt;
+  const sx = SH.x, sy = SH.y;
+  // auto fire: level 1 twin cannons, level 2 four shots, level 3 spread
+  SH.fire -= dt;
+  if(SH.fire <= 0){
+    const L = SH.lvl, v = 640;
+    if(L===1){ SH.bu.push({x:sx-8,y:sy-18,vx:0,vy:-v},{x:sx+8,y:sy-18,vx:0,vy:-v}); }
+    else if(L===2){ SH.bu.push({x:sx-12,y:sy-14,vx:0,vy:-v},{x:sx+12,y:sy-14,vx:0,vy:-v},{x:sx-4,y:sy-22,vx:0,vy:-v},{x:sx+4,y:sy-22,vx:0,vy:-v}); }
+    else { for(const a of [-0.24,-0.12,0,0.12,0.24]) SH.bu.push({x:sx,y:sy-22,vx:Math.sin(a)*v,vy:-Math.cos(a)*v}); }
+    SH.fire = 0.24;
+  }
+  for(const b of SH.bu){ b.x += b.vx*dt; b.y += b.vy*dt; }
+  SH.bu = SH.bu.filter(b=>b.y>-20 && b.x>-10 && b.x<SH.W+10);
+  SH.gap -= dt; if(SH.gap<=0) shSpawnGroup();
+  SH.shake = Math.max(0,(SH.shake||0)-dt*2.6);
+  for(const e of SH.en){
+    if(e.flash>0) e.flash -= dt;
+    if(e.k==='scout'){ e.y += e.sp*dt; e.x = e.bx + Math.sin(SH.t*2.4+e.ph)*30; }
+    else if(e.k==='rock'){ e.x += e.vx*dt; e.y += e.vy*dt; e.rot += e.spin*dt; if(e.x<e.r){ e.x = e.r; e.vx = Math.abs(e.vx); } if(e.x>SH.W-e.r){ e.x = SH.W-e.r; e.vx = -Math.abs(e.vx); } }
+    else if(e.k==='gun'){ e.y += e.sp*dt; e.x = e.bx + Math.sin(SH.t*1.3+e.ph)*34; e.shoot -= dt;
+      if(e.shoot<=0 && e.y>10 && e.y<SH.H-170){ const dx = sx-e.x, dy = sy-e.y, L = Math.hypot(dx,dy)||1; SH.eb.push({x:e.x,y:e.y+16,vx:dx/L*200,vy:dy/L*200}); e.shoot = 2+Math.random()*1.5; } }
+    else if(e.k==='bomber'){ e.y += e.sp*dt; e.x += Math.sin(SH.t*0.9)*40*dt; e.shoot -= dt;
+      if(e.shoot<=0 && e.y>10 && e.y<SH.H-190){ for(const a of [-0.35,0,0.35]) SH.eb.push({x:e.x,y:e.y+22,vx:Math.sin(a)*190,vy:Math.cos(a)*190}); e.shoot = 2.1; } }
+    else if(e.k==='boss'){ if(e.y<70) e.y += 40*dt; e.ph += dt; e.x = SH.W/2 + Math.sin(e.ph*0.8)*(SH.W/2-70); e.shoot -= dt;
+      if(e.shoot<=0 && e.y>=60){ const n = e.hp<e.hp0*0.5?7:5; for(let i=0;i<n;i++){ const a = (i-(n-1)/2)*0.26; SH.eb.push({x:e.x,y:e.y+36,vx:Math.sin(a)*170,vy:Math.cos(a)*170}); } e.shoot = 1.8; } }
+  }
+  for(const b of SH.eb){ b.x += b.vx*dt; b.y += b.vy*dt; }
+  SH.eb = SH.eb.filter(b=>b.y<SH.H+10 && b.y>-20 && b.x>-10 && b.x<SH.W+10);
+  // player bullets vs enemies
+  for(const b of SH.bu){ for(const e of SH.en){
+    if(e.hp>0 && Math.abs(b.x-e.x)<e.r && Math.abs(b.y-e.y)<e.r){
+      e.hp--; b.y = -99; e.flash = 0.07;
+      if(e.hp<=0) shKill(e); else SH.parts.push({x:b.x,y:b.y,vx:0,vy:0,life:0.15,t:0,c:'#fff',r:5,ring:true});
+      break;
+    } } }
+  SH.en = SH.en.filter(e=>e.hp>0 && e.y < SH.H+60);
+  for(const c of SH.caps) c.y += 80*dt;
+  for(const c of SH.caps){ if(Math.abs(c.x-sx)<28 && Math.abs(c.y-sy)<30){ c.y = 9999;
+    if(c.t==='P'){ SH.lvl = Math.min(3,SH.lvl+1); SH.pops.push({x:sx,y:sy-40,t:0,text:'WEAPON UP'}); }
+    else if(c.t==='R'){ SH.hp = Math.min(100,SH.hp+35); SH.pops.push({x:sx,y:sy-40,t:0,text:'REPAIR +35'}); }
+    else { SH.shield = 6; SH.pops.push({x:sx,y:sy-40,t:0,text:'SHIELD'}); } } }
+  SH.caps = SH.caps.filter(c=>c.y<SH.H+20);
+  for(const p of SH.parts){ p.t += dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vx *= 0.96; p.vy *= 0.96; }
+  SH.parts = SH.parts.filter(p=>p.t<p.life);
+  for(const p of SH.pops){ p.t += dt; p.y -= 40*dt; }
+  SH.pops = SH.pops.filter(p=>p.t<0.9);
+  for(const s of SH.stars){ s.y += s.s*210*dt; if(s.y>SH.H){ s.y=-10; s.x=Math.random()*SH.W; } }
+  // damage to the ship
+  for(const e of SH.en){
+    if(e.hp>0 && Math.abs(e.x-sx)<e.r*0.8+12 && Math.abs(e.y-sy)<e.r*0.8+14){
+      if(e.k==='boss'){ shHurt(40); } else { if(shHurt(e.k==='rock'?30:35)){ e.hp = 0; shBoom(e.x,e.y,false); } else if(SH.shield>0){ e.hp = 0; shBoom(e.x,e.y,false); } }
+    }
+    if(e.hp>0 && e.k!=='rock' && e.k!=='boss' && e.y>SH.H+10){ shHurt(10); e.hp = 0; }
+  }
+  for(const b of SH.eb){ if(Math.abs(b.x-sx)<14 && Math.abs(b.y-sy)<18){ b.y = 9999; if(!shHurt(18)){ shBoom(b.x,sy-10,false); } } }
+  if(SH.hp<=0){ SH.hp = 0; shBoom(sx,sy,true); shooterDie(); return; }
+  shooterDraw();
+  G.timer = setTimeout(shooterLoop, 16);
+}
+function shFx(){
+  if(!G || G.over || G.id!=='shooter') return;
+  const now = Date.now(); let dt = (now - (SH.fxLast||now))/1000; SH.fxLast = now; if(dt>0.05) dt = 0.05;
+  SH.t += dt; SH.shake = Math.max(0,(SH.shake||0)-dt*1.8);
+  for(const p of SH.parts){ p.t += dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vx *= 0.97; p.vy *= 0.97; }
+  SH.parts = SH.parts.filter(p=>p.t<p.life);
+  for(const s of SH.stars){ s.y += s.s*100*dt; if(s.y>SH.H){ s.y=-10; s.x=Math.random()*SH.W; } }
+  shooterDraw();
+  if(SH.parts.length || SH.shake>0.02) G.timer = setTimeout(shFx, 16);
+}
+function shooterDie(){
+  SH.dead = true; SH.move = 0;
+  if(G.timer) clearTimeout(G.timer);
+  SH.fxLast = Date.now(); shFx();
+  const res = gEl('gResult');
+  gEl('gPad3').style.display = 'none';
+  res.style.display = 'block';
+  if(SH.att >= SH.maxAtt){ finishGame(SH.score); return; }
+  const left = SH.maxAtt - SH.att;
+  res.innerHTML = '<div style="font-size:17px;font-weight:bold;">Your ship was destroyed!</div>'
+    + '<div style="margin:8px 0;color:var(--muted);">Score so far: <b style="color:#fff;">'+SH.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
+    + '<button class="action btn-collect" onclick="shooterContinue()">'+(GAME_ADS_ON?'🎬 Watch ad to continue':'▶️ Continue')+'</button>'
+    + '<button class="action" style="margin-top:8px;" onclick="finishGame(SH.score)">Finish &amp; see result</button>';
+}
+async function shooterContinue(){
+  const res = gEl('gResult');
+  await continuePlaceholderAd(res);
+  if(!G || G.over) return;
+  SH.att++; SH.dead = false; SH.started = false; SH.en = []; SH.bu = []; SH.eb = []; SH.caps = []; SH.gap = 1.2; SH.move = 0; SH.x = SH.W/2; SH.y = SH.H-80; SH.hp = 100; SH.lvl = 1; SH.shield = 2; SH.inv = 0;
+  gEl('gResult').style.display = 'none';
+  gEl('gPad3').style.display = 'grid';
+  shooterLabel(); shooterDraw();
+}
+function shPoly(c, pts, fill, stroke){ c.beginPath(); c.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) c.lineTo(pts[i][0],pts[i][1]); c.closePath(); c.fillStyle = fill; c.fill(); if(stroke){ c.strokeStyle = stroke; c.lineWidth = 1.2; c.stroke(); } }
+function shMetal(c,x0,y0,x1,y1,a,b,m){ const g = c.createLinearGradient(x0,y0,x1,y1); g.addColorStop(0,a); g.addColorStop(m||0.5,b); g.addColorStop(1,a); return g; }
+function shShip(c, x, y){
+  // flame
+  const fl = 14+Math.random()*10;
+  const fg = c.createLinearGradient(0,y+14,0,y+14+fl); fg.addColorStop(0,'rgba(255,255,255,0.95)'); fg.addColorStop(0.3,'rgba(90,180,255,0.9)'); fg.addColorStop(1,'rgba(40,90,255,0)');
+  c.fillStyle = fg; c.beginPath(); c.moveTo(x-6,y+14); c.quadraticCurveTo(x,y+16+fl,x+6,y+14); c.fill();
+  // swept wings
+  shPoly(c,[[x-4,y-4],[x-30,y+14],[x-30,y+20],[x-8,y+14]],shMetal(c,x-30,y,x,y,'#5d6a88','#aab6d3'),'#2b3552');
+  shPoly(c,[[x+4,y-4],[x+30,y+14],[x+30,y+20],[x+8,y+14]],shMetal(c,x,y,x+30,y,'#aab6d3','#5d6a88'),'#2b3552');
+  c.fillStyle = '#ff5a36'; c.fillRect(x-30,y+13,3,6); c.fillRect(x+27,y+13,3,6);
+  // fuselage
+  shPoly(c,[[x,y-26],[x+9,y-6],[x+11,y+14],[x+5,y+18],[x-5,y+18],[x-11,y+14],[x-9,y-6]],shMetal(c,x-11,y,x+11,y,'#7d8aa8','#eef2fb',0.45),'#2b3552');
+  c.fillStyle = '#3b4766'; c.fillRect(x-1,y-14,2,28);
+  // cockpit glass
+  const cg = c.createLinearGradient(x,y-16,x,y+2); cg.addColorStop(0,'#bff0ff'); cg.addColorStop(1,'#2f7bd6');
+  c.fillStyle = cg; c.beginPath(); c.ellipse(x,y-6,4.6,9,0,0,7); c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.ellipse(x-1.5,y-9,1.4,4,0,0,7); c.fill();
+  // cannons
+  c.fillStyle = '#2b3552'; c.fillRect(x-14,y-8,3,12); c.fillRect(x+11,y-8,3,12);
+}
+function shEnemy(c, e){
+  const x = e.x, y = e.y, f = e.flash>0;
+  if(e.k==='scout'){
+    shPoly(c,[[x,y+14],[x+15,y-10],[x+6,y-5],[x,y-12],[x-6,y-5],[x-15,y-10]],f?'#fff':shMetal(c,x-15,y,x+15,y,'#8f1f3d','#ff5d7e'),'#4a0d1f');
+    c.fillStyle = '#ffd24d'; c.beginPath(); c.arc(x,y,3.2,0,7); c.fill();
+  } else if(e.k==='gun'){
+    shPoly(c,[[x,y+20],[x+18,y+2],[x+14,y-12],[x+6,y-8],[x,y-14],[x-6,y-8],[x-14,y-12],[x-18,y+2]],f?'#fff':shMetal(c,x-18,y,x+18,y,'#4d5675','#a9b3d1'),'#252b42');
+    c.fillStyle = '#ff7a2f'; c.fillRect(x-12,y+2,4,12); c.fillRect(x+8,y+2,4,12);
+    c.fillStyle = '#ff3b3b'; c.beginPath(); c.arc(x,y-2,4,0,7); c.fill();
+  } else if(e.k==='bomber'){
+    shPoly(c,[[x,y+26],[x+30,y+4],[x+26,y-14],[x+10,y-20],[x-10,y-20],[x-26,y-14],[x-30,y+4]],f?'#fff':shMetal(c,x-30,y,x+30,y,'#46308c','#9a7be8'),'#241647');
+    c.fillStyle = 'rgba(255,255,255,0.15)'; c.fillRect(x-20,y-12,40,4);
+    c.fillStyle = '#ff7a2f'; for(const o of [-18,-6,6,18]){ c.beginPath(); c.arc(x+o,y+10,3,0,7); c.fill(); }
+    c.fillStyle = '#e6d6ff'; c.beginPath(); c.arc(x,y-2,6,0,7); c.fill();
+    c.fillStyle = '#222'; c.fillRect(x-20,y-30,40,4); c.fillStyle = '#ff4d4d'; c.fillRect(x-20,y-30,40*e.hp/e.hp0,4);
+  } else if(e.k==='rock'){
+    c.save(); c.translate(x,y); c.rotate(e.rot);
+    const n = 9, r = e.r; c.beginPath();
+    for(let i=0;i<n;i++){ const a = i/n*6.283, rr = r*(0.78+0.22*((Math.sin(i*12.9+e.seed*50)+1)/2)); const px = Math.cos(a)*rr, py = Math.sin(a)*rr; if(i) c.lineTo(px,py); else c.moveTo(px,py); }
+    c.closePath();
+    const g = c.createRadialGradient(-r*0.35,-r*0.35,r*0.1,0,0,r*1.1); g.addColorStop(0,f?'#fff':'#a39a8f'); g.addColorStop(1,'#3f3a36');
+    c.fillStyle = g; c.fill(); c.strokeStyle = '#26221f'; c.lineWidth = 1.2; c.stroke();
+    c.fillStyle = 'rgba(0,0,0,0.28)'; c.beginPath(); c.arc(r*0.25,r*0.1,r*0.2,0,7); c.arc(-r*0.3,r*0.3,r*0.13,0,7); c.arc(-r*0.05,-r*0.38,r*0.1,0,7); c.fill();
+    c.restore();
+  } else if(e.k==='boss'){
+    shPoly(c,[[x,y+44],[x+54,y+8],[x+46,y-22],[x+20,y-34],[x-20,y-34],[x-46,y-22],[x-54,y+8]],f?'#fff':shMetal(c,x-54,y,x+54,y,'#33405f','#8ea0cc'),'#18203a');
+    shPoly(c,[[x,y+30],[x+30,y+6],[x+26,y-16],[x-26,y-16],[x-30,y+6]],'rgba(20,28,52,0.55)');
+    const gl = 0.55+0.4*Math.sin(SH.t*6);
+    c.fillStyle = 'rgba(255,60,60,'+gl+')'; c.beginPath(); c.arc(x,y-2,9,0,7); c.fill();
+    c.fillStyle = '#ff9a2e'; for(const o of [-40,-24,24,40]){ c.beginPath(); c.arc(x+o,y+12,3.5,0,7); c.fill(); }
+    c.fillStyle = '#222'; c.fillRect(x-44,y-50,88,6); c.fillStyle = '#ff4d4d'; c.fillRect(x-44,y-50,88*e.hp/e.hp0,6);
+  }
+}
+function shooterDraw(){
+  const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const W = SH.W, H = SH.H;
+  c.save();
+  if(SH.shake>0){ c.translate((Math.random()-0.5)*SH.shake*14,(Math.random()-0.5)*SH.shake*10); }
+  const bg = c.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#04030f'); bg.addColorStop(0.6,'#0d0a30'); bg.addColorStop(1,'#071742');
+  c.fillStyle = bg; c.fillRect(-20,-20,W+40,H+40);
+  // nebula and a distant planet
+  const n1 = c.createRadialGradient(W*0.2,H*0.3,5,W*0.2,H*0.3,150); n1.addColorStop(0,'rgba(140,60,200,0.28)'); n1.addColorStop(1,'rgba(140,60,200,0)'); c.fillStyle = n1; c.fillRect(0,0,W,H);
+  const n2 = c.createRadialGradient(W*0.85,H*0.7,5,W*0.85,H*0.7,140); n2.addColorStop(0,'rgba(40,120,220,0.25)'); n2.addColorStop(1,'rgba(40,120,220,0)'); c.fillStyle = n2; c.fillRect(0,0,W,H);
+  const py = ((SH.t||0)*4)%(H+160)-80;
+  const pg = c.createRadialGradient(W*0.78-14,py-12,4,W*0.78,py,38); pg.addColorStop(0,'#d7a074'); pg.addColorStop(0.6,'#8a4f36'); pg.addColorStop(1,'#2a1410');
+  c.fillStyle = pg; c.beginPath(); c.arc(W*0.78,py,36,0,7); c.fill();
+  c.fillStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.arc(W*0.78+12,py+4,36,0,7); c.fill();
+  for(const s of SH.stars){ c.fillStyle = 'rgba(255,255,255,'+(0.3+s.s*0.7)+')'; const sz = 0.6+s.s*1.6; c.fillRect(s.x,s.y,sz,sz+s.s*3); }
+  // pick-ups
+  for(const k of SH.caps){
+    const col = k.t==='P'?'#ffb81c':(k.t==='R'?'#2fd36b':'#3aa8ff');
+    const g = c.createRadialGradient(k.x,k.y,2,k.x,k.y,22); g.addColorStop(0,col); g.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle = g; c.globalAlpha = 0.5; c.beginPath(); c.arc(k.x,k.y,22,0,7); c.fill(); c.globalAlpha = 1;
+    c.fillStyle = col; c.beginPath(); c.arc(k.x,k.y,11,0,7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#0b1230'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText(k.t==='P'?'↑':(k.t==='R'?'+':'◎'),k.x,k.y+4.5);
+  }
+  for(const e of SH.en) shEnemy(c,e);
+  // bullets
+  for(const b of SH.bu){ const g = c.createLinearGradient(b.x,b.y-10,b.x,b.y+10); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(90,190,255,0)'); c.strokeStyle = g; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(b.x-b.vx*0.012,b.y+10); c.lineTo(b.x,b.y-8); c.stroke(); }
+  for(const b of SH.eb){ const g = c.createRadialGradient(b.x,b.y,1,b.x,b.y,9); g.addColorStop(0,'#fff'); g.addColorStop(0.4,'#ff6a3d'); g.addColorStop(1,'rgba(255,60,40,0)'); c.fillStyle = g; c.beginPath(); c.arc(b.x,b.y,9,0,7); c.fill(); }
+  // explosions and sparks
+  for(const p of SH.parts){
+    const a = 1-p.t/p.life;
+    if(p.fire){ const g = c.createRadialGradient(p.x,p.y,1,p.x,p.y,p.r*(0.5+p.t/p.life)); g.addColorStop(0,'rgba(255,250,210,'+a+')'); g.addColorStop(0.4,'rgba(255,150,40,'+(a*0.8)+')'); g.addColorStop(1,'rgba(255,60,20,0)'); c.fillStyle = g; c.beginPath(); c.arc(p.x,p.y,p.r*(0.5+p.t/p.life),0,7); c.fill(); }
+    else if(p.ring){ c.strokeStyle = 'rgba(255,255,255,'+a+')'; c.lineWidth = 2; c.beginPath(); c.arc(p.x,p.y,p.r*(p.t/p.life)+3,0,7); c.stroke(); }
+    else { c.globalAlpha = a; c.fillStyle = p.c; c.beginPath(); c.arc(p.x,p.y,p.r*(p.deb?1:a+0.3),0,7); c.fill(); c.globalAlpha = 1; }
+  }
+  // the player's ship (blinks while recovering from a hit) and its shield
+  if(!SH.dead){
+    if(!(SH.inv>0 && Math.floor(SH.inv*20)%2===0)) shShip(c,SH.x,SH.y);
+    if(SH.shield>0){ const a = SH.shield<1.5 ? (Math.floor(SH.shield*8)%2?0.15:0.5) : 0.5; const g = c.createRadialGradient(SH.x,SH.y,10,SH.x,SH.y,36); g.addColorStop(0,'rgba(80,180,255,0)'); g.addColorStop(1,'rgba(80,190,255,'+a+')'); c.fillStyle = g; c.beginPath(); c.arc(SH.x,SH.y,36,0,7); c.fill(); c.strokeStyle = 'rgba(160,220,255,'+a+')'; c.lineWidth = 1.5; c.stroke(); }
+  }
+  for(const p of SH.pops){ c.globalAlpha = Math.max(0,1-p.t/0.9); c.fillStyle = '#ffd24d'; c.font = 'bold 14px sans-serif'; c.textAlign = 'center'; c.fillText(p.text,p.x,p.y); c.globalAlpha = 1; }
+  c.restore();
+  // shield / hull bar
+  c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(10,H-18,W-20,9);
+  const hpc = SH.hp>55?'#2fd36b':(SH.hp>28?'#ffb81c':'#ff4d4d');
+  c.fillStyle = hpc; c.fillRect(10,H-18,(W-20)*Math.max(0,SH.hp)/100,9);
+  c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 1; c.strokeRect(10.5,H-17.5,W-21,8);
+  c.fillStyle = '#fff'; c.font = 'bold 9px sans-serif'; c.textAlign = 'left'; c.fillText('HULL',14,H-10.5);
+  if(SH.hurt>0){ c.fillStyle = 'rgba(255,40,40,'+(SH.hurt*0.7)+')'; c.fillRect(0,0,W,H); }
+  if(!SH.started && !SH.dead){
+    c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(0,H/2-40,W,76);
+    c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center';
+    c.fillText(SH.att>1 ? 'Tap to continue' : 'Tap to start', W/2, H/2-10);
+    c.font = '13px sans-serif'; c.fillText('Drag to fly • your ship fires by itself', W/2, H/2+12);
+    c.fillText('Grab ↑ weapon, + repair, ◎ shield', W/2, H/2+30);
+  }
+}
+
+// ---- Timed Quiz (general knowledge + maths, 5 attempts per play) ----
+const QZ_BANK = [
+ [ // easy
+  ['Which company makes the iPhone?',['Apple','Samsung','Google','Nokia'],0],
+  ['What is the currency of the United States?',['Dollar','Euro','Pound','Yen'],0],
+  ['Which is the biggest country in the world by area?',['Russia','Canada','China','USA'],0],
+  ['Which social media app was formerly called Twitter?',['X','Threads','Snapchat','TikTok'],0],
+  ['Which sport is Lionel Messi famous for?',['Football','Tennis','Basketball','Golf'],0],
+  ['In which country is the Eiffel Tower?',['France','Italy','Spain','Germany'],0],
+  ['Who flies an aeroplane?',['Pilot','Chef','Doctor','Farmer'],0],
+  ['Which is the biggest animal in the ocean?',['Blue whale','Shark','Dolphin','Octopus'],0],
+  ['What colour do you get by mixing red and white?',['Pink','Orange','Purple','Brown'],0],
+  ['How many days are in a week?',['5','6','7','8'],2]
+ ],
+ [ // medium
+  ['Which country hosted the 2024 Summer Olympics?',['France','Japan','Brazil','UK'],0],
+  ['Who won the 2022 FIFA World Cup?',['Argentina','France','Brazil','Germany'],0],
+  ['Where is the headquarters of the United Nations?',['New York','Geneva','London','Paris'],0],
+  ['Which company created ChatGPT?',['OpenAI','Google','Meta','Amazon'],0],
+  ['What is the capital of Australia?',['Sydney','Canberra','Melbourne','Perth'],1],
+  ['Which country hosted the 2022 FIFA World Cup?',['Qatar','Russia','Brazil','Japan'],0],
+  ['What is the currency of Japan?',['Yen','Won','Yuan','Rupee'],0],
+  ['Who founded Facebook?',['Mark Zuckerberg','Bill Gates','Elon Musk','Jeff Bezos'],0],
+  ['Which planet is known as the Red Planet?',['Venus','Mars','Saturn','Mercury'],1],
+  ['Which is the largest ocean on Earth?',['Atlantic','Indian','Pacific','Arctic'],2]
+ ],
+ [ // harder
+  ['What does AI stand for?',['Artificial Intelligence','Automatic Internet','Advanced Input','Applied Index'],0],
+  ['Which organisation runs the Olympic Games?',['IOC','FIFA','UEFA','NBA'],0],
+  ['Which country won Euro 2024?',['Spain','England','France','Germany'],0],
+  ['How many countries are there in Africa?',['54','50','48','60'],0],
+  ['Which language has the most native speakers?',['Mandarin Chinese','English','Spanish','Hindi'],0],
+  ['What does GDP measure?',["A country's economic output",'Population','Rainfall','Army size'],0],
+  ['Which cryptocurrency was created first?',['Bitcoin','Ethereum','Dogecoin','TON'],0],
+  ['Which planet did the Perseverance rover land on?',['Mars','Venus','The Moon','Jupiter'],0],
+  ['What is the chemical symbol for gold?',['Au','Ag','Go','Gd'],0],
+  ['In which year did World War II end?',['1918','1939','1945','1950'],2]
+ ]
+];
+function mathQ(tier){
+  const r = n=>Math.floor(Math.random()*n), R = (a,b)=>a+r(b-a+1);
+  let text, ans, near = [];
+  const kind = tier===0 ? r(2) : (tier===1 ? 2+r(2) : r(5));
+  if(kind===0){ const a=R(3,30), b=R(3,30); text = a+' + '+b; ans = a+b; }
+  else if(kind===1){ let a=R(10,40), b=R(3,25); if(b>a){ const t=a; a=b; b=t; } text = a+' − '+b; ans = a-b; }
+  else if(kind===2){ const a=tier===1?R(2,12):R(12,25), b=tier===1?R(2,12):R(3,9); text = a+' × '+b; ans = a*b; near = [ans+a, ans-a, ans+b, ans-b]; }
+  else if(kind===3){ const b=tier===1?R(2,12):R(3,15), q=tier===1?R(2,12):R(5,25); text = (b*q)+' ÷ '+b; ans = q; near = [q+1, q-1, q+2, q-2]; }
+  else if(tier===2 && Math.random()<0.5){ const a=R(3,9), b=R(3,9), c=R(5,30); text = a+' × '+b+' + '+c; ans = a*b+c; near = [a*b-c, a*b+c+a, a*b+c-b]; }
+  else { const a=R(100,500), b=R(100,400); if(Math.random()<0.5){ text = a+' + '+b; ans = a+b; } else { const hi=Math.max(a,b), lo=Math.min(a,b); text = hi+' − '+lo; ans = hi-lo; } }
+  const set = [ans];
+  for(const n of near){ if(n>=0 && !set.includes(n) && set.length<4) set.push(n); }
+  const offs = [1,-1,2,-2,10,-10,5,-5,3,-3,20,-20];
+  for(const o of offs.sort(()=>Math.random()-0.5)){ const v = ans+o; if(v>=0 && !set.includes(v) && set.length<4) set.push(v); }
+  return ['What is '+text+' ?', set.map(String), 0];
+}
+const QZ = { maxAtt:5, target:10 };
+function quizInit(){
+  gEl('gCanvas').style.display = 'none';
+  gEl('gQuiz').style.display = 'block';
+  QZ.score = 0; QZ.att = 1; QZ.asked = 0; QZ.used = {}; QZ.locked = false;
+  quizNext();
+}
+function quizLabel(){ gEl('gScore').textContent = 'Correct '+QZ.score+' • Attempt '+QZ.att+'/'+QZ.maxAtt; checkCap(QZ.score); }
+function quizPick(){
+  const tier = QZ.asked<5 ? 0 : (QZ.asked<10 ? 1 : 2);
+  if(Math.random()<0.5) return {q:mathQ(tier), tier, math:true};
+  const order = [tier, ...[0,1,2].filter(t=>t!==tier)];
+  for(const t of order){
+    const free = QZ_BANK[t].map((q,i)=>i).filter(i=>!QZ.used[t+':'+i]);
+    if(free.length){ const i = free[Math.floor(Math.random()*free.length)]; QZ.used[t+':'+i] = 1; return {q:QZ_BANK[t][i], tier, math:false}; }
+  }
+  QZ.used = {}; return {q:mathQ(tier), tier, math:true};
+}
+function quizNext(){
+  if(!G || G.over) return;
+  const p = quizPick(); QZ.asked++;
+  const opts = p.q[1].map((t,i)=>({t, ok:i===p.q[2]})).sort(()=>Math.random()-0.5);
+  QZ.cur = { opts }; QZ.locked = false;
+  QZ.total = p.math ? [10,12,15][p.tier] : [15,12,10][p.tier]; QZ.left = QZ.total;
+  gEl('gResult').style.display = 'none';
+  quizLabel();
+  gEl('gQuiz').innerHTML = '<div style="background:var(--card);border-radius:14px;padding:16px;">'
+    + '<div style="color:var(--muted);font-size:12px;">Question '+QZ.asked+' • '+(p.math?'Maths':'General knowledge')+' • '+QZ.total+' seconds</div>'
+    + '<div style="height:8px;background:rgba(255,255,255,0.12);border-radius:6px;margin:8px 0 14px;overflow:hidden;"><div id="qzBar" style="height:100%;width:100%;background:var(--gold);"></div></div>'
+    + '<div style="font-size:'+(p.math?'24':'18')+'px;font-weight:bold;margin-bottom:14px;">'+esc(p.q[0])+'</div>'
+    + opts.map((o,i)=>'<button class="action" id="qzOpt'+i+'" style="margin:0 0 8px;text-align:left;" onclick="quizAnswer('+i+')">'+esc(o.t)+'</button>').join('')
+    + '</div>';
+  quizTick();
+}
+function quizTick(){
+  if(!G || G.over || QZ.locked) return;
+  const bar = gEl('qzBar'); if(bar) bar.style.width = Math.max(0,QZ.left/QZ.total*100)+'%';
+  if(QZ.left <= 0){ quizAnswer(-1); return; }
+  QZ.left -= 0.1;
+  G.timer = setTimeout(quizTick, 100);
+}
+function quizAnswer(i){
+  if(!G || G.over || QZ.locked) return;
+  QZ.locked = true; if(G.timer) clearTimeout(G.timer);
+  const opts = QZ.cur.opts; const ok = i>=0 && opts[i].ok;
+  opts.forEach((o,k)=>{ const b = gEl('qzOpt'+k); if(!b) return; b.disabled = true; if(o.ok){ b.style.background='#2ecc71'; b.style.color='#fff'; } else if(k===i){ b.style.background='#e74c3c'; b.style.color='#fff'; } });
+  if(ok){ QZ.score++; quizLabel(); }
+  G.timer = setTimeout(()=>{
+    if(!G || G.over) return;
+    if(ok) quizNext(); else quizFail(i<0);
+  }, 1300);
+}
+function quizFail(timeout){
+  if(QZ.att >= QZ.maxAtt){ finishGame(QZ.score); return; }
+  const res = gEl('gResult');
+  res.style.display = 'block';
+  const left = QZ.maxAtt - QZ.att;
+  res.innerHTML = '<div style="font-size:17px;font-weight:bold;">'+(timeout?'Time is up!':'Wrong answer')+'</div>'
+    + '<div style="margin:8px 0;color:var(--muted);">Correct so far: <b style="color:#fff;">'+QZ.score+'</b> • '+left+' attempt'+(left>1?'s':'')+' left</div>'
+    + '<button class="action btn-collect" onclick="quizContinue()">'+(GAME_ADS_ON?'🎬 Watch ad to continue':'▶️ Continue')+'</button>'
+    + '<button class="action" style="margin-top:8px;" onclick="finishGame(QZ.score)">Finish &amp; see result</button>';
+}
+async function quizContinue(){
+  const res = gEl('gResult');
+  gEl('gQuiz').style.display = 'none';
+  await continuePlaceholderAd(res);
+  if(!G || G.over) return;
+  gEl('gQuiz').style.display = 'block';
+  QZ.att++;
+  quizNext();
+}
+// =================== END GAMES ===================
+
+async function handleStart(i){
+  const slot = state.slots[i];
+  if(slot.state!=='idle') return;
+  try{
+    const r = await api('start', { i });
+    applyServerState(r.state);
+    calibrate(state.slots[i]);
+  }catch(e){ alert(e.message); }
+  render();
+}
+
+function selectMethod(m){
+  selectedMethod = m;
+  document.getElementById('methodUSDT').classList.toggle('active', m==='USDT_BEP20');
+  document.getElementById('methodTON').classList.toggle('active', m==='TON');
+}
+
+async function loadHistory(){
+  try{ const r = await api('history', {}, WD_URL); return r.rows || []; }catch(e){ return []; }
+}
+
+async function renderHistory(){
+  const rows = await loadHistory();
+  const container = document.getElementById('wdHistory');
+  if(!container) return;
+  if(rows.length===0){
+    container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px;">No withdrawal history yet.</div>';
+    return;
+  }
+  const BADGES = {
+    pending:['⏳ Pending','#f0b429'], approved:['✅ Approved','#4cc38a'], paid:['💸 Paid','#4cc38a'],
+    rejected:['❌ Rejected','#ef6461'], cancelled:['⚠️ Cancelled','#9aa3b2']
+  };
+  container.innerHTML = rows.map(r=>{
+    const b = BADGES[r.status] || [r.status,'#9aa3b2'];
+    const methodLabel = r.method==='TON' ? 'TON' : 'USDT (BEP20)';
+    const date = new Date(r.created_at).toLocaleDateString();
+    const net = r.net!=null ? ' • you get $'+(r.net*RATE).toFixed(4) : '';
+    const tx = r.txid ? '<div class="wd-sub" style="word-break:break-all;">TXID: '+esc(r.txid)+'</div>' : '';
+    return '<div class="wd-item"><div class="wd-top"><span>'+Number(r.amount).toLocaleString()+' coins</span><span style="color:'+b[1]+'">'+b[0]+'</span></div><div class="wd-sub">'+methodLabel+' • '+date+net+'</div>'+tx+'</div>';
+  }).join('');
+}
+
+function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function wdPreview(){
+  const el = document.getElementById('wdPreview');
+  const amt = parseInt(document.getElementById('wdAmount').value);
+  if(!el) return;
+  if(!amt || amt<MIN_WITHDRAW){ el.textContent = 'Fee: '+FEE_PERCENT+'% (network fees may apply)'; return; }
+  const fee = Math.ceil(amt*FEE_PERCENT/100);
+  el.textContent = 'Fee: '+fee.toLocaleString()+' coins • You receive about $'+((amt-fee)*RATE).toFixed(4);
+}
+
+async function handleWithdraw(){
+  const amtInput = document.getElementById('wdAmount');
+  const walletInput = document.getElementById('wdWallet');
+  const msg = document.getElementById('wdMessage');
+  const amt = parseInt(amtInput.value);
+  const wallet = walletInput.value.trim();
+  msg.textContent='';
+  if(!amt || amt < MIN_WITHDRAW){ warnPop('Minimum withdrawal is '+MIN_WITHDRAW.toLocaleString()+' coins.'); return; }
+  if(amt > state.balance){ warnPop('Insufficient balance.'); return; }
+  if(!wallet){ warnPop('Please enter your wallet address.'); return; }
+  try{
+    const r = await api('withdraw', { amount: amt, method: selectedMethod, wallet }, WD_URL);
+    state.balance = r.balance;
+    amtInput.value=''; walletInput.value='';
+  }catch(e){
+    warnPop(e.message);
+    return;
+  }
+  render();
+  renderHistory();
+}
+
+async function renderAdminWd(){
+  const box = document.getElementById('adminWd');
+  if(!box) return;
+  let rows = [];
+  try{ const r = await api('adminList', {}, WD_URL); rows = r.rows || []; }catch(e){ box.textContent = e.message; return; }
+  const open = rows.filter(r=>r.status==='pending'||r.status==='approved');
+  if(!open.length){ box.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px;">No open requests.</div>'; return; }
+  window.__wdRows = {}; open.forEach(r=>{ window.__wdRows[r.id]=r; });
+  box.innerHTML = open.map(r=>{
+    const btns = r.status==='pending'
+      ? '<button class="action btn-start" onclick="adminSet('+r.id+',\'approved\')">Approve</button>'
+      : '<button class="action btn-start" onclick="adminSet('+r.id+',\'paid\')">Mark Paid</button>';
+    return '<div class="wd-item"><div class="wd-top"><span>#'+r.id+' • '+Number(r.amount).toLocaleString()+' coins</span><span>'+esc(r.status)+'</span></div>'
+      +'<div class="wd-sub">User '+esc(r.telegram_id)+' • '+esc(r.method)+' • send $'+((r.net||0)*RATE).toFixed(4)+'</div>'
+      +'<div class="wd-sub" style="word-break:break-all;user-select:all;">'+esc(r.wallet_address)+'</div>'
+      +'<button class="copy-btn" onclick="copyAddr('+r.id+')">📋 Copy address</button>'
+      +'<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">'+btns
+      +'<button class="action" style="background:#3a2230;color:#ff8a8a;" onclick="adminSet('+r.id+',\'rejected\')">Reject (refund)</button>'
+      +'<button class="action" style="background:#2a2f45;color:#c7cce0;" onclick="adminSet('+r.id+',\'cancelled\')">Cancel (refund)</button></div></div>';
+  }).join('');
+}
+async function adminSet(id, status){
+  let txid = '';
+  if(status==='paid'){
+    txid = (await appPrompt('Paste the transaction ID (TXID) of the payment.','Mark as paid','TXID')) || '';
+    if(!txid.trim()) return;
+  } else if(!(await appConfirm('Set request #'+id+' to '+status+'?','Yes','Cancel','Confirm','❓'))) return;
+  try{
+    await api('adminSet', { id, status, txid }, WD_URL);
+  }catch(e){ alert(e.message); }
+  renderAdminWd();
+}
+
+async function loadTasks(){
+  try{ const r = await api('taskList', {}, TASK_URL); return r.rows || []; }catch(e){ return []; }
+}
+
+// ---------------- Tasks tab ----------------
+const TK = { cat:'social', view:'all' };
+const DAILY_ADS = [
+  {id:'usl', name:'USL Ads', per:70, max:20, color:'#ff9a3c'}
+];
+function tkDay(){ return new Date().toISOString().slice(0,10); }
+function tkGet(id){ try{ return Number(localStorage.getItem('tkAd:'+id+':'+tkDay())||0); }catch(e){ return 0; } }
+function tkSet(id,n){ try{ localStorage.setItem('tkAd:'+id+':'+tkDay(), String(n)); }catch(e){} }
+const TK_WAIT = 10;
+let tkOpened = {};
+async function tkOpen(id, link){
+  try{ window.Telegram.WebApp.openLink(link); }catch(e){ window.open(link, '_blank'); }
+  let wait = TK_WAIT;
+  try{ const r = await api('taskOpen', { taskId:id }, TASK_URL); wait = r.wait; }catch(e){ alert(e.message); return; }
+  tkOpened[id] = Date.now() - (TK_WAIT - wait)*1000;
+  renderTasks();
+  if(TK.timer) clearInterval(TK.timer);
+  TK.timer = setInterval(()=>{
+    const waiting = Object.values(tkOpened).some(t=>Date.now()-t < TK_WAIT*1000);
+    if(!waiting){ clearInterval(TK.timer); TK.timer = null; }
+    if(document.getElementById('tab-tasks').classList.contains('active') && TK.cat!=='daily') renderTasks();
+  }, 1000);
+}
+function tkSetCat(c){ TK.cat = c; TK.view = 'all'; renderTasks(); }
+function tkSetView(v){ TK.view = v; renderTasks(); }
+function openTaskSheet(){ document.getElementById('taskSheetBg').style.display='block'; document.getElementById('taskSheet').classList.add('open'); }
+async function openManageSheet(){
+  document.getElementById('taskSheetBg').style.display='block';
+  document.getElementById('manageSheet').classList.add('open');
+  renderManage();
+}
+function closeManageSheet(){ document.getElementById('taskSheetBg').style.display='none'; document.getElementById('manageSheet').classList.remove('open'); }
+async function renderManage(){
+  const box = document.getElementById('manageList');
+  box.innerHTML = '<div class="tk-empty">Loading...</div>';
+  try{
+    const r = await api('adminList', {}, TASK_URL);
+    const rows = r.rows.filter(t=>t.status!=='deleted');
+    if(!rows.length){ box.innerHTML = '<div class="tk-empty">No tasks yet.</div>'; return; }
+    const catBtn = (t,c)=> '<button class="tk-btn '+((t.category||'social')===c?'f':'o')+'" style="padding:6px 9px;font-size:11px;" onclick="adminTask('+t.id+',\'category\',\''+c+'\')">'+(CAT_LABEL[c]||c)+'</button>';
+    box.innerHTML = rows.map(t=>'<div class="tk-card" style="flex-direction:column;gap:8px;"><div><div class="tk-title">'+esc(t.title)+'</div><div class="tk-meta" style="margin:2px 0 0;">'+esc(t.status)+' • '+t.completions_count+'/'+t.max_completions+' • '+(t.type==='telegram'?'Telegram':'Social')+'</div></div><div class="tk-actions" style="flex-wrap:wrap;">'+catBtn(t,'social')+catBtn(t,'exclusive')+catBtn(t,'partner')+(t.status==='active'?'<button class="tk-btn o" style="padding:6px 9px;font-size:11px;" onclick="adminTask('+t.id+',\'status\',\'paused\')">Pause</button>':'<button class="tk-btn f" style="padding:6px 9px;font-size:11px;" onclick="adminTask('+t.id+',\'status\',\'active\')">Resume</button>')+'<button class="tk-btn o" style="padding:6px 9px;font-size:11px;color:#ff8a8a;" onclick="adminTask('+t.id+',\'status\',\'deleted\')">Delete</button></div></div>').join('');
+  }catch(e){ box.innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function adminTask(id, field, value){
+  if(value==='deleted' && !(await appConfirm('Delete this task?','Delete','Cancel','Delete task','🗑️'))) return;
+  try{ const p = { id }; p[field] = value; await api('adminSet', p, TASK_URL); }catch(e){ alert(e.message); }
+  renderManage(); renderTasks();
+}
+function closeTaskSheet(){ document.getElementById('taskSheetBg').style.display='none'; document.getElementById('taskSheet').classList.remove('open'); const m = document.getElementById('manageSheet'); if(m) m.classList.remove('open'); }
+function tkRing(done,max,color){
+  const C = 2*Math.PI*25, off = C*(1-Math.min(1,done/max));
+  return '<div class="tk-ring"><svg viewBox="0 0 62 62"><defs><linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fdcff"/><stop offset="1" stop-color="#2f7bff"/></linearGradient></defs><circle class="bg" cx="31" cy="31" r="25"/><circle class="fg" cx="31" cy="31" r="25" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/></svg><span>'+done+'/'+max+'</span></div>';
+}
+async function gigaWatch(){
+  const btn = document.getElementById('gigaBtn');
+  const alertMsg = m => { try{ window.alert(m); }catch(e){ alert(m); } };
+  if(GIGA && GIGA.cooldownLeft > 0 && Date.now() < (GIGA.cdUntil||0)){ alertMsg('Please wait '+Math.ceil(((GIGA.cdUntil)-Date.now())/1000)+' seconds before the next ad.'); return; }
+  if(typeof window.showGiga !== 'function'){ alertMsg('Ads are not ready yet. Please try again in a moment.'); return; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  try{
+    await window.showGiga();
+  }catch(e){
+    if(btn){ btn.disabled = false; btn.textContent = '▶ Watch ad'; }
+    alertMsg('No ad available right now. Please try again later.');
+    return;
+  }
+  if(btn) btn.textContent = 'Confirming...';
+  let res = null, lastErr = '';
+  for(let i=0;i<8;i++){
+    try{ res = await api('gigaClaim', {}, GIGA_URL); break; }
+    catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await new Promise(r=>setTimeout(r,1500)); }
+  }
+  if(res){
+    state.balance = res.balance; render();
+    GIGA = { done:res.done, max:res.max, per:res.per, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
+    adFinished({ reward:res.amount, progress:'Task progress '+res.done+'/'+res.max });
+  } else {
+    alertMsg(lastErr || 'The ad was not confirmed, so no coins were added.');
+    GIGA = null;
+  }
+  renderTasks();
+}
+function tkAdPlaceholder(id){
+  const a = DAILY_ADS.find(x=>x.id===id); if(!a) return;
+  const n = tkGet(id); if(n >= a.max) return;
+  let box = document.getElementById('tkAdBox');
+  if(!box){ box = document.createElement('div'); box.id = 'tkAdBox'; box.className = 'modal'; box.innerHTML = '<div class="modal-box" id="tkAdInner"></div>'; document.body.appendChild(box); }
+  box.style.display = 'flex';
+  const inner = document.getElementById('tkAdInner');
+  let s = 3;
+  const draw = ()=>{ inner.innerHTML = '<div style="color:var(--muted);font-size:12px;">AD PLACEHOLDER (TEST) • '+a.name+'</div><div style="font-size:44px;font-weight:800;color:var(--gold);margin:12px 0;">'+s+'</div><div style="color:var(--muted);font-size:13px;">Please wait...</div>'; };
+  draw();
+  const t = setInterval(()=>{
+    s--;
+    if(s<=0){ clearInterval(t); tkSet(id, n+1); box.style.display='none'; renderTasks(); }
+    else draw();
+  }, 1000);
+}
+async function renderTasks(){
+  const container = document.getElementById('taskList');
+  if(!container) return;
+  document.querySelectorAll('.tk-cat').forEach(b=>b.classList.toggle('active', b.dataset.c===TK.cat));
+  document.getElementById('tkViewAll').classList.toggle('active', TK.view==='all');
+  document.getElementById('tkViewMine').classList.toggle('active', TK.view==='mine');
+  const pending = !NETWORK_TEST_ROWS_ON ? 0 : DAILY_ADS.reduce((n,a)=>n+(tkGet(a.id)<a.max?1:0),0);
+  const dot = document.getElementById('tkDailyDot'); if(dot) dot.style.display = pending ? 'block' : 'none';
+  const nb = document.getElementById('tkNewBtn'); if(nb) nb.style.display = (IS_OWNER || TK.cat==='exclusive') ? 'block' : 'none';
+  const cnt = document.getElementById('tkCount');
+  if(TK.cat==='daily' && TK.view==='all'){
+    cnt.textContent = 'Resets every day at 00:00 UTC';
+    const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
+    let h = REVIEW ? '' : '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Ads watched</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
+    h += await agRowHtml();
+    if(!REVIEW) h += await mtRowHtml();
+    if(GIGA_ON && !REVIEW){
+      if(!GIGA){ try{ GIGA = await api('gigaStatus', {}, GIGA_URL); }catch(e){ GIGA = null; } }
+      if(GIGA){
+        const gfull = GIGA.done >= GIGA.max;
+        h += '<div class="tk-card'+(gfull?' done':'')+'" style="border-left-color:#3ad17c;">'+tkRing(GIGA.done,GIGA.max)+'<div class="tk-main"><div class="tk-title">GigaPub</div><div class="tk-meta">'+GIGA.per+' coins per ad • '+GIGA.done+'/'+GIGA.max+' today • paid after the ad is confirmed</div><div class="tk-actions">'
+          + (gfull ? '<button class="tk-btn d" disabled>✓ Done today</button>' : '<button class="tk-btn f" id="gigaBtn" onclick="gigaWatch()">▶ Watch ad '+(GIGA.done+1)+'</button>')
+          + '</div></div></div>';
+      }
+    }
+    h += (!NETWORK_TEST_ROWS_ON ? [] : DAILY_ADS).map(a=>{
+      const n = tkGet(a.id), full = n>=a.max;
+      return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:'+a.color+';">'+tkRing(n,a.max)+'<div class="tk-main"><div class="tk-title">'+a.name+'<span class="tk-test">TEST AD</span></div><div class="tk-meta">'+a.per+' coins per ad • '+a.max+' ads a day</div><div class="tk-actions">'
+        + (full ? '<button class="tk-btn d" disabled>✓ Done today</button>' : '<button class="tk-btn f" onclick="tkAdPlaceholder(\''+a.id+'\')">▶ Watch ad '+(n+1)+'</button>')
+        + '</div></div></div>';
+    }).join('');
+    if(NETWORK_TEST_ROWS_ON) h += '<div class="tk-empty" style="padding:14px;font-size:12px;">These are test ads. Coin rewards for them switch on once the ad networks approve the app.</div>';
+    if(REVIEW && !h) h = '<div class="tk-empty">No daily tasks right now. Check the other lists.</div>';
+    container.innerHTML = h;
+    return;
+  }
+  const agTop = (REVIEW && TK.view==='all') ? await agRowHtml() : '';
+  const rows = await loadTasks();
+  const catOf = t => t.category || 'social';
+  let list;
+  if(TK.view==='mine'){
+    list = rows.filter(t=>state.tasksCompleted.includes(t.id));
+    cnt.textContent = list.length+' completed';
+  } else {
+    list = rows.filter(t=>catOf(t)===TK.cat);
+    const doneN = list.filter(t=>state.tasksCompleted.includes(t.id)).length;
+    cnt.textContent = doneN+'/'+list.length+' done';
+  }
+  if(list.length===0){
+    const msg = TK.view==='mine' ? 'You have not completed any tasks yet.' : (TK.cat==='social' ? 'No tasks available right now.' : 'Nothing here yet. New tasks will appear soon.');
+    container.innerHTML = agTop + '<div class="tk-empty">'+msg+'</div>';
+    return;
+  }
+  container.innerHTML = agTop + list.map(t=>{
+    const done = state.tasksCompleted.includes(t.id);
+    const full = t.completions_count >= t.max_completions;
+    let btns;
+    if(done) btns = '<button class="tk-btn d" disabled>✓ Completed</button>';
+    else if(full) btns = '<button class="tk-btn d" style="color:var(--muted);background:var(--card2);" disabled>Full</button>';
+    else {
+      const o = tkOpened[t.id]; const left = o ? Math.ceil(TK_WAIT - (Date.now()-o)/1000) : null;
+      const claimBtn = !o ? '<button class="tk-btn d" style="color:var(--muted);background:var(--card2);" disabled>Open first</button>'
+        : (left>0 ? '<button class="tk-btn d" style="color:var(--muted);background:var(--card2);" disabled>Wait '+left+'s</button>'
+        : '<button class="tk-btn f" onclick="handleClaimTask('+t.id+','+t.reward+')">Claim</button>');
+      btns = '<button class="tk-btn o" onclick="tkOpen('+t.id+',\''+esc(t.link)+'\')">Open ↗</button>'+claimBtn;
+    }
+    const typeLabel = t.type==='telegram' ? 'Telegram' : 'Social media';
+    return '<div class="tk-card'+(done?' done':'')+'"><div class="tk-badge"><span class="coin"></span><b>+'+t.reward+'</b><small>COINS</small></div><div class="tk-main"><div class="tk-title">'+esc(t.title)+'</div><div class="tk-meta">'+typeLabel+' • '+t.completions_count+'/'+t.max_completions+' claimed</div><div class="tk-actions">'+btns+'</div></div></div>';
+  }).join('');
+}
+
+async function handleClaimTask(taskId, reward){
+  if(state.tasksCompleted.includes(taskId)) return;
+  try{
+    const r = await api('taskClaim', { taskId }, TASK_URL);
+    state.balance = r.balance;
+    state.tasksCompleted = r.tasksCompleted;
+  }catch(e){ alert(e.message); }
+  render();
+  renderTasks();
+}
+
+function updateFeePreview(){
+  const max = parseInt(document.getElementById('taskMax').value) || 0;
+  const feeBox = document.getElementById('taskFeePreview');
+  if(!feeBox) return;
+  const fee = (0.10*(max/100)).toFixed(2);
+  feeBox.textContent = 'Fee for '+max+' completions: $'+fee;
+}
+
+function contactSupportTask(){
+  const title = document.getElementById('taskTitle').value.trim();
+  const link = document.getElementById('taskLink').value.trim();
+  const type = document.getElementById('taskType').value;
+  const max = parseInt(document.getElementById('taskMax').value);
+  const msg = document.getElementById('taskMsg');
+  msg.className = 'error-msg';
+  if(!title || !link || !max || max<100){ warnPop('Fill all fields (minimum 100 users).'); return; }
+  if(!/^https:\/\/\S{3,200}$/.test(link)){ warnPop('Link must start with https://'); return; }
+  msg.textContent = '';
+  const fee = (0.10*(max/100)).toFixed(2);
+  const text = 'Hello, I want to create a task on MineEarn.\n\nTask name: '+title+'\nLink: '+link+'\nType: '+(type==='telegram'?'Telegram':'Social media')+'\nMaximum users: '+max+'\nMy Telegram ID: '+TG_ID+'\n\nPlease tell me how to pay the $'+fee+' fee.';
+  const url = SUPPORT_LINK + '?text=' + encodeURIComponent(text);
+  try{ window.Telegram.WebApp.openTelegramLink(url); }catch(e){ window.open(url, '_blank'); }
+}
+async function handleCreateTask(){
+  const title = document.getElementById('taskTitle').value.trim();
+  const link = document.getElementById('taskLink').value.trim();
+  const type = document.getElementById('taskType').value;
+  const max = parseInt(document.getElementById('taskMax').value);
+  const msg = document.getElementById('taskMsg');
+  msg.textContent='';
+  msg.className='error-msg';
+  if(!title || !link || !max || max<1){ warnPop('Fill all fields.'); return; }
+  let result;
+  try{
+    result = await api('adminCreate', { title, link, type, max, category: (document.getElementById('taskCat')||{}).value || 'exclusive' }, TASK_URL);
+  }catch(e){
+    warnPop(e.message);
+    return;
+  }
+  document.getElementById('taskTitle').value='';
+  document.getElementById('taskLink').value='';
+  document.getElementById('taskMax').value='';
+  appDialog({title:'Task created',text:'Your task is now live!',icon:'✅'});
+  renderTasks();
+}
+
+
+
+// ===== Community screen: payouts proof, leaderboard, about / terms / privacy =====
+const COM = { tab:'payouts' };
+function comEnsure(){
+  let el = document.getElementById('comScreen');
+  if(!el){ el = document.createElement('div'); el.id = 'comScreen'; el.className = 'com'; document.body.appendChild(el); }
+  return el;
+}
+function comOpen(tab){ comEnsure().classList.add('open'); comTab(tab || 'payouts'); }
+function comClose(){ comEnsure().classList.remove('open'); }
+function comShell(inner){
+  const t = (k,l)=>'<button class="'+(COM.tab===k?'on':'')+'" onclick="comTab(\''+k+'\')">'+l+'</button>';
+  comEnsure().innerHTML = '<div class="adm-head"><h1>Community</h1><button class="tk-btn o" onclick="comClose()">✕ Close</button></div>'
+    + '<div class="adm-tabs">'+t('payouts','Payouts')+t('board','Leaderboard')+t('about','About')+t('terms','Terms')+t('privacy','Privacy')+'</div>'
+    + '<div id="comBody">'+inner+'</div>';
+}
+function comTab(k){
+  COM.tab = k;
+  if(k==='payouts') comPayouts();
+  else if(k==='board') comBoard();
+  else comDoc(k);
+}
+function comWhen(iso){ const d = new Date(iso); return isNaN(d) ? '' : d.toISOString().slice(0,10); }
+async function comPayouts(){
+  comShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('publicPayouts', {}, WD_URL);
+    const box = document.getElementById('comBody');
+    let h = '<div class="adm-grid"><div class="adm-stat"><b>'+Number(r.totalCount).toLocaleString('en-US')+'</b><span>Payouts sent</span></div><div class="adm-stat"><b>$'+(Number(r.totalNet)/100000).toFixed(2)+'</b><span>Total paid out</span></div></div>';
+    h += '<div class="tk-meta" style="margin:6px 2px 10px;">Latest payouts. IDs are hidden. Each payment has a transaction ID (TXID) you can look up on the blockchain.</div>';
+    h += r.rows.length ? r.rows.map(x=>'<div class="com-row"><div><b>$'+(Number(x.net)/100000).toFixed(2)+'</b> • '+esc(x.method==='TON'?'TON':'USDT BEP20')+'<small>'+esc(x.who)+' • '+esc(comWhen(x.at))+(x.txid?'<br>TXID: '+esc(x.txid):'')+'</small></div></div>').join('') : '<div class="tk-empty">No payouts yet.</div>';
+    box.innerHTML = h;
+  }catch(e){ document.getElementById('comBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function comBoard(){
+  comShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('leaderboard', {}, WD_URL);
+    document.getElementById('comBody').innerHTML = '<div class="tk-meta" style="margin:2px 2px 10px;">Top 10 balances right now. IDs are hidden.</div>'
+      + (r.rows.length ? r.rows.map(x=>'<div class="com-row"'+(x.me?' style="border-color:var(--gold);"':'')+'><div style="display:flex;align-items:center;"><span class="com-rank">'+x.rank+'</span>'+esc(x.who)+(x.me?' (you)':'')+'</div><b>'+Number(x.balance).toLocaleString('en-US')+'</b></div>').join('') : '<div class="tk-empty">No one yet.</div>');
+  }catch(e){ document.getElementById('comBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+function comDoc(k){
+  const min = Number(MIN_WITHDRAW).toLocaleString('en-US');
+  const docs = {
+    about: '<div class="com-doc"><h3>What is MineEarn?</h3><p>MineEarn is a Telegram app where you earn coins by playing games, finishing tasks, inviting friends and watching optional rewarded ads. Coins can be withdrawn as USDT (BEP20) or TON.</p>'
+      +'<h3>How you earn</h3><p><b>Mining:</b> 5 slots. Each collect needs 2 rewarded ads that you start yourself, and pays '+AD_PAY*2+' coins. Up to 5 collects per slot each day.<br><b>Games:</b> 4 games, 5 plays each per day. The first attempt of every play is free.<br><b>Tasks:</b> join a channel or follow a page, then claim your coins.<br><b>Invites:</b> 500 coins when a friend joins, and 3,000 coins when their first withdrawal is paid.</p>'
+      +'<h3>About the ads</h3><p>Ads are shown only after you tap a watch button. Coins are paid only after the ad network confirms that the ad was watched. You are never required to click an ad. Everything resets at 00:00 UTC.</p>'
+      +'<h3>Withdrawals</h3><p>Minimum '+min+' coins ($'+(MIN_WITHDRAW/100000).toFixed(2)+'). Fee '+FEE_PERCENT+'%. 100,000 coins = $1. One request per day. Every payment is reviewed by hand, and paid payouts are listed in the Payouts tab with their TXID.</p>'
+      +'<h3>Support</h3><p>Questions or problems? Message <a href="'+SUPPORT_LINK+'" target="_blank" style="color:var(--gold);">our support</a> on Telegram.</p></div>',
+    terms: '<div class="com-doc"><h3>Terms of use</h3><p>By using MineEarn you agree to these rules.</p>'
+      +'<h3>1. One account per person</h3><p>Use only your own Telegram account. Several accounts, bots, scripts and automatic tools are not allowed.</p>'
+      +'<h3>2. Fair use</h3><p>Do not cheat, fake ad views, fake task completion or fake invites. We may remove coins, suspend an account, or cancel a withdrawal if we find cheating.</p>'
+      +'<h3>3. Rewards</h3><p>Rewards depend on rules that can change, including the coins per ad, the daily limits and the withdrawal minimum and fee. Coins have no value until they are paid out. We may refuse or delay a payout that looks fraudulent.</p>'
+      +'<h3>4. Channels</h3><p>You must stay a member of our required channels to earn coins.</p>'
+      +'<h3>5. Payouts</h3><p>You are responsible for giving a correct wallet address. Payments sent to a wrong address cannot be recovered.</p>'
+      +'<h3>6. Changes</h3><p>We may update these terms or the app at any time. Continuing to use the app means you accept the changes.</p></div>',
+    privacy: '<div class="com-doc"><h3>Privacy</h3><p>What we keep: your Telegram ID and public profile name, your balance and activity in the app, your withdrawal requests and wallet address, and your invite connections.</p>'
+      +'<h3>How we use it</h3><p>To run the app, pay rewards, prevent cheating, process withdrawals, and send you messages about your account (like withdrawal updates).</p>'
+      +'<h3>Ads</h3><p>Ads are provided by ad networks, which may use their own tools to show and measure ads. We do not sell your personal data.</p>'
+      +'<h3>Public information</h3><p>The Payouts and Leaderboard pages show hidden IDs (only the last 4 digits). Blockchain payments are public by nature.</p>'
+      +'<h3>Your choices</h3><p>To ask about or delete your data, message <a href="'+SUPPORT_LINK+'" target="_blank" style="color:var(--gold);">support</a>.</p></div>'
+  };
+  comShell(docs[COM.tab] || '');
+}
+
+// ===== Admin panel (owner only; every call is re-checked on the server) =====
+const ADM = { tab:'stats', user:null };
+function admEnsure(){
+  let el = document.getElementById('admScreen');
+  if(!el){ el = document.createElement('div'); el.id = 'admScreen'; el.className = 'adm'; document.body.appendChild(el); }
+  return el;
+}
+function admOpen(){
+  if(!IS_OWNER) return;
+  admEnsure().classList.add('open');
+  admTab(ADM.tab || 'stats');
+}
+function admClose(){ admEnsure().classList.remove('open'); }
+function admShell(inner){
+  const t = (k,l)=>'<button class="'+(ADM.tab===k?'on':'')+'" onclick="admTab(\''+k+'\')">'+l+'</button>';
+  admEnsure().innerHTML = '<div class="adm-head"><h1>Admin panel</h1><button class="tk-btn o" onclick="admClose()">✕ Close</button></div>'
+    + '<div class="adm-tabs">'+t('stats','Stats')+t('users','Users')+t('announce','Announce')+t('games','Games')+t('settings','Settings')+t('log','Log')+'</div>'
+    + '<div id="admBody">'+inner+'</div>';
+}
+function admTab(k){
+  ADM.tab = k;
+  if(k==='stats') admStats();
+  else if(k==='users') admUsers('');
+  else if(k==='announce') admAnnounce();
+  else if(k==='games') admGames();
+  else if(k==='settings') admSettings();
+  else admLog();
+}
+function admNum(n){ return Number(n||0).toLocaleString('en-US'); }
+function admUsd(c){ return '$'+(Number(c||0)/100000).toFixed(2); }
+async function admStats(){
+  admShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const s = (await api('stats', {}, ADMIN_URL)).stats;
+    const box = (v,l)=>'<div class="adm-stat"><b>'+v+'</b><span>'+l+'</span></div>';
+    document.getElementById('admBody').innerHTML =
+      '<div class="adm-grid">'
+      + box(admNum(s.totalUsers),'Total users')
+      + box(admNum(s.newToday),'New today')
+      + box(admNum(s.activeToday),'Active today')
+      + box(admNum(s.bannedUsers),'Suspended')
+      + box(admNum(s.coinsInApp),'Coins in all balances')
+      + box(admNum(s.earnedToday),'Coins earned today')
+      + box(admNum(s.adsToday),'Ads watched today')
+      + box(admNum(s.adsTotal),'Ads watched, total')
+      + box(admNum(s.pending),'Open withdrawals')
+      + box(admNum(s.paidCount),'Paid withdrawals')
+      + box(admUsd(s.paidCoins),'Total paid out')
+      + box(admNum(s.tasksOpen),'Active tasks')
+      + '</div><button class="action" style="margin-top:6px;" onclick="admStats()">↻ Refresh</button>';
+  }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function admUsers(q){
+  admShell('<div style="display:flex;gap:8px;margin-bottom:10px;"><input id="admQ" class="form-input" inputmode="numeric" placeholder="Telegram ID" value="'+esc(q)+'"><button class="tk-btn f" onclick="admUsers(document.getElementById(\'admQ\').value)">Find</button></div><div id="admList"><div class="tk-empty">Loading...</div></div>');
+  try{
+    const r = await api('userFind', { q }, ADMIN_URL);
+    ADM.rows = r.rows;
+    const list = document.getElementById('admList');
+    if(!r.rows.length){ list.innerHTML = '<div class="tk-empty">'+esc(r.note||'No users.')+'</div>'; return; }
+    list.innerHTML = (r.note?'<div class="tk-meta" style="margin-bottom:8px;">'+esc(r.note)+'</div>':'')
+      + r.rows.map((u,i)=>'<div class="adm-user"><div class="adm-row"><b>ID '+esc(u.id)+'</b><b style="color:'+(u.banned?'#ff8a8a':'#7ecb7e')+'">'+(u.banned?'Suspended':'Active')+'</b></div>'
+      + '<div class="adm-row"><span>Balance</span><b>'+admNum(u.balance)+' coins</b></div>'
+      + '<div class="adm-row"><span>Referrals</span>'+u.referrals+'</div>'
+      + '<div class="adm-row"><span>Tasks done</span>'+u.tasks+'</div>'
+      + '<div class="adm-row"><span>Invited by</span>'+esc(u.referredBy||'-')+'</div>'
+      + '<div style="display:flex;gap:8px;margin-top:8px;"><button class="tk-btn f" style="flex:1;" onclick="admCoins('+i+')">± Coins</button><button class="tk-btn o" style="flex:1;" onclick="admBan('+i+')">'+(u.banned?'Unsuspend':'Suspend')+'</button></div><button class="tk-btn o" style="width:100%;margin-top:8px;" onclick="admActivity('+i+')">📅 Daily activity</button></div>').join('');
+  }catch(e){ document.getElementById('admList').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function admCoins(i){
+  const u = ADM.rows[i]; if(!u) return;
+  const a = await appPrompt('User '+u.id+'\nBalance: '+u.balance+'\n\nCoins to ADD (use a minus sign to remove, e.g. -500)','Add or remove coins','e.g. 500 or -500');
+  if(a===null) return;
+  const amount = Number(String(a).replace(/[, ]/g,''));
+  if(!Number.isInteger(amount) || amount===0){ alert('Enter a whole number, not 0.'); return; }
+  const reason = await appPrompt('Short reason (saved in the Log)','Reason','Reason','');
+  if(reason===null) return;
+  if(!(await appConfirm((amount>0?'Add ':'Remove ')+Math.abs(amount)+' coins '+(amount>0?'to':'from')+' user '+u.id+'?','Yes','Cancel','Confirm','🪙'))) return;
+  try{ const r = await api('userAdjust', { id:u.id, amount, reason }, ADMIN_URL); alert('Done. New balance: '+r.balance); }catch(e){ alert(e.message); }
+  admUsers(u.id);
+}
+const KIND_NAMES = {mt_ad:'Monetag ads',mining:'Mining',ad_reward:'Ad rewards',giga_ad:'GigaPub ads',ag_ad:'AdsGram ads',rich_ad:'RichAds',login_bonus:'Login bonus',game:'Games',task:'Tasks',ref_join:'Referral (join)',admin_adjust:'Owner adjustment',withdraw:'Withdrawal',withdraw_refund:'Withdrawal refund'};
+async function admActivity(i){
+  const u = ADM.rows[i]; if(!u) return;
+  const today = new Date().toISOString().slice(0,10);
+  const d = await appPrompt('User '+u.id+'\nDate in UTC, like '+today+'\n(days change at 00:00 UTC)','Daily activity','YYYY-MM-DD',today);
+  if(d===null) return;
+  try{
+    const r = await api('userActivity', { id:u.id, date:String(d).trim() }, STATS_URL);
+    let t = 'Date: '+r.date+' (UTC)\nBalance now: '+Number(r.balance).toLocaleString()+' coins'+(r.banned?' (suspended)':'')+'\n\n';
+    const ks = Object.keys(r.totals||{});
+    if(!ks.length) t += 'No activity recorded that day.';
+    else{
+      t += ks.map(k=>(KIND_NAMES[k]||k)+': '+r.totals[k].count+' x = '+(r.totals[k].coins>0?'+':'')+Number(r.totals[k].coins).toLocaleString()).join('\n');
+      t += '\n\nNet that day: '+(r.net>0?'+':'')+Number(r.net).toLocaleString()+' coins in '+r.count+' entries'+(r.truncated?' (first 500 only)':'');
+    }
+    appDialog({title:'Activity of '+u.id,text:t,icon:'📅'});
+  }catch(e){ appDialog({title:'Could not load',text:e.message,icon:'⚠️'}); }
+}
+async function admBan(i){
+  const u = ADM.rows[i]; if(!u) return;
+  if(!(await appConfirm((u.banned?'Unsuspend':'Suspend')+' user '+u.id+'?\n\nA suspended user cannot earn coins or request withdrawals.','Yes','Cancel','Confirm','🚫'))) return;
+  try{ await api('userBan', { id:u.id, banned:!u.banned }, ADMIN_URL); }catch(e){ alert(e.message); }
+  admUsers(u.id);
+}
+function admAnnounce(){
+  admShell('<div class="wallet-box" style="line-height:1.5;margin-bottom:10px;">Write a message. <b>Send test to me</b> sends it only to you. <b>Send to everyone</b> messages every user through the bot (users who blocked the bot are skipped). It can take a minute.</div>'
+    + '<textarea id="admMsg" class="form-input" rows="6" maxlength="1000" placeholder="Your message..."></textarea>'
+    + '<div id="admAnnRes" class="tk-meta" style="margin:8px 0;"></div>'
+    + '<button class="action" onclick="admSend(true)">Send test to me</button>'
+    + '<button class="action btn-collect" style="margin-top:8px;" onclick="admSend(false)">Send to everyone</button>');
+}
+async function admSend(test){
+  const text = (document.getElementById('admMsg').value||'').trim();
+  const res = document.getElementById('admAnnRes');
+  if(text.length<3){ res.textContent = 'Write at least 3 characters.'; return; }
+  if(!test && !(await appConfirm('Send this message to ALL users now?','Send to all','Cancel','Send message','📣'))) return;
+  res.textContent = test ? 'Sending test...' : 'Sending to everyone, please wait...';
+  try{
+    const r = await api('announce', { text, test }, ADMIN_URL);
+    res.textContent = test ? (r.sent ? 'Test sent. Check your Telegram.' : 'Test failed. Open the bot chat and press Start first.') : 'Done. Sent: '+r.sent+', failed/blocked: '+r.failed;
+  }catch(e){ res.textContent = e.message; }
+}
+
+async function admGames(){
+  admShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('gameStats', {}, ADMIN2_URL);
+    const names = {snake:'Snake',runner:'Endless Runner',shooter:'Galaxy Blaster',quiz:'Timed Quiz'};
+    const keys = Object.keys(r.games);
+    let h = '<div class="tk-meta" style="margin-bottom:8px;">Today (UTC) • '+r.totalRuns+' runs • Reward claiming: '+(r.claimEnabled?'ON':'OFF (locked)')+'</div>';
+    h += keys.length ? keys.map(k=>{ const g=r.games[k]; return '<div class="adm-user"><div class="adm-row"><b>'+esc(names[k]||k)+'</b><b>'+g.runs+' runs</b></div><div class="adm-row"><span>Finished</span>'+g.finished+'</div><div class="adm-row"><span>Rejected (suspicious)</span>'+g.rejected+'</div><div class="adm-row"><span>Coins earned (before claim)</span>'+admNum(g.coins)+'</div><div class="adm-row"><span>Best score</span>'+admNum(g.best)+'</div></div>'; }).join('') : '<div class="tk-empty">No game runs yet today.</div>';
+    h += '<div class="section-title">Watch list</div>' + (r.watch.length ? r.watch.map(u=>'<div class="adm-user"><div class="adm-row"><b>ID '+esc(u.id)+'</b><span>'+u.runs+' runs</span></div><div class="adm-row"><span>Rejected</span><b style="color:'+(u.rejected>=2?'#ff8a8a':'#fff')+'">'+u.rejected+'</b></div><div class="adm-row"><span>Coins</span>'+admNum(u.coins)+'</div><button class="tk-btn o" style="margin-top:6px;" onclick="admUsers(\''+esc(u.id)+'\')">Open user</button></div>').join('') : '<div class="tk-empty">No one looks suspicious.</div>');
+    document.getElementById('admBody').innerHTML = h + '<button class="action" style="margin-top:6px;" onclick="admGames()">↻ Refresh</button>';
+  }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function admSettings(){
+  admShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('settingsGet', {}, ADMIN2_URL);
+    document.getElementById('admBody').innerHTML =
+      '<div class="wallet-box" style="line-height:1.5;">Changes apply within about 15 seconds. Users see the new numbers the next time they open the app. A collect (2 ads) pays double the coins per ad.</div>'
+      + '<label class="form-label">Coins per mining ad (1 to 500)</label>'
+      + '<input id="admReward" class="form-input" inputmode="numeric" value="'+r.adReward+'">'
+      + '<label class="form-label" style="margin-top:10px;display:block;">Minimum withdrawal in coins (1,000 to 10,000,000)</label>'
+      + '<input id="admWdMin" class="form-input" inputmode="numeric" value="'+r.wdMin+'">'
+      + '<label class="form-label" style="margin-top:10px;display:block;">Withdrawal fee percent (0 to 30)</label>'
+      + '<input id="admWdFee" class="form-input" inputmode="numeric" value="'+r.wdFee+'">'
+      + '<div id="admSetRes" class="tk-meta" style="margin:8px 0;"></div>'
+      + '<button class="action btn-collect" onclick="admSaveSettings()">Save</button>'
+      + '<div class="adm-user" style="margin-top:14px;"><div class="adm-row"><span>Game reward claiming</span><b>'+(r.gameClaim?'ON':'OFF (locked)')+'</b></div><div class="tk-meta">This stays locked until an ad network is approved.</div></div>';
+  }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function admSaveSettings(){
+  const num = id => Number((document.getElementById(id).value||'').replace(/[, ]/g,''));
+  const adReward = num('admReward'), wdMin = num('admWdMin'), wdFee = num('admWdFee');
+  const res = document.getElementById('admSetRes');
+  if(!Number.isInteger(adReward) || adReward<1 || adReward>500){ res.textContent = 'Coins per ad: whole number from 1 to 500.'; return; }
+  if(!Number.isInteger(wdMin) || wdMin<1000 || wdMin>10000000){ res.textContent = 'Minimum withdrawal: whole number from 1,000 to 10,000,000.'; return; }
+  if(!Number.isInteger(wdFee) || wdFee<0 || wdFee>30){ res.textContent = 'Fee percent: whole number from 0 to 30.'; return; }
+  if(!(await appConfirm('Coins per ad: '+adReward+'\nMinimum withdrawal: '+wdMin+'\nFee: '+wdFee+'%','Save','Cancel','Save these settings?','⚙️'))) return;
+  try{ await api('settingsSet', { adReward, wdMin, wdFee }, ADMIN2_URL); res.textContent = 'Saved.'; }catch(e){ res.textContent = e.message; }
+}
+async function admLog(){
+  admShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('logList', {}, ADMIN_URL);
+    document.getElementById('admBody').innerHTML = r.rows.length ? r.rows.map(x=>'<div class="adm-log"><b>'+esc(x.action)+'</b> • '+esc(String(x.created_at||'').replace('T',' ').slice(0,16))+'<br>'+esc(x.details||'')+'</div>').join('') : '<div class="tk-empty">Nothing logged yet.</div>';
+  }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+
+function showTab(tab){
+  if(REVIEW && (tab==='home'||tab==='mine')) tab = 'play';
+  if(tab==='withdraw') tab = 'profile';
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('btn-'+tab).classList.add('active');
+  window.scrollTo(0,0);
+  if(tab==='profile'){ renderHistory(); if(IS_OWNER) renderAdminWd(); wdPreview(); }
+  if(tab==='tasks'){ renderTasks(); }
+  if(tab==='play'){ renderPlay(); }
+  if(tab==='home'){ renderHome(); }
+}
+function goWithdraw(){ showTab('profile'); setTimeout(()=>{ const e = document.getElementById('wdSection'); if(e) e.scrollIntoView({behavior:'smooth'}); }, 80); }
+function copyRef(){
+  const link = myRefLink();
+  const done = ()=>{ const b = document.getElementById('refCopyBtn'); if(b){ b.textContent = '✅ Copied!'; setTimeout(()=>{ b.textContent = '📋 Copy link'; }, 1800); } };
+  try{ navigator.clipboard.writeText(link).then(done, ()=>fallbackCopy(link, done)); }catch(e){ fallbackCopy(link, done); }
+}
+function fallbackCopy(text, done){
+  const t = document.createElement('textarea'); t.value = text; t.style.cssText = 'position:fixed;opacity:0;'; document.body.appendChild(t); t.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ alert(text); }
+  document.body.removeChild(t);
+}
+function shareRef(){
+  const text = 'Watch ads, play games and earn coins on MineEarn! Join with my link:';
+  const url = 'https://t.me/share/url?url=' + encodeURIComponent(myRefLink()) + '&text=' + encodeURIComponent(text);
+  try{ window.Telegram.WebApp.openTelegramLink(url); }catch(e){ window.open(url, '_blank'); }
+}
+async function refJoinOnce(){
+  try{
+    const sp = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.start_param;
+    if(!sp || !/^[0-9]{5,15}$/.test(sp) || sp === TG_ID) return;
+    if(localStorage.getItem('refTried:'+TG_ID) === sp) return;
+    await api('refJoin', { code: sp }, REF_URL);
+    localStorage.setItem('refTried:'+TG_ID, sp);
+  }catch(e){}
+}
+async function renderRefInfo(){
+  const l = document.getElementById('refLink'); if(l) l.textContent = myRefLink();
+  try{
+    const r = await api('refInfo', {}, REF_URL);
+    document.getElementById('refInvited').textContent = r.invited;
+    document.getElementById('refPaid').textContent = r.paid;
+    document.getElementById('refEarned').textContent = Number(r.earned).toLocaleString();
+  }catch(e){}
+}
+
+function loginDraw(v){
+  const row = document.getElementById('loginRow'); if(!row) return;
+  const R = v.rewards || [50,100,150,200,250];
+  row.innerHTML = R.map((c,i)=>{
+    const done = i < v.doneDays;
+    const cur = !v.claimedToday && i === v.nextDay-1;
+    return '<div class="day" style="'+(done?'opacity:1;border-color:var(--gold);':'')+(cur?'opacity:1;border-color:var(--gold);':'')+'"><b>Day '+(i+1)+'</b><span>'+(done?'✓':c)+'</span></div>';
+  }).join('');
+  const btn = document.getElementById('loginBtn');
+  if(btn){ btn.disabled = !!v.claimedToday; btn.textContent = v.claimedToday ? '✅ Claimed today' : '🎁 Claim daily bonus'; }
+}
+async function loginInit(){
+  try{ loginDraw(await api('loginStatus', {}, LOGIN_URL)); }catch(e){ loginDraw({doneDays:0,nextDay:1,claimedToday:false}); }
+}
+async function loginClaim(){
+  const m = document.getElementById('loginMsg'), btn = document.getElementById('loginBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Checking…'; }
+  try{
+    const r = await api('loginClaim', {}, LOGIN_URL);
+    state.balance = r.balance; render(); loginDraw(r);
+    appDialog({title:'Daily bonus',text:'+'+r.amount+' coins added (Day '+r.day+')',icon:'🎁'});
+  }catch(e){
+    if(btn){ btn.disabled = false; btn.textContent = '🎁 Claim daily bonus'; }
+    warnPop(e.message);
+  }
+}
+
+async function renderHome(){
+  renderRefInfo(); loginInit();
+  try{
+    const g = await api('gamesStatus', {}, GAMES_URL);
+    let left = 0; for(const k of Object.keys(g.runs||{})) left += Math.max(0, g.max - g.runs[k]);
+    left += Math.max(0, (4 - Object.keys(g.runs||{}).length) * g.max);
+    const el = document.getElementById('homePlays'); if(el) el.textContent = left+'/'+(4*g.max);
+  }catch(e){}
+}
+
+function render(){
+  document.getElementById('balanceCoins').textContent = state.balance.toLocaleString()+" coins";
+  document.getElementById('balanceUsd').textContent = "≈ $"+(state.balance*RATE).toFixed(5);
+  const hc = document.getElementById('homeCoins'); if(hc){ hc.textContent = state.balance.toLocaleString()+' coins'; document.getElementById('homeUsd').textContent = '≈ $'+(state.balance*RATE).toFixed(5); document.getElementById('homeRefs').textContent = state.referralCount; document.getElementById('homeAds').textContent = state.slots.reduce((n,sl)=>n+sl.sessions*2,0)+'/50'; }
+  document.getElementById('profileCoins').textContent = state.balance.toLocaleString()+" coins";
+  document.getElementById('profileUsd').textContent = "≈ $"+(state.balance*RATE).toFixed(5);
+  document.getElementById('profileReferrals').textContent = state.referralCount;
+  document.getElementById('wdBalance').textContent = state.balance.toLocaleString()+" coins";
+
+  const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
+  const dEl = document.getElementById('dailyAds');
+  if(dEl) dEl.textContent = 'Ads today: '+adsDone+'/50 • +'+AD_PAY+' coins per ad';
+  const container = document.getElementById('slots');
+  container.innerHTML='';
+  SLOT_CONFIG.forEach((cfg,i)=>{
+    const slot = state.slots[i];
+    const div = document.createElement('div');
+    div.className='slot';
+    const pct = Math.min(100, (slot.sessions/MAX_SESSIONS)*100);
+    let btnHtml='';
+    if(slot.state==='completed'){
+      btnHtml = '<button class="action btn-done" disabled>✅ Done for today (resets 00:00 UTC)</button>';
+    } else if(slot.state==='idle'){
+      btnHtml = '<button class="action btn-start" onclick="handleStart('+i+')">▶️ Start Mining</button>';
+    } else if(slot.state==='mining'){
+      const remain = slot.endTime - nowMs();
+      if(remain<=0){
+        slot.state='ready';
+        saveState();
+        btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch ad 1 of '+cfg.ads+' to Collect</button>';
+      } else {
+        btnHtml = '<button class="action btn-wait" disabled>⏳ '+fmtTime(remain)+'</button>';
+      }
+    } else if(slot.state==='ready'){
+      btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch ad 1 of '+cfg.ads+' to Collect</button>';
+    } else if(slot.state==='watching'){
+      if(slot.busy) btnHtml = '<button class="action btn-wait" disabled>Loading ad…</button>';
+      else if(slot.adsWatched>=cfg.ads) btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🔄 Try collecting again</button>';
+      else btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch ad '+(slot.adsWatched+1)+' of '+cfg.ads+'</button>';
+    }
+    div.innerHTML = `
+      <div class="slot-top">
+        <div class="slot-name"><span class="slot-badge">${i+1}</span>${cfg.name}</div>
+        <div class="slot-rate">+${AD_PAY*cfg.ads} coins / ${cfg.ads} ads</div>
+      </div>
+      <div class="slot-progress">${slot.sessions}/${MAX_SESSIONS} collects today</div>
+      <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+      ${btnHtml}
+    `;
+    container.appendChild(div);
+  });
+}
+
+
+
+/* ===== Ad finished pop-up + top bubble ===== */
+function adFinished(o){
+  return new Promise(res=>{
+    const d=document.createElement('div'); d.className='dlg-back';
+    d.innerHTML='<div class="dlg"><div class="dlg-ic">🎬</div><div class="dlg-t">'+esc(o.title||'Ad finished')+'</div>'
+      +(o.reward?'<div class="adf-r">+'+Number(o.reward).toLocaleString()+' coins</div>':'')
+      +(o.progress?'<div class="dlg-m">'+esc(o.progress)+'</div>':'<div style="height:8px"></div>')
+      +'<button class="dlg-ok">OK</button></div>';
+    d.querySelector('.dlg-ok').onclick=()=>{ try{d.remove();}catch(e){} res(true); };
+    document.body.appendChild(d);
+  });
+}
+function topBubble(t,ms){
+  let b=document.getElementById('topBubble');
+  if(!b){ b=document.createElement('div'); b.id='topBubble'; b.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#ffd24d;color:#222;font-weight:800;font-size:13px;padding:10px 16px;border-radius:14px;z-index:400;text-align:center;max-width:88%;box-shadow:0 6px 18px rgba(0,0,0,.45);'; document.body.appendChild(b); }
+  b.textContent=t; b.style.display='block';
+  clearTimeout(b._t); b._t=setTimeout(()=>{ b.style.display='none'; }, ms||3500);
+}
+function warnPop(t){ return appDialog({title:'Heads up',text:t,icon:'⚠️'}); }
+function noAdPop(){ return appDialog({title:'No ad right now',text:'No ad is available at the moment. Please try again later.',icon:'📺'}); }
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+// Shows one AdsGram ad. Resolves 'done' (watched fully), 'skipped' or 'none' (no ad available)
+function agShowRaw(){
+  return new Promise(resolve=>{
+    try{
+      if(!AG){
+        if(!(window.Adsgram && window.Adsgram.init)) return resolve('none');
+        AG = window.Adsgram.init({ blockId: ADSGRAM_BLOCK });
+      }
+    }catch(e){ return resolve('none'); }
+    let p; try{ p = AG.show(); }catch(e){ return resolve('none'); }
+    Promise.resolve(p).then(()=>resolve('done')).catch(r=>resolve(r && r.error ? 'none' : 'skipped'));
+  });
+}
+
+async function mtRowHtml(){
+  if(!MTS){ try{ MTS = await api('mtStatus', {}, MT_URL); MTS.cdUntil = Date.now()+MTS.cooldownLeft*1000; }catch(e){ MTS = null; } }
+  if(!MTS) return '';
+  const full = MTS.done >= MTS.max;
+  return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:#a259ff;">'+tkRing(MTS.done,MTS.max)+'<div class="tk-main"><div class="tk-title">Monetag ad</div><div class="tk-meta">'+MTS.per+' coins per ad • '+MTS.done+'/'+MTS.max+' today • paid after the ad is confirmed</div><div class="tk-actions">'
+    + (full ? '<button class="tk-btn d" disabled>✓ Done today</button>' : '<button class="tk-btn f" id="mtBtn" onclick="mtWatch()">▶ Watch ad '+(MTS.done+1)+'</button>')
+    + '</div></div></div>';
+}
+async function mtWatch(){
+  if(!MTS) return;
+  const btn = document.getElementById('mtBtn');
+  if(MTS.cooldownLeft > 0 && Date.now() < (MTS.cdUntil||0)){ warnPop('Please wait '+Math.ceil((MTS.cdUntil-Date.now())/1000)+' seconds before the next ad.'); return; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  let ymid;
+  try{ ymid = (await api('mtStart', {}, MT_URL)).ymid; }
+  catch(e){ MTS = null; renderTasks(); warnPop(e.message); return; }
+  const watched = await watchAd(ymid);
+  if(!watched){ renderTasks(); return; }
+  if(btn) btn.textContent = 'Confirming…';
+  let res = null, lastErr = '';
+  for(let i=0;i<8;i++){
+    try{ res = await api('mtClaim', { ymid }, MT_URL); break; }
+    catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await sleep(2500); }
+  }
+  if(res){
+    state.balance = res.balance; render();
+    MTS = { done:res.done, max:res.max, per:res.per, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
+    renderTasks();
+    adFinished({ reward:res.amount, progress:'Task progress '+res.done+'/'+res.max });
+  } else {
+    MTS = null; renderTasks();
+    warnPop(lastErr || 'The ad was not confirmed, so no coins were added.');
+  }
+}
+async function agRowHtml(){
+  if(!AGS){ try{ AGS = await api('agStatus', {}, AG_URL); AGS.cdUntil = Date.now()+AGS.cooldownLeft*1000; }catch(e){ AGS = null; } }
+  if(!AGS) return '';
+  const full = AGS.done >= AGS.max;
+  return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:#2f7bff;">'+tkRing(AGS.done,AGS.max)+'<div class="tk-main"><div class="tk-title">AdsGram ad</div><div class="tk-meta">'+AGS.per+' coins per ad • '+AGS.done+'/'+AGS.max+' today • watch the full ad</div><div class="tk-actions">'
+    + (full ? '<button class="tk-btn d" disabled>✓ Done today</button>' : '<button class="tk-btn f" id="agBtn" onclick="agWatch()">▶ Watch ad '+(AGS.done+1)+'</button>')
+    + '</div></div></div>';
+}
+async function agWatch(){
+  if(!AGS) return;
+  const btn = document.getElementById('agBtn');
+  if(AGS.cooldownLeft > 0 && Date.now() < (AGS.cdUntil||0)){ warnPop('Please wait '+Math.ceil((AGS.cdUntil-Date.now())/1000)+' seconds before the next ad.'); return; }
+  topBubble('Watch the full ad to earn '+AGS.per+' coins');
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  const r = await agShowRaw();
+  if(r==='none'){ renderTasks(); noAdPop(); return; }
+  if(r==='skipped'){ renderTasks(); appDialog({title:'Watch the full ad',text:'Watch the full ad to earn '+AGS.per+' coins.',icon:'📺'}); return; }
+  if(btn) btn.textContent = 'Confirming…';
+  let res = null, lastErr = '';
+  for(let i=0;i<10;i++){
+    try{ res = await api('agClaim', {}, AG_URL); break; }
+    catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await sleep(1500); }
+  }
+  if(res){
+    state.balance = res.balance; render();
+    AGS = { done:res.done, max:res.max, per:res.per, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
+    renderTasks();
+    adFinished({ reward:res.amount, progress:'Task progress '+res.done+'/'+res.max });
+  } else {
+    AGS = null; renderTasks();
+    warnPop(lastErr || 'The ad was not confirmed, so no coins were added.');
+  }
+}
+
+/* ===== AdsGram (optional ad after a game) ===== */
+function adsgramShow(btn){
+  const noAd=()=>appDialog({title:'No ad right now',text:'No ad is available at the moment. Please try again later.',icon:'📺'});
+  try{
+    if(!AG){
+      if(!(window.Adsgram && window.Adsgram.init)){ noAd(); return; }
+      AG = window.Adsgram.init({ blockId: ADSGRAM_BLOCK });
+    }
+  }catch(e){ noAd(); return; }
+  if(btn) btn.disabled = true;
+  let p; try{ p = AG.show(); }catch(e){ if(btn) btn.disabled=false; noAd(); return; }
+  Promise.resolve(p).then(()=>{ appDialog({title:'Thank you!',text:'Thanks for supporting MineEarn.',icon:'💙'}); })
+    .catch(r=>{ if(r && r.error) noAd(); })
+    .then(()=>{ if(btn) btn.disabled=false; });
+}
+/* ===== App-style dialogs ===== */
+function appDialog(o){
+  return new Promise(res=>{
+    const d=document.createElement('div'); d.className='dlg-back';
+    const ic=o.icon||'ℹ️';
+    d.innerHTML='<div class="dlg"><div class="dlg-ic">'+ic+'</div><div class="dlg-t">'+esc(o.title||'MineEarn')+'</div><div class="dlg-m">'+esc(o.text||'')+'</div><button class="dlg-ok">'+esc(o.ok||'OK')+'</button>'+(o.cancel?'<button class="dlg-no">'+esc(o.cancel)+'</button>':'')+'</div>';
+    const done=v=>{ try{d.remove();}catch(e){} res(v); };
+    d.querySelector('.dlg-ok').onclick=()=>done(true);
+    const n=d.querySelector('.dlg-no'); if(n) n.onclick=()=>done(false);
+    document.body.appendChild(d);
+  });
+}
+function appPrompt(text,title,ph,def){
+  return new Promise(res=>{
+    const d=document.createElement('div'); d.className='dlg-back';
+    d.innerHTML='<div class="dlg"><div class="dlg-ic">✏️</div><div class="dlg-t">'+esc(title||'Enter value')+'</div><div class="dlg-m" style="margin-bottom:12px;">'+esc(text||'')+'</div><input class="form-input dlg-in" style="width:100%;margin-bottom:14px;text-align:center;" placeholder="'+esc(ph||'')+'" value="'+esc(def||'')+'"><button class="dlg-ok">OK</button><button class="dlg-no">Cancel</button></div>';
+    const done=v=>{ try{d.remove();}catch(e){} res(v); };
+    d.querySelector('.dlg-ok').onclick=()=>done(d.querySelector('.dlg-in').value);
+    d.querySelector('.dlg-no').onclick=()=>done(null);
+    document.body.appendChild(d);
+    setTimeout(()=>{ try{ d.querySelector('.dlg-in').focus(); }catch(e){} },50);
+  });
+}
+function appConfirm(text,ok,cancel,title,icon){ return appDialog({title:title||'Please confirm',text,ok:ok||'Yes',cancel:cancel||'Cancel',icon:icon||'❓'}); }
+window.alert = function(m){ const t=String(m==null?'':m); const bad=/error|could not|cannot|can't|failed|invalid|not enough|too|wait|limit|already|enter |must/i.test(t); appDialog({title:bad?'Heads up':'Done',text:t,icon:bad?'⚠️':'✅'}); };
+function copyText(t,btn){
+  const ok=()=>{ if(btn){ const o=btn.textContent; btn.textContent='✅ Copied'; setTimeout(()=>{btn.textContent=o;},1500); } };
+  try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(ok).catch(()=>fb()); return; } }catch(e){}
+  fb();
+  function fb(){ try{ const a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); ok(); }catch(e){ appDialog({title:'Copy',text:t,icon:'📋'}); } }
+}
+function copyAddr(id){ const r=(window.__wdRows||{})[id]; if(r) copyText(r.wallet_address, event && event.target); }
+
+/* ===== How it works ===== */
+function howSlides(){
+  const usd=(MIN_WITHDRAW/100000).toFixed(2);
+  return [
+    ['⛏️','Welcome to MineEarn','Watch short ads, collect coins and cash them out. It is free to use.'],
+    ['🪙','Earn coins',REVIEW?'Play the games and complete tasks. Your score and progress are saved on your account.':'Mine with 5 slots, claim the daily login bonus, join tasks and invite friends. Ads pay '+AD_PAY+' coins each.'],
+    ['💱','What coins are worth','100,000 coins = $1. Withdraw from '+MIN_WITHDRAW.toLocaleString()+' coins ($'+usd+'), one request per day, '+FEE_PERCENT+'% fee.'],
+    ['💸','How withdrawals work','Send a request with your TON or USDT (BEP20) address. Every request is checked by hand and approved within '+WD_HOURS+' hours. Paid requests show in the Payouts channel. Not paid after '+WD_HOURS+' hours? Contact '+WD_CONTACT+'.'],
+    ['🔒','Play fair','One account per person. Fake or cheating activity gets the account suspended.']
+  ];
+}
+function howOpen(i){
+  i=i||0; const S=howSlides(); const last=i>=S.length-1;
+  const old=document.getElementById('howBox'); if(old) old.remove();
+  const d=document.createElement('div'); d.className='dlg-back'; d.id='howBox';
+  d.innerHTML='<div class="dlg"><div class="dlg-ic">'+S[i][0]+'</div><div class="dlg-t">'+esc(S[i][1])+'</div><div class="dlg-m">'+esc(S[i][2])+'</div><div class="hw-dots">'+S.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join('')+'</div><button class="dlg-ok">'+(last?'Got it, let\'s earn':'Next')+'</button>'+(last?'':'<button class="dlg-no">Skip</button>')+'</div>';
+  d.querySelector('.dlg-ok').onclick=()=>{ if(last){ d.remove(); } else howOpen(i+1); };
+  const n=d.querySelector('.dlg-no'); if(n) n.onclick=()=>d.remove();
+  document.body.appendChild(d);
+  if(last){ try{ localStorage.setItem('me_how_seen','1'); }catch(e){} }
+}
+function howMaybe(){ let seen=false; try{ seen=localStorage.getItem('me_how_seen')==='1'; }catch(e){} if(!seen){ howOpen(0); try{ localStorage.setItem('me_how_seen','1'); }catch(e){} } }
+
+async function startApp(){
+  try{
+    try{ const wc = await api('wdConfig', {}, WD_URL); if(wc.min) MIN_WITHDRAW = Number(wc.min); if(wc.fee!==undefined) FEE_PERCENT = Number(wc.fee); if(wc.hours) WD_HOURS = Number(wc.hours); if(wc.contact) WD_CONTACT = String(wc.contact); }catch(e){}
+    try{ const fl = await api('flags', {}, FLAGS_URL); REVIEW = !!fl.review; }catch(e){}
+    state = await loadState();
+    await splashFinish();
+    setTimeout(howMaybe, 700);
+  }catch(e){
+    await splashFinish();
+    document.getElementById('app').innerHTML = '<div style="text-align:center;padding:40px 16px;color:#ff6b6b;">Could not load your data: '+(e && e.message ? e.message : 'unknown error')+'<br><br>Please close and reopen the app from Telegram.</div>';
+    return;
+  }
+  const name = TG_USER ? (TG_USER.first_name||'') + (TG_USER.last_name?(' '+TG_USER.last_name):'') : 'Guest';
+  const username = TG_USER && TG_USER.username ? '@'+TG_USER.username : '';
+  const photo = TG_USER && TG_USER.photo_url ? '<img src="'+TG_USER.photo_url+'">' : '⛏️';
+
+  const paymentBox = IS_OWNER ? '' : `
+    <div class="wallet-box">
+      Non-owner task fee: $0.10 per 100 completions.<br>
+      <b>USDT (BEP20):</b> ${WALLET_USDT}<br>
+      <b>TON:</b> ${WALLET_TON}<br>
+      After sending payment, message <a href="${SUPPORT_LINK}" style="color:var(--gold);" target="_blank">support</a> to activate your task.
+    </div>
+  `;
+
+  document.getElementById('app').innerHTML = `
+    <div class="tab-content active" id="tab-home">
+      <div class="home-head">
+        <div class="home-avatar">${photo}</div>
+        <div><div class="home-hi">Welcome back</div><div class="home-name">${name}</div></div>
+      </div>
+      <div class="balance">
+        <div class="rcoin"><i>M</i><b class="t1">✦</b><b class="t2">✦</b></div>
+        <div class="usd" style="margin:0 0 4px;">Your balance</div>
+        <div class="coins" id="homeCoins"></div>
+        <div class="usd" id="homeUsd"></div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="action btn-collect" style="flex:1;" onclick="showTab('mine')">⛏️ Mine now</button>
+          <button class="action" style="flex:1;" onclick="goWithdraw()">💸 Withdraw</button>
+        </div>
+      </div>
+      <div class="section-title">Today</div>
+      <div class="tile-row">
+        <div class="tile"><div class="tile-num" id="homeAds">0/50</div><div class="tile-lbl">Ads watched</div></div>
+        <div class="tile"><div class="tile-num" id="homePlays">–</div><div class="tile-lbl">Game plays left</div></div>
+        <div class="tile"><div class="tile-num" id="homeRefs">0</div><div class="tile-lbl">Referrals</div></div>
+      </div>
+      <div class="section-title">Daily login bonus</div>
+      <div class="login-row" id="loginRow"></div>
+      <div style="font-size:12px;color:var(--muted);margin:4px 2px 8px;line-height:1.5;">Put your own invite link in your Telegram bio, then claim once a day. Miss a day and it restarts at Day 1. We only check that your bio contains your link.</div>
+      <button class="action btn-collect" style="width:100%;margin-bottom:6px;" id="loginBtn" onclick="loginClaim()">🎁 Claim daily bonus</button>
+      <div id="loginMsg" style="font-size:12px;color:var(--muted);margin:2px 2px 10px;min-height:16px;"></div>
+      <div class="section-title">Ways to earn</div>
+      <div class="earn-card" onclick="showTab('mine')"><div class="earn-ic">⛏️</div><div class="earn-tx"><b>Mining</b><span>5 slots • watch 2 ads per collect • ${AD_PAY} coins per ad</span></div><div class="earn-go">›</div></div>
+      <div class="earn-card" onclick="showTab('play')"><div class="earn-ic">🎮</div><div class="earn-tx"><b>Games</b><span>4 games • up to 250 coins per play • 5 plays each daily</span></div><div class="earn-go">›</div></div>
+      <div class="earn-card" onclick="showTab('tasks')"><div class="earn-ic">✅</div><div class="earn-tx"><b>Tasks</b><span>Join channels and follow pages for coins</span></div><div class="earn-go">›</div></div>
+      <div class="earn-card" onclick="comOpen('payouts')"><div class="earn-ic">🏆</div><div class="earn-tx"><b>Payouts &amp; leaderboard</b><span>See real payments and the top earners</span></div><div class="earn-go">›</div></div>
+      <div class="earn-card" onclick="howOpen(0)"><div class="earn-ic">📖</div><div class="earn-tx"><b>How it works</b><span>Earning, coins and withdrawals explained</span></div><div class="earn-go">›</div></div>
+      <div class="section-title">Invite &amp; earn</div>
+      <div class="invite-card">
+        <div class="invite-top"><div class="earn-ic">👥</div><div class="earn-tx"><b>Invite friends</b><span>500 coins when a friend joins + 3,000 coins when their first withdrawal is paid</span></div></div>
+        <div class="invite-link" id="refLink"></div>
+        <div style="display:flex;gap:8px;"><button class="action" style="flex:1;" onclick="copyRef()" id="refCopyBtn">📋 Copy link</button><button class="action btn-collect" style="flex:1;" onclick="shareRef()">📤 Share</button></div>
+        <div class="tile-row" style="margin-top:12px;margin-bottom:0;">
+          <div class="tile"><div class="tile-num" id="refInvited">0</div><div class="tile-lbl">Friends joined</div></div>
+          <div class="tile"><div class="tile-num" id="refPaid">0</div><div class="tile-lbl">First withdrawals paid</div></div>
+          <div class="tile"><div class="tile-num" id="refEarned">0</div><div class="tile-lbl">Coins earned</div></div>
+        </div>
+      </div>
+      <a class="support-btn" href="${SUPPORT_LINK}" target="_blank">💬 Contact Support</a>
+      <div class="legal-row"><a onclick="comOpen('about')">About</a><a onclick="comOpen('terms')">Terms</a><a onclick="comOpen('privacy')">Privacy</a></div>
+        ${IS_OWNER ? '<button class="action btn-collect" style="margin-top:10px;" onclick="admOpen()">🛠 Admin panel</button>' : ''}
+    </div>
+    <div class="tab-content" id="tab-mine">
+      <h1>MineEarn</h1>
+      <div class="balance">
+        <div class="coins" id="balanceCoins"></div>
+        <div class="usd" id="balanceUsd"></div>
+      </div>
+      <div class="task-sub" id="dailyAds" style="text-align:center;margin-bottom:10px;"></div>
+      <div id="slots"></div>
+    </div>
+    <div class="tab-content" id="tab-play">
+      <h1>Play &amp; Earn</h1>
+      <div class="chip-row"><div class="chip"><span class="coin"></span><b id="playBal">0</b></div><div class="chip">5 plays per game daily</div><div class="chip">Max 250 coins per play</div></div>
+      <div id="playList"></div>
+    </div>
+    <div class="tab-content" id="tab-tasks">
+      <h1>Tasks</h1>
+      <div class="tk-sub">Pick a category and collect coins.</div>
+      <div class="tk-cats" id="tkCats">
+        <button class="tk-cat active" data-c="social" onclick="tkSetCat('social')"><svg viewBox="0 0 24 24"><path d="M4 12l16-7-5 15-3-6z"/></svg><span>Social</span></button>
+        <button class="tk-cat" data-c="daily" onclick="tkSetCat('daily')"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><span>Daily Wins</span><i class="tk-dot" id="tkDailyDot"></i></button>
+        <button class="tk-cat" data-c="exclusive" onclick="tkSetCat('exclusive')"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><span>Special</span></button>
+        <button class="tk-cat" data-c="partner" onclick="tkSetCat('partner')"><svg viewBox="0 0 24 24"><path d="M3 12l4-4 4 3 3-3 4 4-7 7z"/></svg><span>Featured</span></button>
+      </div>
+      <div class="tk-bar">
+        <div class="tk-view"><button class="active" id="tkViewAll" onclick="tkSetView('all')">Tasks</button><button id="tkViewMine" onclick="tkSetView('mine')">Completed tasks</button></div>
+        <div style="display:flex;gap:8px;">${IS_OWNER ? '<button class="tk-new" onclick="openManageSheet()">⚙ Manage</button>' : ''}<button class="tk-new" id="tkNewBtn" onclick="openTaskSheet()">＋ New</button></div>
+      </div>
+      <div class="tk-count" id="tkCount"></div>
+      <div id="taskList"></div>
+    </div>
+    <div class="sheet-bg" id="taskSheetBg" onclick="closeTaskSheet()"></div>
+    <div class="sheet" id="manageSheet">
+      <div class="sheet-grip"></div>
+      <div class="sheet-title">Manage tasks</div>
+      <div id="manageList"></div>
+      <button class="action" style="margin-top:8px;" onclick="closeManageSheet()">Close</button>
+    </div>
+    <div class="sheet" id="taskSheet">
+      <div class="sheet-grip"></div>
+      <div class="sheet-title">${IS_OWNER ? 'Create a task' : 'Create a Special task'}</div>
+      ${IS_OWNER ? '' : '<div class="wallet-box" style="line-height:1.5;">Fill in your task, then tap <b>Contact support</b>. A message with all your details opens in our support chat. Support will confirm the price ($0.10 per 100 users), and your task goes live after payment.</div>'}
+      <div class="form-group">
+        <label class="form-label">Task title</label>
+        <input type="text" id="taskTitle" class="form-input" placeholder="e.g. Join our channel">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link</label>
+        <input type="text" id="taskLink" class="form-input" placeholder="https://t.me/yourchannel">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select id="taskType" class="form-input">
+          <option value="telegram">Telegram (250 coins)</option>
+          <option value="social">Social Media (300 coins)</option>
+        </select>
+      </div>
+      ${IS_OWNER ? '<div class="form-group"><label class="form-label">Category</label><select id="taskCat" class="form-input"><option value="exclusive">Special</option><option value="partner">Featured</option><option value="social">Social</option></select></div>' : ''}
+      <div class="form-group">
+        <label class="form-label">Number of completions wanted</label>
+        <input type="number" id="taskMax" class="form-input" placeholder="e.g. 100" oninput="updateFeePreview()">
+        ${IS_OWNER ? '' : '<div class="task-sub" id="taskFeePreview" style="margin-top:6px;"></div>'}
+      </div>
+      <div class="error-msg" id="taskMsg"></div>
+      ${IS_OWNER ? '<button class="action btn-start" onclick="handleCreateTask()">Create Task</button>' : '<button class="action btn-collect" onclick="contactSupportTask()">💬 Contact support</button>'}
+      <button class="action" style="margin-top:8px;" onclick="closeTaskSheet()">Close</button>
+    </div>
+    <div class="tab-content" id="tab-profile">
+      <h1>Profile</h1>
+      <div class="profile-card">
+        <div class="profile-avatar">${photo}</div>
+        <div class="profile-name">${name}</div>
+        <div class="profile-username">${username}</div>
+        <div class="stat-row"><span class="stat-label">Balance</span><span class="stat-value" id="profileCoins"></span></div>
+        <div class="stat-row"><span class="stat-label">USD Value</span><span class="stat-value" id="profileUsd"></span></div>
+        <div class="stat-row"><span class="stat-label">Referrals</span><span class="stat-value" id="profileReferrals"></span></div>
+        <a class="support-btn" href="${SUPPORT_LINK}" target="_blank">💬 Contact Support</a>
+        <div class="legal-row"><a onclick="comOpen('about')">About</a><a onclick="comOpen('terms')">Terms</a><a onclick="comOpen('privacy')">Privacy</a></div>
+      </div>
+      <h1 id="wdSection" style="margin-top:24px;">Withdraw</h1>
+      <div class="balance">
+        <div class="coins" id="wdBalance"></div>
+        <div class="usd">Available balance</div>
+      </div>
+      <div class="form-group">
+        <div class="wallet-box" style="line-height:1.5;margin-bottom:10px;font-size:12px;">Requests are approved within <b>${WD_HOURS} hours</b>. If yours is not approved by then, contact the owner of Boss Crypto Hub: <b>${WD_CONTACT}</b>.</div>
+        <label class="form-label">Amount (min ${MIN_WITHDRAW.toLocaleString()} coins)</label>
+        <input type="number" id="wdAmount" class="form-input" placeholder="e.g. 20000" oninput="wdPreview()">
+        <div class="task-sub" id="wdPreview" style="margin-top:6px;"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Payout method</label>
+        <div class="method-row">
+          <div class="method-btn active" id="methodUSDT" onclick="selectMethod('USDT_BEP20')">USDT (BEP20)</div>
+          <div class="method-btn" id="methodTON" onclick="selectMethod('TON')">TON</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Wallet address</label>
+        <input type="text" id="wdWallet" class="form-input" placeholder="Paste your wallet address">
+      </div>
+      <div class="error-msg" id="wdMessage"></div>
+      <button class="action btn-start" onclick="handleWithdraw()">Request Withdrawal</button>
+      <div class="section-title">History</div>
+      <div id="wdHistory"></div>
+      ${IS_OWNER ? '<div class="section-title">Admin: withdrawal requests</div><div id="adminWd"></div>' : ''}
+    </div>
+  `;
+  document.getElementById('tabbar').style.display='flex';
+  refJoinOnce().then(()=>{ renderHome(); });
+  setInterval(render, 1000);
+  render();
+  renderTasks();
+  if(REVIEW){ document.body.classList.add('rv'); TK.cat = 'social'; TK.view = 'all'; showTab('play'); }
+}
+
+async function init(){
+  try{ const fl = await api('flags', {}, FLAGS_URL); REVIEW = !!fl.review; }catch(e){}
+  const joined = REVIEW ? true : await checkMembership();
+  if(joined){
+    startApp();
+  } else {
+    await splashFinish();
+    renderGate();
+  }
+}
+init();
+
+if(window.Telegram && window.Telegram.WebApp){
+  window.Telegram.WebApp.ready();
+  window.Telegram.WebApp.expand();
+}
+</script>
+</body>
+</html>
