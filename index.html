@@ -129,6 +129,37 @@
   .gpip.on{background:linear-gradient(180deg,#6fdcff,#2f7bff);}
   .gpips span{margin-left:4px;}
   .gdim{opacity:0.5;}
+
+  .balance{position:relative;}
+  .rcoin{position:absolute;top:-36px;right:-12px;width:78px;height:78px;perspective:300px;pointer-events:none;z-index:2;animation:coinFloat 2.4s ease-in-out infinite;}
+  .rcoin i{position:relative;display:flex;align-items:center;justify-content:center;width:78px;height:78px;border-radius:50%;font-style:normal;font-weight:900;font-size:38px;color:#8a5a00;text-shadow:0 1px 0 rgba(255,255,255,.55);background:radial-gradient(circle at 32% 28%,#fffbd0 0%,#ffe27a 22%,#ffc928 52%,#d98f00 100%);box-shadow:0 0 0 4px #f5b800,0 0 0 7px rgba(255,236,150,.55),inset 0 0 0 7px rgba(190,120,0,.35),0 0 34px 8px rgba(255,200,40,.6);overflow:hidden;animation:coinSpin 3.2s linear infinite,coinGlow 1.6s ease-in-out infinite;}
+  .rcoin i:before{content:'';position:absolute;top:-20%;left:-60%;width:40%;height:140%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);transform:rotate(20deg);animation:coinShine 2.2s ease-in-out infinite;}
+  .rcoin b{position:absolute;color:#fff6c2;font-size:14px;animation:twinkle 1.4s ease-in-out infinite;}
+  .rcoin b.t1{left:-6px;top:12px;} .rcoin b.t2{right:-4px;bottom:10px;animation-delay:.7s;}
+  @keyframes coinSpin{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
+  @keyframes coinFloat{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(7px) rotate(6deg)}}
+  @keyframes coinGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}
+  @keyframes coinShine{0%{left:-60%}60%,100%{left:130%}}
+  @keyframes twinkle{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.2)}}
+  .adf-r{font-size:34px;font-weight:900;color:var(--gold);margin:0 0 8px;}
+  .gf{position:relative;height:236px;border-radius:24px;overflow:hidden;margin-bottom:6px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.45);}
+  .gf .gfbg,.gf .gfbg svg{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .gf .gfsh{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,10,30,.15) 0%,rgba(4,10,30,.35) 45%,rgba(4,10,30,.92) 100%);}
+  .gf .gftag{position:absolute;left:14px;top:14px;background:rgba(0,0,0,.45);border-radius:12px;padding:4px 10px;font-size:11px;font-weight:800;letter-spacing:.8px;color:#ffd24d;}
+  .gf .gfin{position:absolute;left:16px;right:16px;bottom:14px;}
+  .gf .gfn{font-size:26px;font-weight:900;}
+  .gf .gfm{font-size:12px;color:#c5d3f2;margin:3px 0 12px;font-weight:700;}
+  .gf .gfm b{color:var(--gold);}
+  .gf .gfplay{width:150px;border:none;border-radius:14px;padding:12px;font-size:15px;font-weight:900;background:linear-gradient(#ffd24d,#f5a300);color:#222;}
+  .gf.gdim{opacity:.55;}
+  .gmore{font-size:13px;font-weight:800;color:var(--muted);margin:20px 2px 14px;letter-spacing:.5px;}
+  .grow2{display:grid;grid-template-columns:repeat(3,1fr);gap:20px 8px;justify-items:center;}
+  .gic{text-align:center;width:100%;max-width:112px;}
+  .gic .gicc{width:100%;aspect-ratio:1/1;border-radius:50%;overflow:hidden;margin:auto;border:4px solid rgba(255,210,77,.4);box-shadow:0 6px 16px rgba(0,0,0,.5);}
+  .gic .gicc svg{width:100%;height:100%;display:block;}
+  .gic.sel .gicc{border-color:#ffd24d;box-shadow:0 0 18px rgba(255,210,77,.7);}
+  .gic .gicn{margin-top:8px;font-size:12px;font-weight:800;line-height:1.2;}
+  .gic.gdim{opacity:.5;}
   .grow{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,var(--card),var(--card2));border:1px solid var(--line);border-left-width:5px;border-radius:18px;padding:10px 12px 10px 10px;margin-bottom:11px;position:relative;}
   .grow:active{transform:scale(0.985);}
   .grow .gt{width:86px;height:68px;border-radius:14px;overflow:hidden;flex:none;border:1px solid rgba(255,255,255,0.1);}
@@ -345,6 +376,11 @@ const STATS_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-s
 const ADMIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-hub';
 const LOGIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/login-hub';
 const GIGA_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/giga-hub';
+const MT_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/monetag-hub';
+let MTS = null;
+const AG_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/adsgram-hub';
+let AGS = null;
+const CAT_LABEL = {social:'Social',daily:'Daily Wins',exclusive:'Special',partner:'Featured'};
 const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-pro';
 const TASK_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/task-hub';
 const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-v2';
@@ -509,7 +545,7 @@ async function handleCollect(i){
     if(!watched){ slot.busy = false; render(); return; }
     slot.ymids.push(ymid);
     slot.adsWatched++;
-    if(slot.adsWatched < cfg.ads){ slot.busy = false; render(); return; }
+    if(slot.adsWatched < cfg.ads){ slot.busy = false; render(); adFinished({ progress:'Ad '+slot.adsWatched+' of '+cfg.ads+' done. Watch the next ad to collect your coins.' }); return; }
   }
   // all required ads watched -> collect (retry while Monetag confirms)
   let done = false, lastErr = '';
@@ -530,10 +566,11 @@ async function handleCollect(i){
   if(!done){ alert(lastErr); }
   else { cur.ymids = []; }
   render();
+  if(done) adFinished({ reward:AD_PAY*cfg.ads, progress:'Mining reward collected' });
 }
 
 // ===================== GAMES =====================
-const GAMES_URL = SUPABASE_URL + '/functions/v1/games-v2';
+const GAMES_URL = SUPABASE_URL + '/functions/v1/games-v3';
 const GAME_THUMBS = {
 snake:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><pattern id="ckS" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#1f7a4c"/><rect width="16" height="16" fill="#26925a"/><rect x="16" y="16" width="16" height="16" fill="#26925a"/></pattern></defs><rect width="160" height="124" fill="url(#ckS)"/><g fill="#7ee85a" stroke="#2f9d3e" stroke-width="1.5"><circle cx="24" cy="84" r="9"/><circle cx="42" cy="84" r="9"/><circle cx="60" cy="84" r="9"/><circle cx="60" cy="66" r="9"/><circle cx="78" cy="66" r="9"/><circle cx="96" cy="66" r="9"/></g><circle cx="114" cy="66" r="11" fill="#9bf26c" stroke="#2f9d3e" stroke-width="1.5"/><circle cx="117" cy="61" r="3.5" fill="#fff"/><circle cx="117" cy="71" r="3.5" fill="#fff"/><circle cx="118" cy="61" r="1.6" fill="#111"/><circle cx="118" cy="71" r="1.6" fill="#111"/><path d="M125 66h10m0 0l4-3m-4 3l4 3" stroke="#ff4d4d" stroke-width="2" fill="none"/><circle cx="118" cy="26" r="11" fill="#ff4d4d"/><circle cx="114" cy="23" r="3" fill="rgba(255,255,255,0.5)"/><path d="M118 15c2-6 7-8 10-7-1 5-5 8-10 7z" fill="#9be36b"/></svg>',
 runner:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="skR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4aa8ff"/><stop offset="1" stop-color="#cfeaff"/></linearGradient></defs><rect width="160" height="124" fill="#2f9a5b"/><rect width="160" height="38" fill="url(#skR)"/><polygon points="72,38 88,38 158,124 2,124" fill="#4b4f63"/><path d="M76 38L50 124M84 38L110 124" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/><rect x="92" y="70" width="22" height="9" rx="2" fill="#ff9f1a"/><rect x="40" y="58" width="16" height="22" rx="2" fill="#c0392b"/><rect x="43" y="63" width="10" height="5" fill="#ffd86b"/><ellipse cx="80" cy="116" rx="12" ry="3.5" fill="rgba(0,0,0,0.3)"/><path d="M75 108v7M85 108v7" stroke="#2b3a67" stroke-width="5" stroke-linecap="round"/><rect x="69" y="86" width="22" height="24" rx="7" fill="#e24b4b"/><rect x="73" y="90" width="14" height="14" rx="3" fill="#2f6fe0"/><path d="M68 90l-3 14M92 90l3 14" stroke="#e24b4b" stroke-width="5" stroke-linecap="round"/><circle cx="80" cy="79" r="8" fill="#2a1b14"/></svg>',
@@ -547,22 +584,33 @@ const GAME_LIST = [
   {id:'quiz', name:'Timed Quiz', cat:'BRAIN', col:'#3aa8ff', ready:true}
 ];
 let gameStatus = null;
+let GP_SEL = null;
+function gpDay(){ return GAME_LIST[Math.floor(Date.now()/86400000) % GAME_LIST.length]; }
+function gpLeft(g){ const used = (gameStatus.runs && gameStatus.runs[g.id]) || 0; return Math.max(0, gameStatus.max - used); }
+function gpClick(g){ return gpLeft(g)>0 ? 'startGame(\''+g.id+'\')' : 'alert(\'No plays left for this game today. It resets at 00:00 UTC.\')'; }
+function gpPick(id){ GP_SEL = id; drawPicker(); }
+function drawPicker(){
+  const box = document.getElementById('playList');
+  if(!box || !gameStatus) return;
+  const day = gpDay();
+  const sel = GAME_LIST.find(g=>g.id===GP_SEL) || day;
+  const left = gpLeft(sel);
+  const banner = '<div class="gf'+(left<=0?' gdim':'')+'">'
+    + '<div class="gfbg">'+GAME_THUMBS[sel.id]+'</div><div class="gfsh"></div>'
+    + '<div class="gftag">'+(sel.id===day.id ? '⭐ GAME OF THE DAY' : sel.cat)+'</div>'
+    + '<div class="gfin"><div class="gfn">'+sel.name+'</div><div class="gfm"><b>'+left+'/'+gameStatus.max+'</b> plays left • Up to <b>250</b> coins</div>'
+    + '<button class="gfplay" onclick="'+gpClick(sel)+'">▶ Play</button></div></div>';
+  box.innerHTML = banner
+    + '<div class="gmore">All games</div><div class="grow2">'
+    + GAME_LIST.map(g=>'<div class="gic'+(gpLeft(g)<=0?' gdim':'')+(g.id===sel.id?' sel':'')+'" onclick="gpPick(\''+g.id+'\')"><div class="gicc">'+GAME_THUMBS[g.id]+'</div><div class="gicn">'+g.name+'</div></div>').join('')
+    + '</div>';
+}
 async function renderPlay(){
   const box = document.getElementById('playList');
   if(!box) return;
   const bal = document.getElementById('playBal'); if(bal) bal.textContent = state.balance.toLocaleString();
   try{ gameStatus = await api('gamesStatus', {}, GAMES_URL); }catch(e){ box.textContent = e.message; return; }
-  box.innerHTML = GAME_LIST.map(g=>{
-    const used = (gameStatus.runs && gameStatus.runs[g.id]) || 0;
-    const left = Math.max(0, gameStatus.max - used);
-    const click = left>0 ? 'startGame(\''+g.id+'\')' : 'alert(\'No plays left for this game today. It resets at 00:00 UTC.\')';
-    return '<div class="grow'+(left<=0?' gdim':'')+'" style="border-left-color:'+g.col+'" onclick="'+click+'">'
-      + '<div class="gt">'+GAME_THUMBS[g.id]+'</div>'
-      + '<div class="gi"><div class="gc" style="color:'+g.col+'">'+g.cat+'</div><div class="gn">'+g.name+'</div>'
-      + '<div class="gm"><span><b>'+left+'/'+gameStatus.max+'</b> plays left</span><span>Up to <b>250</b></span></div></div>'
-      + '<div class="gb"><svg viewBox="0 0 24 24"><path d="M6 3.5v17l15-8.5z"/></svg></div>'
-      + '</div>';
-  }).join('') + (REVIEW ? '<div class="grow" style="border-left-color:#2f7bff;"><div class="gt" style="display:flex;align-items:center;justify-content:center;font-size:30px;background:#10204a;">🎬</div><div class="gi"><div class="gn" style="margin-bottom:3px;">Sponsored ad</div><div class="gm" style="font-weight:600;">Watch a short ad from our partner AdsGram. Optional.</div></div><button class="action btn-collect" style="width:auto;padding:10px 14px;margin:0;flex:none;" onclick="adsgramShow(this)">▶ Watch</button></div>' : '');
+  drawPicker();
 }
 
 let G = null;
@@ -574,6 +622,7 @@ function ensureGameOverlay(){
   d.style.cssText = 'display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:#070d24;z-index:60;flex-direction:column;align-items:center;padding:10px;overflow:auto;';
   d.innerHTML = '<div style="width:100%;max-width:380px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
     + '<button class="action" style="width:auto;padding:8px 14px;margin:0;" id="gQuitBtn" onclick="quitGame()">✕ Quit</button>'
+    + '<button class="action" style="width:auto;padding:8px 12px;margin:0;" id="gMute" onclick="sndToggle()">🔊</button>'
     + '<div id="gScore" style="font-weight:bold;color:var(--gold);">Score 0</div></div>'
     + '<canvas id="gCanvas" style="touch-action:none;background:#1f7a4c;border-radius:18px;box-shadow:0 0 0 4px rgba(255,255,255,0.08);"></canvas>'
     + '<div id="gPad" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,52px);gap:6px;justify-content:center;">'
@@ -615,12 +664,14 @@ async function startGame(id){
   gEl('gPad').style.display = 'none'; gEl('gPad2').style.display = 'none'; gEl('gPad3').style.display = 'none'; gEl('gQuiz').style.display = 'none';
   { const cv = gEl('gCanvas'); cv.style.display = 'block'; cv.ontouchstart = cv.ontouchmove = cv.ontouchend = cv.onmousedown = null; }
   lockSwipes(true);
+  sndInit(); musicStart(id);
   if(id==='snake') snakeInit();
   if(id==='runner') runnerInit();
   if(id==='shooter') shooterInit();
   if(id==='quiz') quizInit();
 }
 function closeGameOverlay(){
+  musicStop();
   if(G && G.timer) clearTimeout(G.timer);
   const o = gEl('gameOverlay'); if(o) o.style.display = 'none';
   lockSwipes(false);
@@ -628,6 +679,7 @@ function closeGameOverlay(){
   renderPlay();
 }
 function quitGame(){
+  if(G && G.over){ gameLeave('back'); return; }
   if(G && !G.over && G.capped){ finishGame(curScore()); return; }
   if(G && !G.over){
     appConfirm('It will still count as one of your 5 runs today.','Quit run','Keep playing','Quit this run?','🎮').then(y=>{ if(y) closeGameOverlay(); });
@@ -677,26 +729,140 @@ async function finishGame(score){
   try{ r = await api('gameFinish', { token:G.token, score:Math.min(score, GAME_CAP[G.id]||score) }, GAMES_URL); }
   catch(e){ res.innerHTML = '<div style="color:#ff6b6b;margin-bottom:10px;">'+esc(e.message)+'</div><button class="action btn-start" onclick="closeGameOverlay()">Back</button>'; return; }
   const coins = r.valid ? r.coins : 0;
-  const need = GAME_ADS_ON ? adsForCoinsClient(coins) : 0;
-  for(let i=1;i<=need;i++){
-    await waitTap(res, coins, i, need);
-    if(!G) return;
-    await adCountdown(res, 'Ad '+i+' of '+need+'...');
-    if(!G) return;
-  }
-  const claimLine = !r.valid ? '<div style="color:#ff6b6b;">This result could not be verified.</div>'
-    : (coins<=0 ? '<div style="color:var(--muted);">No points this time. Try again!</div>'
-    : (r.claimEnabled ? '<div style="color:var(--muted);">Claiming is opening soon.</div>'
-    : '<div style="color:var(--muted);">'+(GAME_ADS_ON?'Ads done. ':'')+'Nice run! Your score is saved.</div>'));
-  res.innerHTML = '<div style="font-size:18px;font-weight:bold;">Game over</div>'
-    + '<div style="margin:8px 0;">Score: <b>'+score+'</b></div>'
-    + '<div style="font-size:22px;color:var(--gold);font-weight:bold;">'+coins+' points</div>'
-    + claimLine
-    + '<button class="action btn-collect" style="margin-top:12px;" onclick="adsgramShow(this)">🎬 Watch a short ad (optional)</button>'
-    + '<div style="font-size:11px;color:var(--muted);margin-top:4px;">Ads are optional and never needed to play.</div>'
-    + '<button class="action btn-start" style="margin-top:12px;" onclick="G.over=true;var i=G.id;closeGameOverlay();startGame(i)">▶️ Play again</button>'
-    + '<button class="action" style="margin-top:8px;" onclick="closeGameOverlay()">Back</button>';
+  G.score = score; G.valid = r.valid; G.coins = coins; G.collected = false; G.busy = false; G.done = 0;
+  G.need = (r.claimEnabled && coins>0) ? (Number(r.adsNeeded) || adsForCoinsClient(coins)) : 0;
+  musicStop(); sfx(coins>0 ? 'win' : 'over');
+  gameResultDraw();
 }
+function gameResultDraw(){
+  const res = gEl('gResult'); if(!G || !res) return;
+  const coins = G.coins, need = G.need;
+  let mid;
+  if(!G.valid) mid = '<div style="color:#ff6b6b;">This result could not be verified.</div>';
+  else if(coins<=0) mid = '<div style="color:var(--muted);">No coins this time. Try again!</div>';
+  else if(G.collected) mid = '<div style="color:#7ecb7e;font-weight:bold;">✅ '+coins+' coins collected!</div>';
+  else if(need>0 && G.done>=need) mid = '<button class="action btn-collect" id="gAdBtn" style="margin-top:10px;" onclick="gameClaimNow()">🎁 Collect '+coins+' coins</button>';
+  else if(need>0) mid = '<div style="color:var(--muted);margin:6px 0 10px;">Watch '+need+' ad'+(need>1?'s':'')+' to collect your coins ('+G.done+'/'+need+' done)</div>'
+    + '<button class="action btn-collect" id="gAdBtn" onclick="gameWatchAd()">🎬 Watch ad '+(G.done+1)+' of '+need+' to collect</button>';
+  else mid = '<div style="color:var(--muted);">Nice run! Your score is saved.</div>';
+  res.innerHTML = '<div style="font-size:18px;font-weight:bold;">Game over</div>'
+    + '<div style="margin:8px 0;">Score: <b>'+G.score+'</b></div>'
+    + '<div style="font-size:22px;color:var(--gold);font-weight:bold;">'+coins+' coins earned</div>'
+    + mid
+    + '<button class="action btn-start" style="margin-top:12px;" onclick="gameLeave(\'again\')">▶️ Play again</button>'
+    + '<button class="action" style="margin-top:8px;" onclick="gameLeave(\'back\')">Back</button>';
+}
+async function gameLeave(act){
+  if(G && G.valid && G.coins>0 && G.need>0 && !G.collected){
+    const y = await appConfirm('If you leave now you lose the '+G.coins+' coins from this run. Watch the ad to collect them.','Leave anyway','Stay','Leave without coins?','⚠️');
+    if(!y) return;
+  }
+  if(!G) return;
+  if(act==='again'){ G.over = true; const i = G.id; closeGameOverlay(); startGame(i); }
+  else closeGameOverlay();
+}
+async function gameClaimNow(){
+  if(!G || G.busy) return; G.busy = true;
+  const btn = gEl('gAdBtn'); if(btn){ btn.disabled = true; btn.textContent = 'Collecting…'; }
+  try{
+    const c = await api('gameClaim', { token:G.token }, GAMES_URL);
+    state.balance = c.balance; render();
+    if(!G) return;
+    G.collected = true; G.busy = false; gameResultDraw();
+    adFinished({ title:'Coins collected', reward:c.coins, progress:'Added to your balance' });
+  }catch(e){
+    if(!G) return;
+    G.busy = false; gameResultDraw();
+    warnPop(e.message+'\nTap the button to try again.');
+  }
+}
+async function gameWatchAd(){
+  if(!G || G.busy) return; G.busy = true;
+  const btn = gEl('gAdBtn'); if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  const r = await agShowRaw();
+  if(!G) return;
+  if(r==='none'){ G.busy = false; gameResultDraw(); noAdPop(); return; }
+  if(r==='skipped'){ G.busy = false; gameResultDraw(); appDialog({title:'Watch the full ad',text:'Watch the full ad to collect your coins.',icon:'📺'}); return; }
+  if(btn) btn.textContent = 'Confirming…';
+  let ok = false, last = '';
+  for(let i=0;i<10;i++){
+    try{ const c = await api('gameAdConfirm', { token:G.token }, GAMES_URL); if(!G) return; G.done = c.adsDone; ok = true; break; }
+    catch(e){ last = e.message; if(!/not confirmed|try again/i.test(last)) break; await sleep(1500); if(!G) return; }
+  }
+  if(!G) return;
+  G.busy = false;
+  if(!ok){ gameResultDraw(); warnPop(last || 'The ad was not confirmed. Please try again.'); return; }
+  if(G.done >= G.need){ gameClaimNow(); return; }
+  gameResultDraw();
+  adFinished({ progress:'Ad '+G.done+' of '+G.need+' done. Watch the next ad to collect your coins.' });
+}
+
+/* ===== Game sound (generated in the browser, no audio files) ===== */
+const SND = { ctx:null, master:null, muted:false, step:0, mus:null, watch:null, lastScore:0, lastAtt:1, lastDead:false };
+try{ SND.muted = localStorage.getItem('sndMuted')==='1'; }catch(e){}
+function sndInit(){
+  try{
+    if(!SND.ctx){
+      const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
+      SND.ctx = new AC(); SND.master = SND.ctx.createGain(); SND.master.gain.value = SND.muted ? 0 : 0.5; SND.master.connect(SND.ctx.destination);
+    }
+    if(SND.ctx.state==='suspended') SND.ctx.resume();
+  }catch(e){}
+  const m = gEl('gMute'); if(m) m.textContent = SND.muted ? '🔇' : '🔊';
+}
+function sndToggle(){
+  SND.muted = !SND.muted;
+  try{ localStorage.setItem('sndMuted', SND.muted?'1':'0'); }catch(e){}
+  if(SND.master) SND.master.gain.value = SND.muted ? 0 : 0.5;
+  const m = gEl('gMute'); if(m) m.textContent = SND.muted ? '🔇' : '🔊';
+}
+function tone(f,dur,type,vol,delay){
+  if(!SND.ctx || SND.muted) return;
+  try{
+    const t = SND.ctx.currentTime + (delay||0);
+    const o = SND.ctx.createOscillator(), g = SND.ctx.createGain();
+    o.type = type||'sine'; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol||0.2, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(SND.master); o.start(t); o.stop(t+dur+0.05);
+  }catch(e){}
+}
+function sfx(n){
+  if(!SND.ctx || SND.muted) return;
+  if(n==='coin'){ tone(880,0.09,'square',0.12); tone(1320,0.14,'square',0.12,0.07); }
+  else if(n==='hit'){ tone(220,0.18,'sawtooth',0.22); tone(140,0.25,'sawtooth',0.22,0.1); }
+  else if(n==='win'){ [523,659,784,1047].forEach((f,i)=>tone(f,0.18,'triangle',0.2,i*0.1)); }
+  else if(n==='over'){ [392,330,262].forEach((f,i)=>tone(f,0.22,'triangle',0.2,i*0.15)); }
+}
+// Original looping tune: a short pentatonic melody over a bass line, a different mood per game
+const MUS = {
+  snake:{ bpm:128, lead:[0,2,4,2,5,4,2,0,0,2,4,7,5,4,2,4], bass:[0,0,-5,-5], root:261.6 },
+  runner:{ bpm:150, lead:[4,4,2,4,7,4,2,0,4,4,5,7,9,7,5,4], bass:[0,0,-3,-3], root:293.7 },
+  shooter:{ bpm:140, lead:[0,3,5,3,7,5,3,0,0,3,5,8,7,5,3,5], bass:[-12,-12,-9,-7], root:220 },
+  quiz:{ bpm:110, lead:[0,4,7,4,9,7,4,2,0,4,7,9,12,9,7,4], bass:[0,-5,-3,-5], root:329.6 }
+};
+const PENT = [0,2,4,7,9,12,14];
+function nf(root,semi){ return root*Math.pow(2,semi/12); }
+function musicStart(id){
+  musicStop();
+  const m = MUS[id] || MUS.snake;
+  SND.step = 0; SND.lastScore = 0; SND.lastAtt = 1; SND.lastDead = false;
+  SND.mus = setInterval(()=>{
+    if(!SND.ctx || SND.muted) return;
+    const i = SND.step++;
+    const L = m.lead[i % m.lead.length];
+    if(i%2===0 || m.bpm>135) tone(nf(m.root, L+12), 0.16, 'triangle', 0.07);
+    if(i%4===0) tone(nf(m.root, m.bass[(i/4|0)%m.bass.length]-12), 0.45, 'sine', 0.16);
+  }, 60000/m.bpm/2);
+  SND.watch = setInterval(()=>{
+    if(!G) return;
+    let sc = 0, dead = false;
+    try{ sc = curScore(); dead = G.id==='snake' ? !!SN.dead : G.id==='runner' ? !!RN.dead : G.id==='shooter' ? !!SH.dead : false; }catch(e){}
+    if(sc > SND.lastScore) sfx('coin');
+    if(dead && !SND.lastDead) sfx('hit');
+    SND.lastScore = sc; SND.lastDead = dead;
+  }, 150);
+}
+function musicStop(){ if(SND.mus){ clearInterval(SND.mus); SND.mus = null; } if(SND.watch){ clearInterval(SND.watch); SND.watch = null; } }
 
 // ---- Snake (round snake, walls wrap around, 5 attempts per play) ----
 const SN = { N:12, maxAtt:5 };
@@ -1690,15 +1856,15 @@ async function handleWithdraw(){
   const amt = parseInt(amtInput.value);
   const wallet = walletInput.value.trim();
   msg.textContent='';
-  if(!amt || amt < MIN_WITHDRAW){ msg.textContent = 'Minimum withdrawal is '+MIN_WITHDRAW.toLocaleString()+' coins.'; return; }
-  if(amt > state.balance){ msg.textContent = 'Insufficient balance.'; return; }
-  if(!wallet){ msg.textContent = 'Please enter your wallet address.'; return; }
+  if(!amt || amt < MIN_WITHDRAW){ warnPop('Minimum withdrawal is '+MIN_WITHDRAW.toLocaleString()+' coins.'); return; }
+  if(amt > state.balance){ warnPop('Insufficient balance.'); return; }
+  if(!wallet){ warnPop('Please enter your wallet address.'); return; }
   try{
     const r = await api('withdraw', { amount: amt, method: selectedMethod, wallet }, WD_URL);
     state.balance = r.balance;
     amtInput.value=''; walletInput.value='';
   }catch(e){
-    msg.textContent = e.message;
+    warnPop(e.message);
     return;
   }
   render();
@@ -1781,7 +1947,7 @@ async function renderManage(){
     const r = await api('adminList', {}, TASK_URL);
     const rows = r.rows.filter(t=>t.status!=='deleted');
     if(!rows.length){ box.innerHTML = '<div class="tk-empty">No tasks yet.</div>'; return; }
-    const catBtn = (t,c)=> '<button class="tk-btn '+((t.category||'social')===c?'f':'o')+'" style="padding:6px 9px;font-size:11px;" onclick="adminTask('+t.id+',\'category\',\''+c+'\')">'+c.slice(0,1).toUpperCase()+c.slice(1)+'</button>';
+    const catBtn = (t,c)=> '<button class="tk-btn '+((t.category||'social')===c?'f':'o')+'" style="padding:6px 9px;font-size:11px;" onclick="adminTask('+t.id+',\'category\',\''+c+'\')">'+(CAT_LABEL[c]||c)+'</button>';
     box.innerHTML = rows.map(t=>'<div class="tk-card" style="flex-direction:column;gap:8px;"><div><div class="tk-title">'+esc(t.title)+'</div><div class="tk-meta" style="margin:2px 0 0;">'+esc(t.status)+' • '+t.completions_count+'/'+t.max_completions+' • '+(t.type==='telegram'?'Telegram':'Social')+'</div></div><div class="tk-actions" style="flex-wrap:wrap;">'+catBtn(t,'social')+catBtn(t,'exclusive')+catBtn(t,'partner')+(t.status==='active'?'<button class="tk-btn o" style="padding:6px 9px;font-size:11px;" onclick="adminTask('+t.id+',\'status\',\'paused\')">Pause</button>':'<button class="tk-btn f" style="padding:6px 9px;font-size:11px;" onclick="adminTask('+t.id+',\'status\',\'active\')">Resume</button>')+'<button class="tk-btn o" style="padding:6px 9px;font-size:11px;color:#ff8a8a;" onclick="adminTask('+t.id+',\'status\',\'deleted\')">Delete</button></div></div>').join('');
   }catch(e){ box.innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
 }
@@ -1800,7 +1966,7 @@ async function gigaWatch(){
   const alertMsg = m => { try{ window.alert(m); }catch(e){ alert(m); } };
   if(GIGA && GIGA.cooldownLeft > 0 && Date.now() < (GIGA.cdUntil||0)){ alertMsg('Please wait '+Math.ceil(((GIGA.cdUntil)-Date.now())/1000)+' seconds before the next ad.'); return; }
   if(typeof window.showGiga !== 'function'){ alertMsg('Ads are not ready yet. Please try again in a moment.'); return; }
-  if(btn){ btn.disabled = true; btn.textContent = 'Loading ad...'; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
   try{
     await window.showGiga();
   }catch(e){
@@ -1817,7 +1983,7 @@ async function gigaWatch(){
   if(res){
     state.balance = res.balance; render();
     GIGA = { done:res.done, max:res.max, per:res.per, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
-    alertMsg('+'+res.amount+' coins added');
+    adFinished({ reward:res.amount, progress:'Task progress '+res.done+'/'+res.max });
   } else {
     alertMsg(lastErr || 'The ad was not confirmed, so no coins were added.');
     GIGA = null;
@@ -1854,6 +2020,8 @@ async function renderTasks(){
     cnt.textContent = 'Resets every day at 00:00 UTC';
     const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
     let h = REVIEW ? '' : '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Ads watched</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
+    h += await agRowHtml();
+    if(!REVIEW) h += await mtRowHtml();
     if(GIGA_ON && !REVIEW){
       if(!GIGA){ try{ GIGA = await api('gigaStatus', {}, GIGA_URL); }catch(e){ GIGA = null; } }
       if(GIGA){
@@ -1874,6 +2042,7 @@ async function renderTasks(){
     container.innerHTML = h;
     return;
   }
+  const agTop = (REVIEW && TK.view==='all') ? await agRowHtml() : '';
   const rows = await loadTasks();
   const catOf = t => t.category || 'social';
   let list;
@@ -1887,10 +2056,10 @@ async function renderTasks(){
   }
   if(list.length===0){
     const msg = TK.view==='mine' ? 'You have not completed any tasks yet.' : (TK.cat==='social' ? 'No tasks available right now.' : 'Nothing here yet. New tasks will appear soon.');
-    container.innerHTML = '<div class="tk-empty">'+msg+'</div>';
+    container.innerHTML = agTop + '<div class="tk-empty">'+msg+'</div>';
     return;
   }
-  container.innerHTML = list.map(t=>{
+  container.innerHTML = agTop + list.map(t=>{
     const done = state.tasksCompleted.includes(t.id);
     const full = t.completions_count >= t.max_completions;
     let btns;
@@ -1934,8 +2103,8 @@ function contactSupportTask(){
   const max = parseInt(document.getElementById('taskMax').value);
   const msg = document.getElementById('taskMsg');
   msg.className = 'error-msg';
-  if(!title || !link || !max || max<100){ msg.textContent = 'Fill all fields (minimum 100 users).'; return; }
-  if(!/^https:\/\/\S{3,200}$/.test(link)){ msg.textContent = 'Link must start with https://'; return; }
+  if(!title || !link || !max || max<100){ warnPop('Fill all fields (minimum 100 users).'); return; }
+  if(!/^https:\/\/\S{3,200}$/.test(link)){ warnPop('Link must start with https://'); return; }
   msg.textContent = '';
   const fee = (0.10*(max/100)).toFixed(2);
   const text = 'Hello, I want to create a task on MineEarn.\n\nTask name: '+title+'\nLink: '+link+'\nType: '+(type==='telegram'?'Telegram':'Social media')+'\nMaximum users: '+max+'\nMy Telegram ID: '+TG_ID+'\n\nPlease tell me how to pay the $'+fee+' fee.';
@@ -1950,19 +2119,18 @@ async function handleCreateTask(){
   const msg = document.getElementById('taskMsg');
   msg.textContent='';
   msg.className='error-msg';
-  if(!title || !link || !max || max<1){ msg.textContent = 'Fill all fields.'; return; }
+  if(!title || !link || !max || max<1){ warnPop('Fill all fields.'); return; }
   let result;
   try{
     result = await api('adminCreate', { title, link, type, max, category: (document.getElementById('taskCat')||{}).value || 'exclusive' }, TASK_URL);
   }catch(e){
-    msg.textContent = e.message;
+    warnPop(e.message);
     return;
   }
   document.getElementById('taskTitle').value='';
   document.getElementById('taskLink').value='';
   document.getElementById('taskMax').value='';
-  msg.className='success-msg';
-  msg.textContent = '✅ Task created and is now live!';
+  appDialog({title:'Task created',text:'Your task is now live!',icon:'✅'});
   renderTasks();
 }
 
@@ -2113,7 +2281,7 @@ async function admCoins(i){
   try{ const r = await api('userAdjust', { id:u.id, amount, reason }, ADMIN_URL); alert('Done. New balance: '+r.balance); }catch(e){ alert(e.message); }
   admUsers(u.id);
 }
-const KIND_NAMES = {mining:'Mining',ad_reward:'Ad rewards',giga_ad:'GigaPub ads',login_bonus:'Login bonus',game:'Games',task:'Tasks',ref_join:'Referral (join)',admin_adjust:'Owner adjustment',withdraw:'Withdrawal',withdraw_refund:'Withdrawal refund'};
+const KIND_NAMES = {mt_ad:'Monetag ads',mining:'Mining',ad_reward:'Ad rewards',giga_ad:'GigaPub ads',ag_ad:'AdsGram ads',rich_ad:'RichAds',login_bonus:'Login bonus',game:'Games',task:'Tasks',ref_join:'Referral (join)',admin_adjust:'Owner adjustment',withdraw:'Withdrawal',withdraw_refund:'Withdrawal refund'};
 async function admActivity(i){
   const u = ADM.rows[i]; if(!u) return;
   const today = new Date().toISOString().slice(0,10);
@@ -2267,16 +2435,14 @@ async function loginInit(){
 }
 async function loginClaim(){
   const m = document.getElementById('loginMsg'), btn = document.getElementById('loginBtn');
-  if(btn) btn.disabled = true; if(m) m.textContent = 'Checking your bio...';
+  if(btn){ btn.disabled = true; btn.textContent = 'Checking…'; }
   try{
     const r = await api('loginClaim', {}, LOGIN_URL);
     state.balance = r.balance; render(); loginDraw(r);
-    if(m) m.textContent = '+'+r.amount+' coins added (Day '+r.day+').';
-    try{ window.alert('+'+r.amount+' coins added (Day '+r.day+')'); }catch(_e){}
+    appDialog({title:'Daily bonus',text:'+'+r.amount+' coins added (Day '+r.day+')',icon:'🎁'});
   }catch(e){
-    if(m) m.textContent = '';
-    if(btn) btn.disabled = false;
-    try{ window.alert(e.message); }catch(_e){ alert(e.message); }
+    if(btn){ btn.disabled = false; btn.textContent = '🎁 Claim daily bonus'; }
+    warnPop(e.message);
   }
 }
 
@@ -2326,7 +2492,7 @@ function render(){
     } else if(slot.state==='ready'){
       btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch ad 1 of '+cfg.ads+' to Collect</button>';
     } else if(slot.state==='watching'){
-      if(slot.busy) btnHtml = '<button class="action btn-wait" disabled>Please wait...</button>';
+      if(slot.busy) btnHtml = '<button class="action btn-wait" disabled>Loading ad…</button>';
       else if(slot.adsWatched>=cfg.ads) btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🔄 Try collecting again</button>';
       else btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch ad '+(slot.adsWatched+1)+' of '+cfg.ads+'</button>';
     }
@@ -2343,6 +2509,110 @@ function render(){
   });
 }
 
+
+
+/* ===== Ad finished pop-up + top bubble ===== */
+function adFinished(o){
+  return new Promise(res=>{
+    const d=document.createElement('div'); d.className='dlg-back';
+    d.innerHTML='<div class="dlg"><div class="dlg-ic">🎬</div><div class="dlg-t">'+esc(o.title||'Ad finished')+'</div>'
+      +(o.reward?'<div class="adf-r">+'+Number(o.reward).toLocaleString()+' coins</div>':'')
+      +(o.progress?'<div class="dlg-m">'+esc(o.progress)+'</div>':'<div style="height:8px"></div>')
+      +'<button class="dlg-ok">OK</button></div>';
+    d.querySelector('.dlg-ok').onclick=()=>{ try{d.remove();}catch(e){} res(true); };
+    document.body.appendChild(d);
+  });
+}
+function topBubble(t,ms){
+  let b=document.getElementById('topBubble');
+  if(!b){ b=document.createElement('div'); b.id='topBubble'; b.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#ffd24d;color:#222;font-weight:800;font-size:13px;padding:10px 16px;border-radius:14px;z-index:400;text-align:center;max-width:88%;box-shadow:0 6px 18px rgba(0,0,0,.45);'; document.body.appendChild(b); }
+  b.textContent=t; b.style.display='block';
+  clearTimeout(b._t); b._t=setTimeout(()=>{ b.style.display='none'; }, ms||3500);
+}
+function warnPop(t){ return appDialog({title:'Heads up',text:t,icon:'⚠️'}); }
+function noAdPop(){ return appDialog({title:'No ad right now',text:'No ad is available at the moment. Please try again later.',icon:'📺'}); }
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+// Shows one AdsGram ad. Resolves 'done' (watched fully), 'skipped' or 'none' (no ad available)
+function agShowRaw(){
+  return new Promise(resolve=>{
+    try{
+      if(!AG){
+        if(!(window.Adsgram && window.Adsgram.init)) return resolve('none');
+        AG = window.Adsgram.init({ blockId: ADSGRAM_BLOCK });
+      }
+    }catch(e){ return resolve('none'); }
+    let p; try{ p = AG.show(); }catch(e){ return resolve('none'); }
+    Promise.resolve(p).then(()=>resolve('done')).catch(r=>resolve(r && r.error ? 'none' : 'skipped'));
+  });
+}
+
+async function mtRowHtml(){
+  if(!MTS){ try{ MTS = await api('mtStatus', {}, MT_URL); MTS.cdUntil = Date.now()+MTS.cooldownLeft*1000; }catch(e){ MTS = null; } }
+  if(!MTS) return '';
+  const full = MTS.done >= MTS.max;
+  return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:#a259ff;">'+tkRing(MTS.done,MTS.max)+'<div class="tk-main"><div class="tk-title">Monetag ad</div><div class="tk-meta">'+MTS.per+' coins per ad • '+MTS.done+'/'+MTS.max+' today • paid after the ad is confirmed</div><div class="tk-actions">'
+    + (full ? '<button class="tk-btn d" disabled>✓ Done today</button>' : '<button class="tk-btn f" id="mtBtn" onclick="mtWatch()">▶ Watch ad '+(MTS.done+1)+'</button>')
+    + '</div></div></div>';
+}
+async function mtWatch(){
+  if(!MTS) return;
+  const btn = document.getElementById('mtBtn');
+  if(MTS.cooldownLeft > 0 && Date.now() < (MTS.cdUntil||0)){ warnPop('Please wait '+Math.ceil((MTS.cdUntil-Date.now())/1000)+' seconds before the next ad.'); return; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  let ymid;
+  try{ ymid = (await api('mtStart', {}, MT_URL)).ymid; }
+  catch(e){ MTS = null; renderTasks(); warnPop(e.message); return; }
+  const watched = await watchAd(ymid);
+  if(!watched){ renderTasks(); return; }
+  if(btn) btn.textContent = 'Confirming…';
+  let res = null, lastErr = '';
+  for(let i=0;i<8;i++){
+    try{ res = await api('mtClaim', { ymid }, MT_URL); break; }
+    catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await sleep(2500); }
+  }
+  if(res){
+    state.balance = res.balance; render();
+    MTS = { done:res.done, max:res.max, per:res.per, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
+    renderTasks();
+    adFinished({ reward:res.amount, progress:'Task progress '+res.done+'/'+res.max });
+  } else {
+    MTS = null; renderTasks();
+    warnPop(lastErr || 'The ad was not confirmed, so no coins were added.');
+  }
+}
+async function agRowHtml(){
+  if(!AGS){ try{ AGS = await api('agStatus', {}, AG_URL); AGS.cdUntil = Date.now()+AGS.cooldownLeft*1000; }catch(e){ AGS = null; } }
+  if(!AGS) return '';
+  const full = AGS.done >= AGS.max;
+  return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:#2f7bff;">'+tkRing(AGS.done,AGS.max)+'<div class="tk-main"><div class="tk-title">AdsGram ad</div><div class="tk-meta">'+AGS.per+' coins per ad • '+AGS.done+'/'+AGS.max+' today • watch the full ad</div><div class="tk-actions">'
+    + (full ? '<button class="tk-btn d" disabled>✓ Done today</button>' : '<button class="tk-btn f" id="agBtn" onclick="agWatch()">▶ Watch ad '+(AGS.done+1)+'</button>')
+    + '</div></div></div>';
+}
+async function agWatch(){
+  if(!AGS) return;
+  const btn = document.getElementById('agBtn');
+  if(AGS.cooldownLeft > 0 && Date.now() < (AGS.cdUntil||0)){ warnPop('Please wait '+Math.ceil((AGS.cdUntil-Date.now())/1000)+' seconds before the next ad.'); return; }
+  topBubble('Watch the full ad to earn '+AGS.per+' coins');
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  const r = await agShowRaw();
+  if(r==='none'){ renderTasks(); noAdPop(); return; }
+  if(r==='skipped'){ renderTasks(); appDialog({title:'Watch the full ad',text:'Watch the full ad to earn '+AGS.per+' coins.',icon:'📺'}); return; }
+  if(btn) btn.textContent = 'Confirming…';
+  let res = null, lastErr = '';
+  for(let i=0;i<10;i++){
+    try{ res = await api('agClaim', {}, AG_URL); break; }
+    catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await sleep(1500); }
+  }
+  if(res){
+    state.balance = res.balance; render();
+    AGS = { done:res.done, max:res.max, per:res.per, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
+    renderTasks();
+    adFinished({ reward:res.amount, progress:'Task progress '+res.done+'/'+res.max });
+  } else {
+    AGS = null; renderTasks();
+    warnPop(lastErr || 'The ad was not confirmed, so no coins were added.');
+  }
+}
 
 /* ===== AdsGram (optional ad after a game) ===== */
 function adsgramShow(btn){
@@ -2447,6 +2717,7 @@ async function startApp(){
         <div><div class="home-hi">Welcome back</div><div class="home-name">${name}</div></div>
       </div>
       <div class="balance">
+        <div class="rcoin"><i>M</i><b class="t1">✦</b><b class="t2">✦</b></div>
         <div class="usd" style="margin:0 0 4px;">Your balance</div>
         <div class="coins" id="homeCoins"></div>
         <div class="usd" id="homeUsd"></div>
@@ -2506,9 +2777,9 @@ async function startApp(){
       <div class="tk-sub">Pick a category and collect coins.</div>
       <div class="tk-cats" id="tkCats">
         <button class="tk-cat active" data-c="social" onclick="tkSetCat('social')"><svg viewBox="0 0 24 24"><path d="M4 12l16-7-5 15-3-6z"/></svg><span>Social</span></button>
-        <button class="tk-cat" data-c="daily" onclick="tkSetCat('daily')"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><span>Daily</span><i class="tk-dot" id="tkDailyDot"></i></button>
-        <button class="tk-cat" data-c="exclusive" onclick="tkSetCat('exclusive')"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><span>Exclusive</span></button>
-        <button class="tk-cat" data-c="partner" onclick="tkSetCat('partner')"><svg viewBox="0 0 24 24"><path d="M3 12l4-4 4 3 3-3 4 4-7 7z"/></svg><span>Partner</span></button>
+        <button class="tk-cat" data-c="daily" onclick="tkSetCat('daily')"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><span>Daily Wins</span><i class="tk-dot" id="tkDailyDot"></i></button>
+        <button class="tk-cat" data-c="exclusive" onclick="tkSetCat('exclusive')"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><span>Special</span></button>
+        <button class="tk-cat" data-c="partner" onclick="tkSetCat('partner')"><svg viewBox="0 0 24 24"><path d="M3 12l4-4 4 3 3-3 4 4-7 7z"/></svg><span>Featured</span></button>
       </div>
       <div class="tk-bar">
         <div class="tk-view"><button class="active" id="tkViewAll" onclick="tkSetView('all')">Tasks</button><button id="tkViewMine" onclick="tkSetView('mine')">Completed tasks</button></div>
@@ -2526,7 +2797,7 @@ async function startApp(){
     </div>
     <div class="sheet" id="taskSheet">
       <div class="sheet-grip"></div>
-      <div class="sheet-title">${IS_OWNER ? 'Create a task' : 'Create an Exclusive task'}</div>
+      <div class="sheet-title">${IS_OWNER ? 'Create a task' : 'Create a Special task'}</div>
       ${IS_OWNER ? '' : '<div class="wallet-box" style="line-height:1.5;">Fill in your task, then tap <b>Contact support</b>. A message with all your details opens in our support chat. Support will confirm the price ($0.10 per 100 users), and your task goes live after payment.</div>'}
       <div class="form-group">
         <label class="form-label">Task title</label>
@@ -2543,7 +2814,7 @@ async function startApp(){
           <option value="social">Social Media (300 coins)</option>
         </select>
       </div>
-      ${IS_OWNER ? '<div class="form-group"><label class="form-label">Category</label><select id="taskCat" class="form-input"><option value="exclusive">Exclusive</option><option value="partner">Partner</option><option value="social">Social</option></select></div>' : ''}
+      ${IS_OWNER ? '<div class="form-group"><label class="form-label">Category</label><select id="taskCat" class="form-input"><option value="exclusive">Special</option><option value="partner">Featured</option><option value="social">Social</option></select></div>' : ''}
       <div class="form-group">
         <label class="form-label">Number of completions wanted</label>
         <input type="number" id="taskMax" class="form-input" placeholder="e.g. 100" oninput="updateFeePreview()">
