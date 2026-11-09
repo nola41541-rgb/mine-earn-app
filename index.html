@@ -153,6 +153,11 @@
   .gf .gfm b{color:var(--gold);}
   .gf .gfplay{width:150px;border:none;border-radius:14px;padding:12px;font-size:15px;font-weight:900;background:linear-gradient(#ffd24d,#f5a300);color:#222;}
   .gf.gdim{opacity:.55;}
+  .gpend{background:linear-gradient(135deg,#1c3a7a,#10204a);border:2px solid #ffd24d;border-radius:18px;padding:14px;margin-bottom:14px;box-shadow:0 0 18px rgba(255,210,77,.35);}
+  .gpbtn{width:100%;margin-top:10px;border:none;border-radius:14px;padding:12px;font-size:15px;font-weight:900;background:linear-gradient(#ffd24d,#f5a300);color:#222;}
+  .gpend .gpt{font-size:14px;line-height:1.4;}
+  .gpend .gpt b{color:#ffd24d;}
+  .gpend .gpt span{color:var(--muted);font-size:12px;}
   .gmore{font-size:13px;font-weight:800;color:var(--muted);margin:20px 2px 14px;letter-spacing:.5px;}
   .grow2{display:grid;grid-template-columns:repeat(3,1fr);gap:20px 8px;justify-items:center;}
   .gic{text-align:center;width:100%;max-width:112px;}
@@ -347,7 +352,7 @@ const SLOT_CONFIG = [
 ];
 const MAX_SESSIONS = 5;
 // ---- Review mode switches. Set both to true again after an ad network approves the app. ----
-const GAME_ADS_ON = false;      // true = games show the "watch ad" steps (continue + collect)
+const GAME_ADS_ON = true;       // true = games show the "watch ad" steps (continue + collect)
 const NETWORK_TEST_ROWS_ON = false; // true = show the GigaPub / USL Ads rows in Tasks > Daily
 const GIGA_ON = true;           // real GigaPub ad row in Tasks > Daily (server-confirmed)
 let GIGA = null;
@@ -571,7 +576,7 @@ async function handleCollect(i){
 }
 
 // ===================== GAMES =====================
-const GAMES_URL = SUPABASE_URL + '/functions/v1/games-v3';
+const GAMES_URL = SUPABASE_URL + '/functions/v1/games-v5';
 const GAME_THUMBS = {
 snake:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><pattern id="ckS" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#1f7a4c"/><rect width="16" height="16" fill="#26925a"/><rect x="16" y="16" width="16" height="16" fill="#26925a"/></pattern></defs><rect width="160" height="124" fill="url(#ckS)"/><g fill="#7ee85a" stroke="#2f9d3e" stroke-width="1.5"><circle cx="24" cy="84" r="9"/><circle cx="42" cy="84" r="9"/><circle cx="60" cy="84" r="9"/><circle cx="60" cy="66" r="9"/><circle cx="78" cy="66" r="9"/><circle cx="96" cy="66" r="9"/></g><circle cx="114" cy="66" r="11" fill="#9bf26c" stroke="#2f9d3e" stroke-width="1.5"/><circle cx="117" cy="61" r="3.5" fill="#fff"/><circle cx="117" cy="71" r="3.5" fill="#fff"/><circle cx="118" cy="61" r="1.6" fill="#111"/><circle cx="118" cy="71" r="1.6" fill="#111"/><path d="M125 66h10m0 0l4-3m-4 3l4 3" stroke="#ff4d4d" stroke-width="2" fill="none"/><circle cx="118" cy="26" r="11" fill="#ff4d4d"/><circle cx="114" cy="23" r="3" fill="rgba(255,255,255,0.5)"/><path d="M118 15c2-6 7-8 10-7-1 5-5 8-10 7z" fill="#9be36b"/></svg>',
 runner:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="skR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4aa8ff"/><stop offset="1" stop-color="#cfeaff"/></linearGradient></defs><rect width="160" height="124" fill="#2f9a5b"/><rect width="160" height="38" fill="url(#skR)"/><polygon points="72,38 88,38 158,124 2,124" fill="#4b4f63"/><path d="M76 38L50 124M84 38L110 124" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/><rect x="92" y="70" width="22" height="9" rx="2" fill="#ff9f1a"/><rect x="40" y="58" width="16" height="22" rx="2" fill="#c0392b"/><rect x="43" y="63" width="10" height="5" fill="#ffd86b"/><ellipse cx="80" cy="116" rx="12" ry="3.5" fill="rgba(0,0,0,0.3)"/><path d="M75 108v7M85 108v7" stroke="#2b3a67" stroke-width="5" stroke-linecap="round"/><rect x="69" y="86" width="22" height="24" rx="7" fill="#e24b4b"/><rect x="73" y="90" width="14" height="14" rx="3" fill="#2f6fe0"/><path d="M68 90l-3 14M92 90l3 14" stroke="#e24b4b" stroke-width="5" stroke-linecap="round"/><circle cx="80" cy="79" r="8" fill="#2a1b14"/></svg>',
@@ -586,9 +591,10 @@ const GAME_LIST = [
 ];
 let gameStatus = null;
 let GP_SEL = null;
+let GPEND = null;
 function gpDay(){ return GAME_LIST[Math.floor(Date.now()/86400000) % GAME_LIST.length]; }
 function gpLeft(g){ const used = (gameStatus.runs && gameStatus.runs[g.id]) || 0; return Math.max(0, gameStatus.max - used); }
-function gpClick(g){ return gpLeft(g)>0 ? 'startGame(\''+g.id+'\')' : 'alert(\'No plays left for this game today. It resets at 00:00 UTC.\')'; }
+function gpClick(g){ if(GPEND) return 'collectPending()'; return gpLeft(g)>0 ? 'startGame(\''+g.id+'\')' : 'alert(\'No plays left for this game today. It resets at 00:00 UTC.\')'; }
 function gpPick(id){ GP_SEL = id; drawPicker(); }
 function drawPicker(){
   const box = document.getElementById('playList');
@@ -601,7 +607,8 @@ function drawPicker(){
     + '<div class="gftag">'+(sel.id===day.id ? '⭐ GAME OF THE DAY' : sel.cat)+'</div>'
     + '<div class="gfin"><div class="gfn">'+sel.name+'</div><div class="gfm"><b>'+left+'/'+gameStatus.max+'</b> plays left • Up to <b>250</b> coins</div>'
     + '<button class="gfplay" onclick="'+gpClick(sel)+'">▶ Play</button></div></div>';
-  box.innerHTML = banner
+  const pend = GPEND ? '<div class="gpend"><div class="gpt">🎁 <b>'+GPEND.coins+' coins</b> are waiting from your last game ('+(GAME_LIST.find(g=>g.id===GPEND.game)||{name:GPEND.game}).name+').<br><span>Collect them before your next play.</span></div><button class="gpbtn" onclick="collectPending()">🎬 Collect coins</button></div>' : '';
+  box.innerHTML = pend + banner
     + '<div class="gmore">All games</div><div class="grow2">'
     + GAME_LIST.map(g=>'<div class="gic'+(gpLeft(g)<=0?' gdim':'')+(g.id===sel.id?' sel':'')+'" onclick="gpPick(\''+g.id+'\')"><div class="gicc">'+GAME_THUMBS[g.id]+'</div><div class="gicn">'+g.name+'</div></div>').join('')
     + '</div>';
@@ -611,6 +618,8 @@ async function renderPlay(){
   if(!box) return;
   const bal = document.getElementById('playBal'); if(bal) bal.textContent = state.balance.toLocaleString();
   try{ gameStatus = await api('gamesStatus', {}, GAMES_URL); }catch(e){ box.textContent = e.message; return; }
+  GPEND = null;
+  if(gameStatus.claimEnabled){ try{ GPEND = (await api('gamePending', {}, GAMES_URL)).pending || null; }catch(e){ GPEND = null; } }
   drawPicker();
 }
 
@@ -683,7 +692,9 @@ function quitGame(){
   if(G && G.over){ gameLeave('back'); return; }
   if(G && !G.over && G.capped){ finishGame(curScore()); return; }
   if(G && !G.over){
-    appConfirm('It will still count as one of your 5 runs today.','Quit run','Keep playing','Quit this run?','🎮').then(y=>{ if(y) closeGameOverlay(); });
+    const sc = curScore();
+    if(sc > 0) appConfirm('Your score so far will be saved. You can collect the coins after watching the ad.','Save & quit','Keep playing','Quit this run?','🎮').then(y=>{ if(y) finishGame(sc); });
+    else appConfirm('It will still count as one of your 5 runs today.','Quit run','Keep playing','Quit this run?','🎮').then(y=>{ if(y) closeGameOverlay(); });
     return;
   }
   closeGameOverlay();
@@ -746,6 +757,7 @@ function gameResultDraw(){
   else if(need>0) mid = '<div style="color:var(--muted);margin:6px 0 10px;">Watch '+need+' ad'+(need>1?'s':'')+' to collect your coins ('+G.done+'/'+need+' done)</div>'
     + '<button class="action btn-collect" id="gAdBtn" onclick="gameWatchAd()">🎬 Watch ad '+(G.done+1)+' of '+need+' to collect</button>';
   else mid = '<div style="color:var(--muted);">Nice run! Your score is saved.</div>';
+  if(!G.collected && coins>0 && need>0) mid += '<div style="color:var(--muted);font-size:12px;margin-top:8px;">Your coins stay saved until you collect them. You can collect them before your next play.</div>';
   res.innerHTML = '<div style="font-size:18px;font-weight:bold;">Game over</div>'
     + '<div style="margin:8px 0;">Score: <b>'+G.score+'</b></div>'
     + '<div style="font-size:22px;color:var(--gold);font-weight:bold;">'+coins+' coins earned</div>'
@@ -753,10 +765,24 @@ function gameResultDraw(){
     + '<button class="action btn-start" style="margin-top:12px;" onclick="gameLeave(\'again\')">▶️ Play again</button>'
     + '<button class="action" style="margin-top:8px;" onclick="gameLeave(\'back\')">Back</button>';
 }
+function collectPending(){
+  if(!GPEND || (G && !G.over)) return;
+  ensureGameOverlay();
+  G = { id:GPEND.game, token:GPEND.token, over:true, timer:null, capped:false, valid:true, score:GPEND.score, coins:GPEND.coins, need:GPEND.adsNeeded, done:GPEND.adsDone, collected:false, busy:false };
+  gEl('gQuitBtn').textContent = '← Back';
+  gEl('gameOverlay').style.display = 'flex';
+  gEl('gPad').style.display = 'none'; gEl('gPad2').style.display = 'none'; gEl('gPad3').style.display = 'none'; gEl('gQuiz').style.display = 'none';
+  { const cv = gEl('gCanvas'); if(cv) cv.style.display = 'none'; }
+  gEl('gScore').textContent = 'Saved reward';
+  gEl('gResult').style.display = 'block';
+  lockSwipes(true);
+  sndInit();
+  gameResultDraw();
+}
 async function gameLeave(act){
-  if(G && G.valid && G.coins>0 && G.need>0 && !G.collected){
-    const y = await appConfirm('If you leave now you lose the '+G.coins+' coins from this run. Watch the ad to collect them.','Leave anyway','Stay','Leave without coins?','⚠️');
-    if(!y) return;
+  if(G && act==='again' && G.valid && G.coins>0 && G.need>0 && !G.collected){
+    warnPop('Collect your '+G.coins+' coins first. Then you can play again.');
+    return;
   }
   if(!G) return;
   if(act==='again'){ G.over = true; const i = G.id; closeGameOverlay(); startGame(i); }
@@ -956,7 +982,7 @@ function snakeDie(){
 }
 async function snakeContinue(){
   const res = gEl('gResult');
-  await continuePlaceholderAd(res);
+  if(!(await continuePlaceholderAd(res))) return;
   if(!G || G.over) return;
   SN.att++;
   SN.dead = false; SN.started = false; SN.resumed = true;
@@ -965,15 +991,29 @@ async function snakeContinue(){
   snakeLabel();
   snakeDraw();
 }
-// TEST ONLY: labeled 3-second stand-in for the real "continue" ad
-function continuePlaceholderAd(el){
-  if(!GAME_ADS_ON) return Promise.resolve();
-  return new Promise(resolve=>{
-    let n = 3;
-    const draw = ()=>{ el.innerHTML = '<div style="color:var(--muted);font-size:12px;">AD PLACEHOLDER (TEST)</div><div style="font-size:40px;font-weight:bold;color:var(--gold);margin:10px 0;">'+n+'</div><div style="color:var(--muted);">Your next attempt starts after the ad...</div>'; };
-    draw();
-    const t = setInterval(()=>{ n--; if(n<=0){ clearInterval(t); resolve(); } else draw(); }, 1000);
-  });
+// Required AdsGram ad before every new attempt (the server confirms the ad was really watched)
+async function continuePlaceholderAd(res){
+  if(!G) return false;
+  const btn = res && res.querySelector('.btn-collect');
+  const label = btn ? btn.textContent : '';
+  const reset = ()=>{ if(btn){ btn.disabled = false; btn.textContent = label; } };
+  if(G.cbusy) return false;
+  G.cbusy = true;
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  const r = await agShowRaw();
+  if(!G || G.over) return false;
+  if(r==='skipped'){ G.cbusy = false; reset(); appDialog({title:'Watch the full ad',text:'Watch the full ad to continue.',icon:'📺'}); return false; }
+  if(r==='none'){ G.cbusy = false; return true; }   // no ad available right now: do not block the player
+  if(btn) btn.textContent = 'Confirming…';
+  let ok = false;
+  for(let i=0;i<10;i++){
+    try{ await api('gameAttemptAd', { token:G.token }, GAMES_URL); ok = true; break; }
+    catch(e){ if(!/not confirmed|try again/i.test(e.message)) break; await sleep(1500); if(!G) return false; }
+  }
+  if(!G) return false;
+  G.cbusy = false;
+  if(!ok){ reset(); warnPop('The ad was not confirmed. Please try again.'); return false; }
+  return true;
 }
 function snakeDraw(){
   const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const k = SN.cell;
@@ -1122,7 +1162,7 @@ function runnerDie(){
 }
 async function runnerContinue(){
   const res = gEl('gResult');
-  await continuePlaceholderAd(res);
+  if(!(await continuePlaceholderAd(res))) return;
   if(!G || G.over) return;
   RN.att++;
   RN.dead = false; RN.started = false;
@@ -1552,7 +1592,7 @@ function shooterDie(){
 }
 async function shooterContinue(){
   const res = gEl('gResult');
-  await continuePlaceholderAd(res);
+  if(!(await continuePlaceholderAd(res))) return;
   if(!G || G.over) return;
   SH.att++; SH.dead = false; SH.started = false; SH.en = []; SH.bu = []; SH.eb = []; SH.caps = []; SH.gap = 1.2; SH.move = 0; SH.x = SH.W/2; SH.y = SH.H-80; SH.hp = 100; SH.lvl = 1; SH.shield = 2; SH.inv = 0;
   gEl('gResult').style.display = 'none';
@@ -1787,8 +1827,7 @@ function quizFail(timeout){
 }
 async function quizContinue(){
   const res = gEl('gResult');
-  gEl('gQuiz').style.display = 'none';
-  await continuePlaceholderAd(res);
+  if(!(await continuePlaceholderAd(res))) return;
   if(!G || G.over) return;
   gEl('gQuiz').style.display = 'block';
   QZ.att++;
