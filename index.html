@@ -11,6 +11,7 @@
 <style>
   :root{--bg:#070d24;--card:#0f1b3d;--card2:#0a1432;--line:rgba(90,170,255,0.2);--gold:#5cc8ff;--gold2:#2f7bff;--text:#fff;--muted:#8fa6d6;--field:#18295c;}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{overflow-x:hidden;max-width:100%;}
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(circle at 15% -8%,rgba(47,123,255,0.38),transparent 52%),radial-gradient(circle at 95% 8%,rgba(92,200,255,0.2),transparent 46%),var(--bg);background-attachment:fixed;color:var(--text);padding:14px 14px 118px 14px;min-height:100vh;}
   h1{text-align:left;margin:6px 4px 14px;font-size:26px;font-weight:800;letter-spacing:-0.3px;}
   .loading{text-align:center;padding:60px 20px;color:var(--muted);}
@@ -131,11 +132,11 @@
   .gdim{opacity:0.5;}
 
   .balance{position:relative;}
-  .rcoin{position:absolute;top:-36px;right:-12px;width:78px;height:78px;perspective:300px;pointer-events:none;z-index:2;animation:coinFloat 2.4s ease-in-out infinite;}
+  .rcoin{position:absolute;top:-36px;right:-4px;width:78px;height:78px;perspective:300px;pointer-events:none;z-index:2;animation:coinFloat 2.4s ease-in-out infinite;}
   .rcoin i{position:relative;display:flex;align-items:center;justify-content:center;width:78px;height:78px;border-radius:50%;font-style:normal;font-weight:900;font-size:38px;color:#8a5a00;text-shadow:0 1px 0 rgba(255,255,255,.55);background:radial-gradient(circle at 32% 28%,#fffbd0 0%,#ffe27a 22%,#ffc928 52%,#d98f00 100%);box-shadow:0 0 0 4px #f5b800,0 0 0 7px rgba(255,236,150,.55),inset 0 0 0 7px rgba(190,120,0,.35),0 0 34px 8px rgba(255,200,40,.6);overflow:hidden;animation:coinSpin 3.2s linear infinite,coinGlow 1.6s ease-in-out infinite;}
   .rcoin i:before{content:'';position:absolute;top:-20%;left:-60%;width:40%;height:140%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);transform:rotate(20deg);animation:coinShine 2.2s ease-in-out infinite;}
   .rcoin b{position:absolute;color:#fff6c2;font-size:14px;animation:twinkle 1.4s ease-in-out infinite;}
-  .rcoin b.t1{left:-6px;top:12px;} .rcoin b.t2{right:-4px;bottom:10px;animation-delay:.7s;}
+  .rcoin b.t1{left:-2px;top:10px;} .rcoin b.t2{right:2px;bottom:8px;animation-delay:.7s;}
   @keyframes coinSpin{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
   @keyframes coinFloat{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(7px) rotate(6deg)}}
   @keyframes coinGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}
