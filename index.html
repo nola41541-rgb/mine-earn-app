@@ -135,6 +135,14 @@
   .rcoin{position:absolute;top:10px;right:12px;width:54px;height:54px;perspective:300px;pointer-events:none;z-index:2;animation:coinFloat 2.4s ease-in-out infinite;}
   .rcoin i{position:relative;display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:50%;font-style:normal;font-weight:900;font-size:28px;color:#8a5a00;text-shadow:0 1px 0 rgba(255,255,255,.55);background:radial-gradient(circle at 32% 28%,#fffbd0 0%,#ffe27a 22%,#ffc928 52%,#d98f00 100%);box-shadow:0 0 0 4px #f5b800,0 0 0 7px rgba(255,236,150,.55),inset 0 0 0 7px rgba(190,120,0,.35),0 0 34px 8px rgba(255,200,40,.6);overflow:hidden;animation:coinSpin 3.2s linear infinite,coinGlow 1.6s ease-in-out infinite;}
   .rcoin i:before{content:'';position:absolute;top:-20%;left:-60%;width:40%;height:140%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);transform:rotate(20deg);animation:coinShine 2.2s ease-in-out infinite;}
+  .mine-back{background:var(--field,#17285a);color:#fff;border:0;border-radius:12px;padding:9px 16px;font-weight:700;font-size:14px;margin-bottom:12px;}
+  .net-card{display:flex;align-items:center;gap:14px;background:linear-gradient(145deg,#12224f,#0e1a3d);border:1px solid rgba(111,160,255,.25);border-radius:22px;padding:16px;margin-bottom:12px;}
+  .net-ic{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;flex:none;box-shadow:0 0 16px rgba(80,150,255,.5);}
+  .net-ic.mt{background:linear-gradient(145deg,#a259ff,#5a2fd0);} .net-ic.rc{background:linear-gradient(145deg,#ffb830,#d96a00);}
+  .net-tx{flex:1;text-align:left;} .net-tx b{display:block;font-size:17px;} .net-tx span{color:var(--muted);font-size:13px;}
+  .ic-tasks{background:linear-gradient(145deg,#3a7bff,#2a2f9a 60%,#3a1f78)!important;box-shadow:0 0 14px rgba(70,140,255,.6);animation:icGlow 2.4s ease-in-out infinite;}
+  .ic-tasks svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+  @keyframes icGlow{0%,100%{box-shadow:0 0 10px rgba(70,140,255,.45)}50%{box-shadow:0 0 22px rgba(120,190,255,.95)}}
   .mcoin{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-weight:900;font-size:13px;color:#8a5a00;vertical-align:middle;background:radial-gradient(circle at 32% 28%,#fffbd0,#ffe27a 30%,#ffc928 60%,#d98f00);box-shadow:0 0 0 2px #f5b800,0 0 10px 2px rgba(255,200,40,.7);animation:coinSpin 3.2s linear infinite,coinGlow 1.6s ease-in-out infinite;}
   .rcoin b{position:absolute;color:#fff6c2;font-size:14px;animation:twinkle 1.4s ease-in-out infinite;}
   .rcoin b.t1{left:-2px;top:10px;} .rcoin b.t2{right:2px;bottom:8px;animation-delay:.7s;}
@@ -181,10 +189,25 @@
   .grow.gdim{opacity:0.5;}
   .gdim .gplay{background:#223566;}
   .gdim .gplay svg{fill:#6f86b8;}
-  .splash{min-height:92vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;}
-  .splash-logo{width:104px;height:104px;border-radius:30px;background:linear-gradient(145deg,#6fdcff,#2f7bff 60%,#1a3fa8);display:flex;align-items:center;justify-content:center;box-shadow:0 0 50px rgba(60,150,255,0.55);animation:pulse 1.6s ease-in-out infinite;}
+  /* ===== SPLASH THEME: self-contained, swap this block when the app is redesigned ===== */
+  .splash{position:relative;overflow:hidden;min-height:92vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;}
+  .splash-logo{width:104px;height:104px;border-radius:30px;background:linear-gradient(145deg,#6fdcff,#2f7bff 60%,#1a3fa8);display:flex;align-items:center;justify-content:center;box-shadow:0 0 50px rgba(60,150,255,0.55);animation:pulse 1.6s ease-in-out infinite,logoFloat 3s ease-in-out infinite;position:relative;z-index:2;}
   .splash-logo svg{width:58px;height:58px;stroke:#fff;fill:rgba(255,255,255,0.18);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
   @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.07);}}
+  @keyframes logoFloat{0%,100%{margin-top:0}50%{margin-top:-8px}}
+  .splash-stage{position:relative;width:210px;height:210px;display:flex;align-items:center;justify-content:center;z-index:2;}
+  .sp-ring{position:absolute;border-radius:50%;border:1.5px solid rgba(111,220,255,.25);animation:ringSpin 7s linear infinite;}
+  .sp-ring.r1{width:150px;height:150px;border-top-color:rgba(111,220,255,.95);}
+  .sp-ring.r2{width:184px;height:184px;border-left-color:rgba(255,210,74,.9);animation-duration:10s;animation-direction:reverse;}
+  .sp-ring.r3{width:208px;height:208px;border-bottom-color:rgba(130,170,255,.8);animation-duration:13s;}
+  @keyframes ringSpin{to{transform:rotate(360deg)}}
+  .sp-fx{position:absolute;inset:0;pointer-events:none;z-index:1;}
+  .sp-fx i{position:absolute;bottom:-20px;font-style:normal;opacity:0;animation:spRise linear infinite;}
+  .sp-fx i.d{color:#7fd8ff;text-shadow:0 0 8px #3aa8ff;} .sp-fx i.c{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff7c0,#ffc928 60%,#c98400);box-shadow:0 0 10px rgba(255,200,40,.8);}
+  .sp-fx i.p{width:4px;height:4px;border-radius:50%;background:#8fd0ff;box-shadow:0 0 8px #4aa8ff;}
+  @keyframes spRise{0%{transform:translateY(0) rotate(0);opacity:0}15%{opacity:.95}85%{opacity:.8}100%{transform:translateY(-95vh) rotate(300deg);opacity:0}}
+  .splash-fill{background:linear-gradient(90deg,#2f7bff,#6fdcff,#2f7bff,#6fdcff)!important;background-size:200% 100%;animation:barMove 1.4s linear infinite;}
+  @keyframes barMove{to{background-position:-200% 0}}
   .splash-title{font-size:30px;font-weight:800;margin-top:22px;letter-spacing:-0.4px;}
   .splash-sub{color:var(--muted);font-size:14px;margin-top:4px;}
   .splash-bar{width:78%;max-width:300px;height:10px;border-radius:8px;background:var(--field);margin-top:34px;overflow:hidden;}
@@ -288,7 +311,8 @@
 </head>
 <body>
 <div id="app"><div class="splash" id="splash">
-  <div class="splash-logo"><svg viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M9 3l-2 6 5 12 5-12-2-6"/></svg></div>
+  <div class="sp-fx" id="spFx"></div>
+  <div class="splash-stage"><div class="sp-ring r1"></div><div class="sp-ring r2"></div><div class="sp-ring r3"></div><div class="splash-logo"><svg viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M9 3l-2 6 5 12 5-12-2-6"/></svg></div></div>
   <div class="splash-title">MineEarn</div>
   <div class="splash-sub">Watch • Play • Earn</div>
   <div class="splash-bar"><div class="splash-fill" id="splFill"></div></div>
@@ -312,6 +336,10 @@
 
 <script>
 let SPL = { pct:0, t:null };
+(function splashFx(){ const b=document.getElementById('spFx'); if(!b) return; let h='';
+  for(let n=0;n<22;n++){ const k=n%3===0?'d':n%3===1?'c':'p'; const l=Math.random()*96, du=5+Math.random()*5, de=-Math.random()*9; const sz=k==='d'?(10+Math.random()*10):0;
+    h+='<i class="'+k+'" style="left:'+l.toFixed(1)+'%;animation-duration:'+du.toFixed(1)+'s;animation-delay:'+de.toFixed(1)+'s;'+(sz?'font-size:'+sz.toFixed(0)+'px;':'')+'">'+(k==='d'?'◆':'')+'</i>'; }
+  b.innerHTML=h; })();
 function splashPaint(){
   const f = document.getElementById('splFill'); if(!f) return;
   const p = Math.round(SPL.pct);
@@ -345,11 +373,11 @@ let AG = null;
 const FLAGS_URL = SUPABASE_URL + '/functions/v1/app-flags';
 let WD_HOURS = 72, WD_CONTACT = '@boss001legend';
 const SLOT_CONFIG = [
-  {name:"Slot 1", coins:100, ads:2},
-  {name:"Slot 2", coins:100, ads:2},
-  {name:"Slot 3", coins:100, ads:2},
-  {name:"Slot 4", coins:100, ads:2},
-  {name:"Slot 5", coins:100, ads:2},
+  {name:"Gold Mine", coins:100, ads:2},
+  {name:"Silver Vein", coins:100, ads:2},
+  {name:"Crystal Cave", coins:100, ads:2},
+  {name:"Diamond Pit", coins:100, ads:2},
+  {name:"Royal Vault", coins:100, ads:2},
 ];
 let MAX_SESSIONS = 5;
 // ---- Review mode switches. Set both to true again after an ad network approves the app. ----
@@ -2438,7 +2466,7 @@ function showTab(tab){
   if(tab==='tasks'){ renderTasks(); }
   if(tab==='play'){ renderPlay(); }
   if(tab==='home'){ renderHome(); }
-  if(tab==='mine'){ richLoad(); }
+  if(tab==='mine'){ mineGo('pick'); }
 }
 function goWithdraw(){ showTab('profile'); setTimeout(()=>{ const e = document.getElementById('wdSection'); if(e) e.scrollIntoView({behavior:'smooth'}); }, 80); }
 function copyRef(){
@@ -2588,6 +2616,21 @@ function topBubble(t,ms){
 function warnPop(t){ return appDialog({title:'Heads up',text:t,icon:'⚠️'}); }
 function noAdPop(){ return appDialog({title:'No ad right now',text:'No ad is available at the moment. Please try again later.',icon:'📺'}); }
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+/* ===== Mine tab: two network cards ===== */
+let MINE_VIEW = 'pick';
+function mineApply(){
+  const g = id => document.getElementById(id); if(!g('minePick')) return;
+  g('minePick').style.display = MINE_VIEW==='pick' ? '' : 'none';
+  g('mineBack').style.display = MINE_VIEW==='pick' ? 'none' : '';
+  g('slots').style.display = MINE_VIEW==='monetag' ? '' : 'none';
+  g('richSlot').style.display = MINE_VIEW==='rich' ? '' : 'none';
+  g('dailyAds').style.display = MINE_VIEW==='monetag' ? '' : 'none';
+  g('minePick').innerHTML =
+    '<div class="net-card" onclick="mineGo(\'monetag\')"><div class="net-ic mt">⛏️</div><div class="net-tx"><b>Monetag Mining</b><span>'+SLOT_CONFIG.length+' mines • watch '+MINE_ADS+' ads per collect</span></div><div class="earn-go">›</div></div>'
+    + '<div class="net-card" onclick="mineGo(\'rich\')"><div class="net-ic rc">🎁</div><div class="net-tx"><b>RichAds Mining</b><span>Open an offer • coins vary • resets by countdown</span></div><div class="earn-go">›</div></div>';
+}
+function mineGo(v){ MINE_VIEW = v; mineApply(); if(v==='rich') richLoad(); window.scrollTo(0,0); }
 /* ===== RichAds slot (Mine tab, own countdown set in Admin) ===== */
 let RCH = null, RCH_BUSY = false, RCH_LOADED = false;
 async function richLoad(){
@@ -2603,7 +2646,7 @@ function richDraw(){
   else if(RCH_BUSY) btn = '<button class="action btn-wait" disabled>Waiting for your click…</button>';
   else if(left>0) btn = '<button class="action btn-wait" disabled><span class="mcoin">$</span> <span id="richCd">'+fmtTime(left)+'</span></button>';
   else btn = '<button class="action btn-collect" onclick="richWatch()">🎁 Open offer & collect</button>';
-  box.innerHTML = '<div class="slot"><div class="slot-top"><div class="slot-name">RichAds slot</div></div><div class="slot-progress">'+RCH.done+'/'+RCH.max+' collects today • coins depend on the offer</div>'+btn+'</div>';
+  box.innerHTML = '<div class="slot"><div class="slot-top"><div class="slot-name">Bonus Chest</div></div><div class="slot-progress">'+RCH.done+'/'+RCH.max+' collects today • coins depend on the offer</div>'+btn+'</div>';
 }
 setInterval(()=>{ if(!RCH || RCH_BUSY) return; const left = Math.max(0, RCH.cdUntil-Date.now()); const el = document.getElementById('richCd'); if(el) el.textContent = fmtTime(left); else if(left===0 && document.querySelector('#richSlot .btn-wait') && RCH.done<RCH.max) richDraw(); }, 1000);
 function richScript(){
@@ -2840,7 +2883,7 @@ async function startApp(){
       <div class="section-title">Ways to earn</div>
       <div class="earn-card" onclick="showTab('mine')"><div class="earn-ic">⛏️</div><div class="earn-tx"><b>Mining</b><span>5 slots • watch 2 ads per collect • ${AD_PAY} coins per ad</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="showTab('play')"><div class="earn-ic">🎮</div><div class="earn-tx"><b>Games</b><span>4 games • up to 250 coins per play • 5 plays each daily</span></div><div class="earn-go">›</div></div>
-      <div class="earn-card" onclick="showTab('tasks')"><div class="earn-ic">✅</div><div class="earn-tx"><b>Tasks</b><span>Join channels and follow pages for coins</span></div><div class="earn-go">›</div></div>
+      <div class="earn-card" onclick="showTab('tasks')"><div class="earn-ic ic-tasks"><svg viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="17" rx="3"/><path d="M9 4.5V3.6c0-.5.4-.9.9-.9h4.2c.5 0 .9.4.9.9v.9"/><path d="M8.8 13.2l2.2 2.2 4.4-4.6"/></svg></div><div class="earn-tx"><b>Tasks</b><span>Join channels and follow pages for coins</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="comOpen('payouts')"><div class="earn-ic">🏆</div><div class="earn-tx"><b>Payouts &amp; leaderboard</b><span>See real payments and the top earners</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="howOpen(0)"><div class="earn-ic">📖</div><div class="earn-tx"><b>How it works</b><span>Earning, coins and withdrawals explained</span></div><div class="earn-go">›</div></div>
       <div class="section-title">Invite &amp; earn</div>
@@ -2865,8 +2908,10 @@ async function startApp(){
         <div class="usd" id="balanceUsd"></div>
       </div>
       <div class="task-sub" id="dailyAds" style="text-align:center;margin-bottom:10px;"></div>
-      <div id="slots"></div>
-      <div id="richSlot"></div>
+      <div id="minePick"></div>
+      <div id="mineBack" style="display:none;"><button class="mine-back" onclick="mineGo('pick')">‹ Back</button></div>
+      <div id="slots" style="display:none;"></div>
+      <div id="richSlot" style="display:none;"></div>
     </div>
     <div class="tab-content" id="tab-play">
       <h1>Play &amp; Earn</h1>
