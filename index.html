@@ -132,9 +132,10 @@
   .gdim{opacity:0.5;}
 
   .balance{position:relative;}
-  .rcoin{position:absolute;top:-36px;right:-4px;width:78px;height:78px;perspective:300px;pointer-events:none;z-index:2;animation:coinFloat 2.4s ease-in-out infinite;}
-  .rcoin i{position:relative;display:flex;align-items:center;justify-content:center;width:78px;height:78px;border-radius:50%;font-style:normal;font-weight:900;font-size:38px;color:#8a5a00;text-shadow:0 1px 0 rgba(255,255,255,.55);background:radial-gradient(circle at 32% 28%,#fffbd0 0%,#ffe27a 22%,#ffc928 52%,#d98f00 100%);box-shadow:0 0 0 4px #f5b800,0 0 0 7px rgba(255,236,150,.55),inset 0 0 0 7px rgba(190,120,0,.35),0 0 34px 8px rgba(255,200,40,.6);overflow:hidden;animation:coinSpin 3.2s linear infinite,coinGlow 1.6s ease-in-out infinite;}
+  .rcoin{position:absolute;top:10px;right:12px;width:54px;height:54px;perspective:300px;pointer-events:none;z-index:2;animation:coinFloat 2.4s ease-in-out infinite;}
+  .rcoin i{position:relative;display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:50%;font-style:normal;font-weight:900;font-size:28px;color:#8a5a00;text-shadow:0 1px 0 rgba(255,255,255,.55);background:radial-gradient(circle at 32% 28%,#fffbd0 0%,#ffe27a 22%,#ffc928 52%,#d98f00 100%);box-shadow:0 0 0 4px #f5b800,0 0 0 7px rgba(255,236,150,.55),inset 0 0 0 7px rgba(190,120,0,.35),0 0 34px 8px rgba(255,200,40,.6);overflow:hidden;animation:coinSpin 3.2s linear infinite,coinGlow 1.6s ease-in-out infinite;}
   .rcoin i:before{content:'';position:absolute;top:-20%;left:-60%;width:40%;height:140%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);transform:rotate(20deg);animation:coinShine 2.2s ease-in-out infinite;}
+  .mcoin{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-weight:900;font-size:13px;color:#8a5a00;vertical-align:middle;background:radial-gradient(circle at 32% 28%,#fffbd0,#ffe27a 30%,#ffc928 60%,#d98f00);box-shadow:0 0 0 2px #f5b800,0 0 10px 2px rgba(255,200,40,.7);animation:coinSpin 3.2s linear infinite,coinGlow 1.6s ease-in-out infinite;}
   .rcoin b{position:absolute;color:#fff6c2;font-size:14px;animation:twinkle 1.4s ease-in-out infinite;}
   .rcoin b.t1{left:-2px;top:10px;} .rcoin b.t2{right:2px;bottom:8px;animation-delay:.7s;}
   @keyframes coinSpin{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
@@ -350,14 +351,15 @@ const SLOT_CONFIG = [
   {name:"Slot 4", coins:100, ads:2},
   {name:"Slot 5", coins:100, ads:2},
 ];
-const MAX_SESSIONS = 5;
+let MAX_SESSIONS = 5;
 // ---- Review mode switches. Set both to true again after an ad network approves the app. ----
 const GAME_ADS_ON = true;       // true = games show the "watch ad" steps (continue + collect)
 const NETWORK_TEST_ROWS_ON = false; // true = show the GigaPub / USL Ads rows in Tasks > Daily
 const GIGA_ON = true;           // real GigaPub ad row in Tasks > Daily (server-confirmed)
 let GIGA = null;
 let AD_PAY = 50; // coins per ad; the server tells us the live value
-const SESSION_MS = 30*60*1000;
+let SESSION_MS = 30*60*1000;
+let MINE_ADS = 2, MINE_AD_MAX = 50;
 let selectedMethod = 'USDT_BEP20';
 
 function getTelegramUser(){
@@ -381,13 +383,13 @@ const TG_USER = getTelegramUser();
 const STATS_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-stats';
 const ADMIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-hub';
 const LOGIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/login-hub';
-const GIGA_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/giga-hub';
-const MT_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/monetag-hub';
+const GIGA_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/rows-hub';
+const MT_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/rows-hub';
 let MTS = null;
-const AG_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/adsgram-hub';
+const AG_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/rows-hub';
 let AGS = null;
 const CAT_LABEL = {social:'Social',daily:'Daily Wins',exclusive:'Special',partner:'Featured'};
-const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-pro';
+const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-pro2';
 const TASK_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/task-hub';
 const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-v2';
 const BOT_APP_LINK = 'https://t.me/mineearnx_bot/mineearn';
@@ -445,7 +447,7 @@ async function handleVerify(){
   }
 }
 
-const API_URL = SUPABASE_URL + '/functions/v1/mine-v2';
+const API_URL = SUPABASE_URL + '/functions/v1/mine-v3';
 const WD_URL = SUPABASE_URL + '/functions/v1/smart-v3';
 // Phone clocks can be wrong, so timers use Telegram's server time (auth_date) as the reference
 let CLOCK_OFFSET = 0;
@@ -486,6 +488,7 @@ function applyServerState(s){
 async function loadState(){
   const r = await api('load');
   if(r.reward) AD_PAY = Number(r.reward) || 50;
+  if(r.limits){ const L=r.limits; MINE_ADS=L.ads||2; MAX_SESSIONS=L.sessions||5; MINE_AD_MAX=L.adMax||50; SESSION_MS=(L.sessionMin||30)*60*1000; SLOT_CONFIG.forEach(c=>{c.ads=MINE_ADS;}); }
   const s = r.state;
   s.slots.forEach(sl=>{ if(sl.state==='watching') sl.state='mining'; });
   return s;
@@ -576,7 +579,7 @@ async function handleCollect(i){
 }
 
 // ===================== GAMES =====================
-const GAMES_URL = SUPABASE_URL + '/functions/v1/games-v5';
+const GAMES_URL = SUPABASE_URL + '/functions/v1/games-v6';
 const GAME_THUMBS = {
 snake:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><pattern id="ckS" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#1f7a4c"/><rect width="16" height="16" fill="#26925a"/><rect x="16" y="16" width="16" height="16" fill="#26925a"/></pattern></defs><rect width="160" height="124" fill="url(#ckS)"/><g fill="#7ee85a" stroke="#2f9d3e" stroke-width="1.5"><circle cx="24" cy="84" r="9"/><circle cx="42" cy="84" r="9"/><circle cx="60" cy="84" r="9"/><circle cx="60" cy="66" r="9"/><circle cx="78" cy="66" r="9"/><circle cx="96" cy="66" r="9"/></g><circle cx="114" cy="66" r="11" fill="#9bf26c" stroke="#2f9d3e" stroke-width="1.5"/><circle cx="117" cy="61" r="3.5" fill="#fff"/><circle cx="117" cy="71" r="3.5" fill="#fff"/><circle cx="118" cy="61" r="1.6" fill="#111"/><circle cx="118" cy="71" r="1.6" fill="#111"/><path d="M125 66h10m0 0l4-3m-4 3l4 3" stroke="#ff4d4d" stroke-width="2" fill="none"/><circle cx="118" cy="26" r="11" fill="#ff4d4d"/><circle cx="114" cy="23" r="3" fill="rgba(255,255,255,0.5)"/><path d="M118 15c2-6 7-8 10-7-1 5-5 8-10 7z" fill="#9be36b"/></svg>',
 runner:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="skR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4aa8ff"/><stop offset="1" stop-color="#cfeaff"/></linearGradient></defs><rect width="160" height="124" fill="#2f9a5b"/><rect width="160" height="38" fill="url(#skR)"/><polygon points="72,38 88,38 158,124 2,124" fill="#4b4f63"/><path d="M76 38L50 124M84 38L110 124" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/><rect x="92" y="70" width="22" height="9" rx="2" fill="#ff9f1a"/><rect x="40" y="58" width="16" height="22" rx="2" fill="#c0392b"/><rect x="43" y="63" width="10" height="5" fill="#ffd86b"/><ellipse cx="80" cy="116" rx="12" ry="3.5" fill="rgba(0,0,0,0.3)"/><path d="M75 108v7M85 108v7" stroke="#2b3a67" stroke-width="5" stroke-linecap="round"/><rect x="69" y="86" width="22" height="24" rx="7" fill="#e24b4b"/><rect x="73" y="90" width="14" height="14" rx="3" fill="#2f6fe0"/><path d="M68 90l-3 14M92 90l3 14" stroke="#e24b4b" stroke-width="5" stroke-linecap="round"/><circle cx="80" cy="79" r="8" fill="#2a1b14"/></svg>',
@@ -593,7 +596,9 @@ let gameStatus = null;
 let GP_SEL = null;
 let GPEND = null;
 function gpDay(){ return GAME_LIST[Math.floor(Date.now()/86400000) % GAME_LIST.length]; }
-function gpLeft(g){ const used = (gameStatus.runs && gameStatus.runs[g.id]) || 0; return Math.max(0, gameStatus.max - used); }
+function gpLeft(g){ const used = (gameStatus.runs && gameStatus.runs[g.id]) || 0; return Math.max(0, gpMax(g) - used); }
+function gpMax(g){ return (gameStatus.maxRuns && gameStatus.maxRuns[g.id]) || gameStatus.max; }
+function gpCoins(g){ return (gameStatus.maxCoins && gameStatus.maxCoins[g.id]) || 250; }
 function gpClick(g){ if(GPEND) return 'collectPending()'; return gpLeft(g)>0 ? 'startGame(\''+g.id+'\')' : 'alert(\'No plays left for this game today. It resets at 00:00 UTC.\')'; }
 function gpPick(id){ GP_SEL = id; drawPicker(); }
 function drawPicker(){
@@ -605,7 +610,7 @@ function drawPicker(){
   const banner = '<div class="gf'+(left<=0?' gdim':'')+'">'
     + '<div class="gfbg">'+GAME_THUMBS[sel.id]+'</div><div class="gfsh"></div>'
     + '<div class="gftag">'+(sel.id===day.id ? '⭐ GAME OF THE DAY' : sel.cat)+'</div>'
-    + '<div class="gfin"><div class="gfn">'+sel.name+'</div><div class="gfm"><b>'+left+'/'+gameStatus.max+'</b> plays left • Up to <b>250</b> coins</div>'
+    + '<div class="gfin"><div class="gfn">'+sel.name+'</div><div class="gfm"><b>'+left+'/'+gpMax(sel)+'</b> plays left • Up to <b>'+gpCoins(sel)+'</b> coins</div>'
     + '<button class="gfplay" onclick="'+gpClick(sel)+'">▶ Play</button></div></div>';
   const pend = GPEND ? '<div class="gpend"><div class="gpt">🎁 <b>'+GPEND.coins+' coins</b> are waiting from your last game ('+(GAME_LIST.find(g=>g.id===GPEND.game)||{name:GPEND.game}).name+').<br><span>Collect them before your next play.</span></div><button class="gpbtn" onclick="collectPending()">🎬 Collect coins</button></div>' : '';
   box.innerHTML = pend + banner
@@ -2058,7 +2063,7 @@ async function renderTasks(){
   const cnt = document.getElementById('tkCount');
   if(TK.cat==='daily' && TK.view==='all'){
     cnt.textContent = 'Resets every day at 00:00 UTC';
-    const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
+    const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*MINE_ADS,0);
     let h = REVIEW ? '' : '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Ads watched</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
     h += await agRowHtml();
     if(!REVIEW) h += await mtRowHtml();
@@ -2376,32 +2381,42 @@ async function admGames(){
     document.getElementById('admBody').innerHTML = h + '<button class="action" style="margin-top:6px;" onclick="admGames()">↻ Refresh</button>';
   }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
 }
+const ADM_FIELDS = [
+ ['Money & withdrawals',[['adReward','Coins per mining ad (1-500)'],['wdMin','Minimum withdrawal in coins'],['wdFee','Withdrawal fee percent (0-30)']]],
+ ['Mining',[['mineAds','Ads per collect (1-5)'],['mineSessions','Collects per slot per day (1-20)'],['mineAdMax','Mining ads per day (1-500)'],['mineMin','Slot countdown minutes (1-240)']]],
+ ['AdsGram row',[['agCoins','Coins per ad (1-100)'],['agMax','Ads per day'],['agCd','Wait between ads (seconds)']]],
+ ['Monetag row',[['mtCoins','Coins per ad (1-100)'],['mtMax','Ads per day'],['mtCd','Wait between ads (seconds)']]],
+ ['GigaPub row',[['gigaCoins','Coins per ad (1-100)'],['gigaMax','Ads per day'],['gigaCd','Wait between ads (seconds)']]],
+ ['RichAds slot (Mine tab)',[['richMax','Collects per day'],['richCd','Countdown in seconds (1800 = 30 min)'],['richShare','Our coin share percent (5-90)']]],
+ ['Snake',[['playsSnake','New plays per day (1-50)'],['maxSnake','Max coins per play (1-250)']]],
+ ['Endless Runner',[['playsRunner','New plays per day (1-50)'],['maxRunner','Max coins per play (1-250)']]],
+ ['Star Patrol',[['playsShooter','New plays per day (1-50)'],['maxShooter','Max coins per play (1-250)']]],
+ ['Quiz',[['playsQuiz','New plays per day (1-50)'],['maxQuiz','Max coins per play (1-250)']]],
+];
 async function admSettings(){
   admShell('<div class="tk-empty">Loading...</div>');
   try{
     const r = await api('settingsGet', {}, ADMIN2_URL);
-    document.getElementById('admBody').innerHTML =
-      '<div class="wallet-box" style="line-height:1.5;">Changes apply within about 15 seconds. Users see the new numbers the next time they open the app. A collect (2 ads) pays double the coins per ad.</div>'
-      + '<label class="form-label">Coins per mining ad (1 to 500)</label>'
-      + '<input id="admReward" class="form-input" inputmode="numeric" value="'+r.adReward+'">'
-      + '<label class="form-label" style="margin-top:10px;display:block;">Minimum withdrawal in coins (1,000 to 10,000,000)</label>'
-      + '<input id="admWdMin" class="form-input" inputmode="numeric" value="'+r.wdMin+'">'
-      + '<label class="form-label" style="margin-top:10px;display:block;">Withdrawal fee percent (0 to 30)</label>'
-      + '<input id="admWdFee" class="form-input" inputmode="numeric" value="'+r.wdFee+'">'
-      + '<div id="admSetRes" class="tk-meta" style="margin:8px 0;"></div>'
-      + '<button class="action btn-collect" onclick="admSaveSettings()">Save</button>'
-      + '<div class="adm-user" style="margin-top:14px;"><div class="adm-row"><span>Game reward claiming</span><b>'+(r.gameClaim?'ON':'OFF (locked)')+'</b></div><div class="tk-meta">This stays locked until an ad network is approved.</div></div>';
+    let h = '<div class="wallet-box" style="line-height:1.5;">Changes apply within about 15 seconds. Users see the new numbers the next time they open the app.</div>';
+    ADM_FIELDS.forEach(g=>{
+      h += '<div class="adm-user" style="margin-top:12px;"><b>'+g[0]+'</b>';
+      g[1].forEach(f=>{ h += '<label class="form-label" style="margin-top:8px;display:block;">'+f[1]+'</label><input id="adm_'+f[0]+'" class="form-input" inputmode="numeric" value="'+r[f[0]]+'">'; });
+      h += '</div>';
+    });
+    h += '<div id="admSetRes" class="tk-meta" style="margin:8px 0;"></div><button class="action btn-collect" onclick="admSaveSettings()">Save all</button>'
+      + '<div class="adm-user" style="margin-top:14px;"><div class="adm-row"><span>Game reward claiming</span><b>'+(r.gameClaim?'ON':'OFF (locked)')+'</b></div></div>';
+    document.getElementById('admBody').innerHTML = h;
   }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
 }
 async function admSaveSettings(){
-  const num = id => Number((document.getElementById(id).value||'').replace(/[, ]/g,''));
-  const adReward = num('admReward'), wdMin = num('admWdMin'), wdFee = num('admWdFee');
-  const res = document.getElementById('admSetRes');
-  if(!Number.isInteger(adReward) || adReward<1 || adReward>500){ res.textContent = 'Coins per ad: whole number from 1 to 500.'; return; }
-  if(!Number.isInteger(wdMin) || wdMin<1000 || wdMin>10000000){ res.textContent = 'Minimum withdrawal: whole number from 1,000 to 10,000,000.'; return; }
-  if(!Number.isInteger(wdFee) || wdFee<0 || wdFee>30){ res.textContent = 'Fee percent: whole number from 0 to 30.'; return; }
-  if(!(await appConfirm('Coins per ad: '+adReward+'\nMinimum withdrawal: '+wdMin+'\nFee: '+wdFee+'%','Save','Cancel','Save these settings?','⚙️'))) return;
-  try{ await api('settingsSet', { adReward, wdMin, wdFee }, ADMIN2_URL); res.textContent = 'Saved.'; }catch(e){ res.textContent = e.message; }
+  const res = document.getElementById('admSetRes'); const body = {};
+  for(const g of ADM_FIELDS) for(const f of g[1]){
+    const v = (document.getElementById('adm_'+f[0]).value||'').replace(/[, ]/g,'');
+    if(v==='' || !/^\d+$/.test(v)){ res.textContent = f[1]+': whole number needed.'; return; }
+    body[f[0]] = Number(v);
+  }
+  if(!(await appConfirm('Save all these numbers?','Save','Cancel','Save these settings?','⚙️'))) return;
+  try{ await api('settingsSet', body, ADMIN2_URL); res.textContent = 'Saved.'; }catch(e){ res.textContent = e.message; }
 }
 async function admLog(){
   admShell('<div class="tk-empty">Loading...</div>');
@@ -2423,6 +2438,7 @@ function showTab(tab){
   if(tab==='tasks'){ renderTasks(); }
   if(tab==='play'){ renderPlay(); }
   if(tab==='home'){ renderHome(); }
+  if(tab==='mine'){ richLoad(); }
 }
 function goWithdraw(){ showTab('profile'); setTimeout(()=>{ const e = document.getElementById('wdSection'); if(e) e.scrollIntoView({behavior:'smooth'}); }, 80); }
 function copyRef(){
@@ -2499,15 +2515,15 @@ async function renderHome(){
 function render(){
   document.getElementById('balanceCoins').textContent = state.balance.toLocaleString()+" coins";
   document.getElementById('balanceUsd').textContent = "≈ $"+(state.balance*RATE).toFixed(5);
-  const hc = document.getElementById('homeCoins'); if(hc){ hc.textContent = state.balance.toLocaleString()+' coins'; document.getElementById('homeUsd').textContent = '≈ $'+(state.balance*RATE).toFixed(5); document.getElementById('homeRefs').textContent = state.referralCount; document.getElementById('homeAds').textContent = state.slots.reduce((n,sl)=>n+sl.sessions*2,0)+'/50'; }
+  const hc = document.getElementById('homeCoins'); if(hc){ hc.textContent = state.balance.toLocaleString()+' coins'; document.getElementById('homeUsd').textContent = '≈ $'+(state.balance*RATE).toFixed(5); document.getElementById('homeRefs').textContent = state.referralCount; document.getElementById('homeAds').textContent = state.slots.reduce((n,sl)=>n+sl.sessions*MINE_ADS,0)+'/50'; }
   document.getElementById('profileCoins').textContent = state.balance.toLocaleString()+" coins";
   document.getElementById('profileUsd').textContent = "≈ $"+(state.balance*RATE).toFixed(5);
   document.getElementById('profileReferrals').textContent = state.referralCount;
   document.getElementById('wdBalance').textContent = state.balance.toLocaleString()+" coins";
 
-  const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*2,0);
+  const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*MINE_ADS,0);
   const dEl = document.getElementById('dailyAds');
-  if(dEl) dEl.textContent = 'Ads today: '+adsDone+'/50 • +'+AD_PAY+' coins per ad';
+  if(dEl) dEl.textContent = 'Ads today: '+adsDone+'/'+MINE_AD_MAX+' • +'+AD_PAY+' coins per ad';
   const container = document.getElementById('slots');
   container.innerHTML='';
   SLOT_CONFIG.forEach((cfg,i)=>{
@@ -2527,7 +2543,7 @@ function render(){
         saveState();
         btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch ad 1 of '+cfg.ads+' to Collect</button>';
       } else {
-        btnHtml = '<button class="action btn-wait" disabled>⏳ '+fmtTime(remain)+'</button>';
+        btnHtml = '<button class="action btn-wait" disabled><span class="mcoin">$</span> '+fmtTime(remain)+'</button>';
       }
     } else if(slot.state==='ready'){
       btnHtml = '<button class="action btn-collect" onclick="handleCollect('+i+')">🎬 Watch ad 1 of '+cfg.ads+' to Collect</button>';
@@ -2572,6 +2588,50 @@ function topBubble(t,ms){
 function warnPop(t){ return appDialog({title:'Heads up',text:t,icon:'⚠️'}); }
 function noAdPop(){ return appDialog({title:'No ad right now',text:'No ad is available at the moment. Please try again later.',icon:'📺'}); }
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
+/* ===== RichAds slot (Mine tab, own countdown set in Admin) ===== */
+let RCH = null, RCH_BUSY = false, RCH_LOADED = false;
+async function richLoad(){
+  try{ const r = await api('richStatus', {}, AG_URL); RCH = { done:r.done, max:r.max, cdUntil: Date.now()+r.cooldownLeft*1000 }; }catch(e){ RCH = null; }
+  richDraw();
+}
+function richDraw(){
+  const box = document.getElementById('richSlot'); if(!box) return;
+  if(!RCH || REVIEW){ box.innerHTML=''; return; }
+  const full = RCH.done >= RCH.max, left = Math.max(0, RCH.cdUntil - Date.now());
+  let btn;
+  if(full) btn = '<button class="action btn-wait" disabled>✓ Done today</button>';
+  else if(RCH_BUSY) btn = '<button class="action btn-wait" disabled>Waiting for your click…</button>';
+  else if(left>0) btn = '<button class="action btn-wait" disabled><span class="mcoin">$</span> <span id="richCd">'+fmtTime(left)+'</span></button>';
+  else btn = '<button class="action btn-collect" onclick="richWatch()">🎁 Open offer & collect</button>';
+  box.innerHTML = '<div class="slot"><div class="slot-top"><div class="slot-name">RichAds slot</div></div><div class="slot-progress">'+RCH.done+'/'+RCH.max+' collects today • coins depend on the offer</div>'+btn+'</div>';
+}
+setInterval(()=>{ if(!RCH || RCH_BUSY) return; const left = Math.max(0, RCH.cdUntil-Date.now()); const el = document.getElementById('richCd'); if(el) el.textContent = fmtTime(left); else if(left===0 && document.querySelector('#richSlot .btn-wait') && RCH.done<RCH.max) richDraw(); }, 1000);
+function richScript(){
+  return new Promise(res=>{
+    if(RCH_LOADED && window.TelegramAdsController) return res(true);
+    const sc = document.createElement('script'); sc.src = 'https://richinfo.co/richpartners/telegram/js/tg-ob.js';
+    sc.onload = ()=>{ try{ window.TelegramAdsController = new window.TelegramAdsController(); window.TelegramAdsController.initialize({ pubId:'1027811', appId:'9588' }); RCH_LOADED = true; res(true); }catch(e){ res(false); } };
+    sc.onerror = ()=>res(false); document.head.appendChild(sc);
+  });
+}
+async function richWatch(){
+  if(RCH_BUSY || !RCH) return; RCH_BUSY = true; richDraw();
+  const ok = await richScript();
+  if(!ok){ RCH_BUSY=false; richDraw(); noAdPop(); return; }
+  try{ window.TelegramAdsController.triggerNativeNotification(); }catch(e){ RCH_BUSY=false; richDraw(); noAdPop(); return; }
+  let res = null;
+  for(let i=0;i<20;i++){
+    await sleep(3000);
+    try{ res = await api('richClaim', {}, AG_URL); break; }catch(e){ if(!/not confirmed/i.test(e.message)) { RCH_BUSY=false; await richLoad(); warnPop(e.message); return; } }
+  }
+  RCH_BUSY = false;
+  if(res){
+    state.balance = res.balance; render();
+    RCH = { done:res.done, max:res.max, cdUntil: Date.now()+res.cooldownLeft*1000 }; richDraw();
+    adFinished({ reward:res.amount, progress:'Collects today '+res.done+'/'+res.max });
+  } else { richDraw(); warnPop('We did not get a click on the offer, so no coins were added. Open the offer and tap it to earn.'); }
+}
+
 // Shows one AdsGram ad. Resolves 'done' (watched fully), 'skipped' or 'none' (no ad available)
 function agShowRaw(){
   return new Promise(resolve=>{
@@ -2757,7 +2817,7 @@ async function startApp(){
         <div><div class="home-hi">Welcome back</div><div class="home-name">${name}</div></div>
       </div>
       <div class="balance">
-        <div class="rcoin"><i>M</i><b class="t1">✦</b><b class="t2">✦</b></div>
+        <div class="rcoin"><i>$</i><b class="t1">✦</b><b class="t2">✦</b></div>
         <div class="usd" style="margin:0 0 4px;">Your balance</div>
         <div class="coins" id="homeCoins"></div>
         <div class="usd" id="homeUsd"></div>
@@ -2806,6 +2866,7 @@ async function startApp(){
       </div>
       <div class="task-sub" id="dailyAds" style="text-align:center;margin-bottom:10px;"></div>
       <div id="slots"></div>
+      <div id="richSlot"></div>
     </div>
     <div class="tab-content" id="tab-play">
       <h1>Play &amp; Earn</h1>
