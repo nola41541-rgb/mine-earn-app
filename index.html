@@ -1235,9 +1235,9 @@ document.addEventListener('keydown', e=>{
 const RN = { maxAtt:5, W:360, H:340 };
 function runnerInit(){
   const cv = gEl('gCanvas');
-  RN.W = Math.min(window.innerWidth-20, 400); RN.H = 340;
+  RN.W = Math.min(window.innerWidth-20, 400); RN.H = RN.W;
   cv.width = RN.W; cv.height = RN.H;
-  RN.hy = RN.H*0.22; RN.py = RN.H-56; RN.laneW = RN.W*0.27;
+  RN.hy = RN.W*0.352; RN.py = RN.W*0.731; RN.laneW = RN.W*0.326; raLoad();
   RN.score = 0; RN.att = 1; RN.speed = 14; RN.dist = 0;
   let sx=0, sy=0;
   cv.ontouchstart = e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; e.preventDefault(); };
@@ -1469,6 +1469,7 @@ function rnSkyline(c, color, hMax, off, seed, W, hy, windows){
   }
 }
 function runnerDraw(){
+  if(RA.ok){ runnerDrawArt(); return; }
   const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const W = RN.W, H = RN.H, hy = RN.hy, py = RN.py, cx = W/2, L = RN.laneW;
   const f80 = rnProj(80);
   const yOf = z => hy + (py-hy)*(rnProj(Math.max(z,0))-f80)/(1-f80);
@@ -1626,7 +1627,7 @@ function shooterInit(){
   cv.ontouchmove = e=>{ const t = e.touches[0]; SH.x = shClamp(sx+(t.clientX-tx)*1.2,26,SH.W-26); SH.y = shClamp(sy+(t.clientY-ty)*1.2,SH.H*0.3,SH.H-46); e.preventDefault(); };
   cv.onmousedown = ()=>{ shooterStart(); };
   SH.stars = Array.from({length:70},()=>({x:Math.random()*SH.W,y:Math.random()*SH.H,s:Math.random()*0.9+0.1}));
-  shooterSpawn();
+  shooterSpawn(); gaLoad();
 }
 function shooterLabel(){ gEl('gScore').textContent = 'Score '+SH.score+' • ≈'+Math.min(250,SH.score*5)+' coins'; checkCap(SH.score); }
 function shooterSpawn(){
@@ -1658,7 +1659,7 @@ function shHurt(dmg){
 function shKill(e){
   const pts = e.k==='boss'?3:(e.k==='rock'&&e.sz<2?0:1);
   SH.score += pts; if(pts) shooterLabel();
-  shBoom(e.x,e.y,e.k==='boss'||e.k==='bomber'||e.k==='rock'&&e.sz>=3);
+  shBoom2(e.x,e.y,e.k==='boss'||e.k==='bomber'||e.k==='rock'&&e.sz>=3);
   if(pts) SH.pops.push({x:e.x,y:e.y,t:0,text:'+'+(pts*5)});
   if(e.k==='rock' && e.sz>=3){ for(const s of [-1,1]) SH.en.push({k:'rock',sz:1,x:e.x+s*12,y:e.y,vx:s*55,vy:70+Math.random()*30,hp:1,r:13,rot:Math.random()*6,spin:(Math.random()-0.5)*3,seed:Math.random()}); }
   if(e.k==='boss') SH.boss++;
@@ -1737,12 +1738,12 @@ function shooterLoop(){
   // damage to the ship
   for(const e of SH.en){
     if(e.hp>0 && Math.abs(e.x-sx)<e.r*0.8+12 && Math.abs(e.y-sy)<e.r*0.8+14){
-      if(e.k==='boss'){ shHurt(40); } else { if(shHurt(e.k==='rock'?30:35)){ e.hp = 0; shBoom(e.x,e.y,false); } else if(SH.shield>0){ e.hp = 0; shBoom(e.x,e.y,false); } }
+      if(e.k==='boss'){ shHurt(40); } else { if(shHurt(e.k==='rock'?30:35)){ e.hp = 0; shBoom2(e.x,e.y,false); } else if(SH.shield>0){ e.hp = 0; shBoom2(e.x,e.y,false); } }
     }
     if(e.hp>0 && e.k!=='rock' && e.k!=='boss' && e.y>SH.H+10){ shHurt(10); e.hp = 0; }
   }
-  for(const b of SH.eb){ if(Math.abs(b.x-sx)<14 && Math.abs(b.y-sy)<18){ b.y = 9999; if(!shHurt(18)){ shBoom(b.x,sy-10,false); } } }
-  if(SH.hp<=0){ SH.hp = 0; shBoom(sx,sy,true); shooterDie(); return; }
+  for(const b of SH.eb){ if(Math.abs(b.x-sx)<14 && Math.abs(b.y-sy)<18){ b.y = 9999; if(!shHurt(18)){ shBoom2(b.x,sy-10,false); } } }
+  if(SH.hp<=0){ SH.hp = 0; shBoom2(sx,sy,true); shooterDie(); return; }
   shooterDraw();
   G.timer = setTimeout(shooterLoop, 16);
 }
@@ -1839,6 +1840,7 @@ function shooterDraw(){
   if(SH.shake>0){ c.translate((Math.random()-0.5)*SH.shake*14,(Math.random()-0.5)*SH.shake*10); }
   const bg = c.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#04030f'); bg.addColorStop(0.6,'#0d0a30'); bg.addColorStop(1,'#071742');
   c.fillStyle = bg; c.fillRect(-20,-20,W+40,H+40);
+  if(!shBgDraw(c,W,H)){
   // nebula and a distant planet
   const n1 = c.createRadialGradient(W*0.2,H*0.3,5,W*0.2,H*0.3,150); n1.addColorStop(0,'rgba(140,60,200,0.28)'); n1.addColorStop(1,'rgba(140,60,200,0)'); c.fillStyle = n1; c.fillRect(0,0,W,H);
   const n2 = c.createRadialGradient(W*0.85,H*0.7,5,W*0.85,H*0.7,140); n2.addColorStop(0,'rgba(40,120,220,0.25)'); n2.addColorStop(1,'rgba(40,120,220,0)'); c.fillStyle = n2; c.fillRect(0,0,W,H);
@@ -1846,28 +1848,31 @@ function shooterDraw(){
   const pg = c.createRadialGradient(W*0.78-14,py-12,4,W*0.78,py,38); pg.addColorStop(0,'#d7a074'); pg.addColorStop(0.6,'#8a4f36'); pg.addColorStop(1,'#2a1410');
   c.fillStyle = pg; c.beginPath(); c.arc(W*0.78,py,36,0,7); c.fill();
   c.fillStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.arc(W*0.78+12,py+4,36,0,7); c.fill();
+  }
   for(const s of SH.stars){ c.fillStyle = 'rgba(255,255,255,'+(0.3+s.s*0.7)+')'; const sz = 0.6+s.s*1.6; c.fillRect(s.x,s.y,sz,sz+s.s*3); }
   // pick-ups
   for(const k of SH.caps){
+    if(shPickDraw(c,k)) continue;
     const col = k.t==='P'?'#ffb81c':(k.t==='R'?'#2fd36b':'#3aa8ff');
     const g = c.createRadialGradient(k.x,k.y,2,k.x,k.y,22); g.addColorStop(0,col); g.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle = g; c.globalAlpha = 0.5; c.beginPath(); c.arc(k.x,k.y,22,0,7); c.fill(); c.globalAlpha = 1;
     c.fillStyle = col; c.beginPath(); c.arc(k.x,k.y,11,0,7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
     c.fillStyle = '#0b1230'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText(k.t==='P'?'↑':(k.t==='R'?'+':'◎'),k.x,k.y+4.5);
   }
-  for(const e of SH.en) shEnemy(c,e);
+  for(const e of SH.en) shEnemy2(c,e);
   // bullets
-  for(const b of SH.bu){ const g = c.createLinearGradient(b.x,b.y-10,b.x,b.y+10); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(90,190,255,0)'); c.strokeStyle = g; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(b.x-b.vx*0.012,b.y+10); c.lineTo(b.x,b.y-8); c.stroke(); }
-  for(const b of SH.eb){ const g = c.createRadialGradient(b.x,b.y,1,b.x,b.y,9); g.addColorStop(0,'#fff'); g.addColorStop(0.4,'#ff6a3d'); g.addColorStop(1,'rgba(255,60,40,0)'); c.fillStyle = g; c.beginPath(); c.arc(b.x,b.y,9,0,7); c.fill(); }
+  for(const b of SH.bu){ if(shBulletDraw(c,b,0)) continue; const g = c.createLinearGradient(b.x,b.y-10,b.x,b.y+10); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(90,190,255,0)'); c.strokeStyle = g; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(b.x-b.vx*0.012,b.y+10); c.lineTo(b.x,b.y-8); c.stroke(); }
+  for(const b of SH.eb){ if(shBulletDraw(c,b,1)) continue; const g = c.createRadialGradient(b.x,b.y,1,b.x,b.y,9); g.addColorStop(0,'#fff'); g.addColorStop(0.4,'#ff6a3d'); g.addColorStop(1,'rgba(255,60,40,0)'); c.fillStyle = g; c.beginPath(); c.arc(b.x,b.y,9,0,7); c.fill(); }
   // explosions and sparks
   for(const p of SH.parts){
     const a = 1-p.t/p.life;
+    if(p.boomspr){ shBoomDraw(c,p,a); continue; }
     if(p.fire){ const g = c.createRadialGradient(p.x,p.y,1,p.x,p.y,p.r*(0.5+p.t/p.life)); g.addColorStop(0,'rgba(255,250,210,'+a+')'); g.addColorStop(0.4,'rgba(255,150,40,'+(a*0.8)+')'); g.addColorStop(1,'rgba(255,60,20,0)'); c.fillStyle = g; c.beginPath(); c.arc(p.x,p.y,p.r*(0.5+p.t/p.life),0,7); c.fill(); }
     else if(p.ring){ c.strokeStyle = 'rgba(255,255,255,'+a+')'; c.lineWidth = 2; c.beginPath(); c.arc(p.x,p.y,p.r*(p.t/p.life)+3,0,7); c.stroke(); }
     else { c.globalAlpha = a; c.fillStyle = p.c; c.beginPath(); c.arc(p.x,p.y,p.r*(p.deb?1:a+0.3),0,7); c.fill(); c.globalAlpha = 1; }
   }
   // the player's ship (blinks while recovering from a hit) and its shield
   if(!SH.dead){
-    if(!(SH.inv>0 && Math.floor(SH.inv*20)%2===0)) shShip(c,SH.x,SH.y);
+    if(!(SH.inv>0 && Math.floor(SH.inv*20)%2===0)) shShip2(c,SH.x,SH.y);
     if(SH.shield>0){ const a = SH.shield<1.5 ? (Math.floor(SH.shield*8)%2?0.15:0.5) : 0.5; const g = c.createRadialGradient(SH.x,SH.y,10,SH.x,SH.y,36); g.addColorStop(0,'rgba(80,180,255,0)'); g.addColorStop(1,'rgba(80,190,255,'+a+')'); c.fillStyle = g; c.beginPath(); c.arc(SH.x,SH.y,36,0,7); c.fill(); c.strokeStyle = 'rgba(160,220,255,'+a+')'; c.lineWidth = 1.5; c.stroke(); }
   }
   for(const p of SH.pops){ c.globalAlpha = Math.max(0,1-p.t/0.9); c.fillStyle = '#ffd24d'; c.font = 'bold 14px sans-serif'; c.textAlign = 'center'; c.fillText(p.text,p.x,p.y); c.globalAlpha = 1; }
@@ -1887,6 +1892,156 @@ function shooterDraw(){
     c.fillText('Grab ↑ weapon, + repair, ◎ shield', W/2, H/2+30);
   }
 }
+
+// ---- Endless Runner artwork: street background, boy poses and obstacles (the old drawing stays as a backup) ----
+const RA = { ok:false, n:0, img:new Image(), bg:new Image(), M:{"run1":[0,0,122,247],"run2":[124,0,120,244],"jump":[246,0,139,201],"slide":[387,0,171,156],"hit":[560,0,147,222],"stand":[709,0,126,228],"barrier":[0,249,213,215],"truck":[215,249,220,241],"hurdle":[437,249,194,105],"bar":[633,249,256,251],"coin":[0,502,80,81]} };
+function raLoad(){
+  if(RA.started) return; RA.started = true;
+  const done = ()=>{ if(++RA.n===2){ RA.ok = true; try{ if(G && !G.over && G.id==='runner' && !RN.started && !RN.dead) runnerDraw(); }catch(e){} } };
+  RA.img.onload = done; RA.bg.onload = done;
+  RA.img.src = 'run.png'; RA.bg.src = 'run_bg.jpg';
+}
+function raSpr(c, k, x, y, w){
+  const m = RA.M[k], h = w*m[3]/m[2];
+  c.drawImage(RA.img, m[0],m[1],m[2],m[3], x-w/2, y-h, w, h);
+  return h;
+}
+function runnerDrawArt(){
+  const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const W = RN.W, H = RN.H, hy = RN.hy, py = RN.py, cx = W/2, L = RN.laneW;
+  const f80 = rnProj(80);
+  const fxOf = z => z>=0 ? (rnProj(z)-f80)/(1-f80) : 1 - z*0.12;
+  const yOf = z => hy + (py-hy)*fxOf(z);
+  c.save();
+  c.fillStyle = '#2a2f55'; c.fillRect(-20,-20,W+40,H+40);
+  if(RN.shake) c.translate((Math.random()-0.5)*RN.shake*10, (Math.random()-0.5)*RN.shake*8);
+  c.drawImage(RA.bg, 0,0,720,720, 0,0,W,H);
+  // moving road shine and dashed lane lines (the picture itself has no dashes)
+  const bz = 6, bo = RN.dist % bz, bi = Math.floor(RN.dist/bz);
+  for(let k=-1;k<16;k++){
+    const z0 = k*bz - bo, z1 = z0 + bz; if(z1<-5) continue;
+    if((k+bi)%2){ const f1 = fxOf(z0), f0 = fxOf(z1), y1 = yOf(z0), y0 = yOf(z1);
+      c.fillStyle = 'rgba(255,255,255,0.045)'; c.beginPath(); c.moveTo(cx-1.5*L*f0,y0); c.lineTo(cx+1.5*L*f0,y0); c.lineTo(cx+1.5*L*f1,y1); c.lineTo(cx-1.5*L*f1,y1); c.fill(); }
+  }
+  const dz = 5, dofs = RN.dist % dz;
+  c.fillStyle = 'rgba(255,255,255,0.92)';
+  for(const lx of [-0.5,0.5]){
+    for(let k=-2;k<18;k++){
+      const z0 = k*dz - dofs, z1 = z0 + 2.2; if(z1<-5 || z0>78) continue;
+      const fa = fxOf(z0), fb = fxOf(z1), ya = yOf(z0), yb = yOf(z1), wa = 0.045*L*fa, wb = 0.045*L*fb;
+      c.beginPath(); c.moveTo(cx+lx*L*fb-wb,yb); c.lineTo(cx+lx*L*fb+wb,yb); c.lineTo(cx+lx*L*fa+wa,ya); c.lineTo(cx+lx*L*fa-wa,ya); c.fill();
+    }
+  }
+  // obstacles, far to near
+  const list = RN.obs.slice().sort((a,b)=>b.z-a.z);
+  for(const o of list){
+    if(o.z > 80) continue;
+    const f = fxOf(o.z); if(f < 0.015) continue;
+    const x = cx + o.lane*L*f, y = yOf(o.z), u = L*f;
+    if(o.v===undefined) o.v = Math.random()<0.5 ? 1 : 0;
+    const k = o.type==='block' ? (o.v?'barrier':'truck') : (o.type==='low' ? 'hurdle' : 'bar');
+    const wd = {truck:0.95, barrier:0.95, hurdle:1.0, bar:1.12}[k];
+    c.fillStyle = 'rgba(0,0,0,0.28)'; c.beginPath(); c.ellipse(x,y+1,u*wd*0.5,u*0.1,0,0,7); c.fill();
+    raSpr(c,k,x,y+u*0.03,u*wd);
+  }
+  // dust and crash particles
+  for(const p of RN.parts){ const a = 1 - p.t/p.life; c.globalAlpha = Math.max(0,a)*0.8; c.fillStyle = p.c; c.beginPath(); c.arc(p.x,p.y,p.r*(p.dust?(1+p.t*3):1),0,7); c.fill(); }
+  c.globalAlpha = 1;
+  // the boy
+  const px = cx + RN.x*L, lift = RN.h*60*(W/400), sl = RN.slide>0;
+  const sc = 0.95*L/247;
+  let pose = 'stand';
+  if(RN.dead) pose = 'hit'; else if(sl) pose = 'slide'; else if(RN.h>0) pose = 'jump'; else if(RN.started) pose = (Math.floor(Date.now()/130)%2) ? 'run2' : 'run1';
+  const bounce = (pose==='run1'||pose==='run2') ? Math.abs(Math.sin(Date.now()/65))*2.2 : 0;
+  c.fillStyle = 'rgba(0,0,0,0.32)'; c.beginPath(); c.ellipse(px, py+2, L*0.27*(1-RN.h*0.3), L*0.06, 0, 0, 7); c.fill();
+  const lean = (RN.lane - RN.x) * 0.18;
+  c.save(); c.translate(px, py-lift); c.rotate(lean);
+  raSpr(c, pose, 0, -bounce, RA.M[pose][2]*sc);
+  c.restore();
+  // speed lines
+  if(RN.started && RN.speed > 17){
+    c.strokeStyle = 'rgba(255,255,255,'+Math.min(0.2,(RN.speed-17)*0.015)+')'; c.lineWidth = 1.5;
+    for(let i=0;i<9;i++){ const a = (i*53 + RN.dist*9) % 100/100; const sx = a<0.5 ? a*0.5*W*0.5 : W - (1-a)*W*0.25; const sy = hy + (RN.dist*3 + i*37) % (H-hy); c.beginPath(); c.moveTo(sx,sy); c.lineTo(sx+(sx<cx?-6:6),sy+26); c.stroke(); }
+  }
+  c.restore();
+  if(!RN.started && !RN.dead){
+    c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(0,H/2-40,W,70);
+    c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center';
+    c.fillText(RN.att>1 ? 'Tap to continue' : 'Tap to start', W/2, H/2-10);
+    c.font = '13px sans-serif'; c.fillText('Swipe ◀ ▶ lanes • ▲ jump • ▼ slide', W/2, H/2+14);
+  }
+}
+
+// ---- Galaxy Shooter artwork: space background, your ship, enemies, pick-ups, bullets, explosions ----
+const GA = { ok:false, n:0, img:new Image(), bg:new Image(), M:{"scout":[0,0,80,73],"gun":[82,0,96,87],"boss":[180,0,224,223],"bomber":[406,0,150,150],"rock3":[558,0,136,130],"rock1":[0,225,68,71],"ebul":[70,225,29,46],"boom":[101,225,200,201],"ship":[303,225,112,97],"bul":[417,225,24,58],"shield":[443,225,60,62],"magnet":[505,225,52,50],"up":[559,225,56,52],"heart":[617,225,54,49],"star":[0,428,54,54]} };
+function gaLoad(){
+  if(GA.started) return; GA.started = true;
+  const done = ()=>{ if(++GA.n===2){ GA.ok = true; try{ if(G && !G.over && G.id==='shooter' && !SH.started && !SH.dead) shooterDraw(); }catch(e){} } };
+  GA.img.onload = done; GA.bg.onload = done;
+  GA.img.src = 'gal.png'; GA.bg.src = 'gal_bg.jpg';
+}
+function gaSpr(c, k, x, y, w, rot){
+  const m = GA.M[k], h = w*m[3]/m[2];
+  if(rot){ c.save(); c.translate(x,y); c.rotate(rot); c.drawImage(GA.img, m[0],m[1],m[2],m[3], -w/2,-h/2,w,h); c.restore(); }
+  else c.drawImage(GA.img, m[0],m[1],m[2],m[3], x-w/2, y-h/2, w, h);
+}
+function shBgDraw(c, W, H){
+  if(!GA.ok) return false;
+  const iw = GA.bg.naturalWidth || 720, ih = GA.bg.naturalHeight || 1280;
+  const vh = H/(W/iw), drift = (Math.sin((SH.t||0)*0.1)*0.5+0.5)*Math.min(Math.max(0,ih-vh), 380);
+  c.drawImage(GA.bg, 0, Math.max(0,ih-vh-drift), iw, vh, 0, 0, W, H);
+  return true;
+}
+function shPickDraw(c, k){
+  if(!GA.ok) return false;
+  const key = k.t==='P' ? 'up' : (k.t==='R' ? 'heart' : 'shield');
+  const col = k.t==='P' ? '255,200,40' : (k.t==='R' ? '255,70,90' : '70,190,255');
+  const bob = Math.sin((SH.t||0)*5 + k.x)*2.5;
+  const g = c.createRadialGradient(k.x,k.y,2,k.x,k.y,26); g.addColorStop(0,'rgba('+col+',0.55)'); g.addColorStop(1,'rgba('+col+',0)');
+  c.fillStyle = g; c.beginPath(); c.arc(k.x,k.y,26,0,7); c.fill();
+  gaSpr(c,key,k.x,k.y+bob,30);
+  return true;
+}
+function shBulletDraw(c, b, enemy){
+  if(!GA.ok) return false;
+  const rot = Math.atan2(b.vx||0, Math.abs(b.vy)||1) * (enemy ? -1 : 1);
+  if(enemy) gaSpr(c,'ebul',b.x,b.y,13, Math.atan2(-(b.vx||0), (b.vy||1)));
+  else gaSpr(c,'bul',b.x,b.y,11, (b.vx||0)/640);
+  return true;
+}
+function shBoom2(x, y, big){
+  shBoom(x,y,big);
+  if(GA.ok) SH.parts.push({x:x,y:y,vx:0,vy:0,life:big?0.6:0.4,t:0,c:'#fff',r:big?60:30,boomspr:true});
+}
+function shBoomDraw(c, p, a){
+  if(!GA.ok) return;
+  const sz = p.r*2*(0.55+0.6*(p.t/p.life));
+  c.globalAlpha = Math.max(0,Math.min(1,a*1.7)); gaSpr(c,'boom',p.x,p.y,sz); c.globalAlpha = 1;
+}
+function shShip2(c, x, y){
+  if(!GA.ok){ shShip(c,x,y); return; }
+  const fl = 0.8 + Math.random()*0.35;
+  const g = c.createRadialGradient(x,y+22,1,x,y+22,16*fl); g.addColorStop(0,'rgba(120,200,255,0.7)'); g.addColorStop(1,'rgba(60,120,255,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(x,y+22,16*fl,0,7); c.fill();
+  gaSpr(c,'ship',x,y,62);
+}
+function shEnemy2(c, e){
+  if(!GA.ok){ shEnemy(c,e); return; }
+  const x = e.x, y = e.y, f = e.flash>0;
+  let key, w, rot = 0;
+  if(e.k==='scout'){ key = 'scout'; w = 42; }
+  else if(e.k==='gun'){ key = 'gun'; w = 52; }
+  else if(e.k==='bomber'){ key = 'bomber'; w = 76; }
+  else if(e.k==='boss'){ key = 'boss'; w = 116; }
+  else { key = e.sz>=2 ? 'rock3' : 'rock1'; w = e.r*2.5; rot = e.rot; }
+  gaSpr(c,key,x,y,w,rot);
+  if(f){ c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.75; gaSpr(c,key,x,y,w,rot); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+  if(e.k==='bomber' || e.k==='boss'){
+    const bw = e.k==='boss' ? 88 : 40, by = y - w*0.5 - 4;
+    c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillRect(x-bw/2-1,by-1,bw+2,7);
+    c.fillStyle = '#ff4d4d'; c.fillRect(x-bw/2,by,bw*Math.max(0,e.hp)/e.hp0,5);
+  }
+}
+setTimeout(()=>{ try{ raLoad(); gaLoad(); }catch(e){} }, 1500);
 
 // ---- Timed Quiz (general knowledge + maths, 5 attempts per play) ----
 const QZ_BANK = [
