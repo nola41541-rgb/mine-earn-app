@@ -477,7 +477,7 @@ async function handleVerify(){
   errBox.textContent = 'Checking...';
   const ok = await checkMembership();
   if(ok){
-    startApp();
+    startApp(); prefetchAll();
   } else {
     errBox.textContent = 'Not verified yet. Join both channels, then tap verify again. (' + (window.lastGateInfo||'no response') + ')';
   }
@@ -1949,12 +1949,13 @@ function runnerDrawArt(){
   // the boy
   const px = cx + RN.x*L, lift = RN.h*60*(W/400), sl = RN.slide>0;
   const sc = 0.95*L/247;
-  let pose = 'stand';
-  if(RN.dead) pose = 'hit'; else if(sl) pose = 'slide'; else if(RN.h>0) pose = 'jump'; else if(RN.started) pose = (Math.floor(Date.now()/130)%2) ? 'run2' : 'run1';
+  let pose = 'stand', flip = false;
+  if(RN.dead) pose = 'hit'; else if(sl) pose = 'slide'; else if(RN.h>0) pose = 'jump'; else if(RN.started){ const fr = Math.floor(Date.now()/115)%4; pose = (fr%2) ? 'run2' : 'run1'; flip = fr>=2; }
   const bounce = (pose==='run1'||pose==='run2') ? Math.abs(Math.sin(Date.now()/65))*2.2 : 0;
   c.fillStyle = 'rgba(0,0,0,0.32)'; c.beginPath(); c.ellipse(px, py+2, L*0.27*(1-RN.h*0.3), L*0.06, 0, 0, 7); c.fill();
   const lean = (RN.lane - RN.x) * 0.18;
   c.save(); c.translate(px, py-lift); c.rotate(lean);
+  if(flip) c.scale(-1,1);
   raSpr(c, pose, 0, -bounce, RA.M[pose][2]*sc);
   c.restore();
   // speed lines
@@ -2033,6 +2034,7 @@ function shEnemy2(c, e){
   else if(e.k==='bomber'){ key = 'bomber'; w = 76; }
   else if(e.k==='boss'){ key = 'boss'; w = 116; }
   else { key = e.sz>=2 ? 'rock3' : 'rock1'; w = e.r*2.5; rot = e.rot; }
+  if(e.k!=='rock') rot = Math.PI;   // the ships in the picture point up, so turn them to face the player
   gaSpr(c,key,x,y,w,rot);
   if(f){ c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.75; gaSpr(c,key,x,y,w,rot); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
   if(e.k==='bomber' || e.k==='boss'){
@@ -2042,6 +2044,56 @@ function shEnemy2(c, e){
   }
 }
 setTimeout(()=>{ try{ raLoad(); gaLoad(); }catch(e){} }, 1500);
+
+// ---- Speed: load the lists in the background so the Games, Treasure Hunt and Daily Wins screens show at once ----
+async function tkPre(){
+  await Promise.all([
+    (async()=>{ if(!AGS){ try{ AGS = await api('agStatus', {}, AG_URL); AGS.cdUntil = Date.now()+AGS.cooldownLeft*1000; }catch(e){ AGS = null; } } })(),
+    (async()=>{ if(!MTS && !REVIEW){ try{ MTS = await api('mtStatus', {}, MT_URL); MTS.cdUntil = Date.now()+MTS.cooldownLeft*1000; }catch(e){ MTS = null; } } })(),
+    (async()=>{ if(GIGA_ON && !REVIEW && !GIGA){ try{ GIGA = await api('gigaStatus', {}, GIGA_URL); }catch(e){ GIGA = null; } } })()
+  ]);
+}
+async function prefetchAll(){
+  const jobs = [
+    (async()=>{ try{ gameStatus = await api('gamesStatus', {}, GAMES_URL); GPEND = null;
+      if(gameStatus.claimEnabled){ try{ GPEND = (await api('gamePending', {}, GAMES_URL)).pending || null; }catch(e){ GPEND = null; } } }catch(e){} })()
+  ];
+  if(!REVIEW){
+    jobs.push(tkPre());
+    jobs.push((async()=>{ try{ const r = await api('richStatus', {}, AG_URL); RCH = { done:r.done, max:r.max, cdUntil: Date.now()+r.cooldownLeft*1000 }; }catch(e){} })());
+  }
+  try{ await Promise.all(jobs); }catch(e){}
+  try{ homePlays2(true); }catch(e){}
+}
+async function renderPlay2(){
+  const box = document.getElementById('playList');
+  if(!box) return;
+  const bal = document.getElementById('playBal'); if(bal) bal.textContent = state.balance.toLocaleString();
+  if(gameStatus) drawPicker();                      // show the saved list at once, then refresh it
+  try{
+    const gs = await api('gamesStatus', {}, GAMES_URL);
+    let pend = null;
+    if(gs.claimEnabled){ try{ pend = (await api('gamePending', {}, GAMES_URL)).pending || null; }catch(e){ pend = null; } }
+    gameStatus = gs; GPEND = pend;
+    drawPicker();
+  }catch(e){ if(!gameStatus) box.textContent = e.message; }
+}
+async function richLoad2(){
+  if(RCH) richDraw();
+  try{ const r = await api('richStatus', {}, AG_URL); RCH = { done:r.done, max:r.max, cdUntil: Date.now()+r.cooldownLeft*1000 }; }catch(e){ if(!RCH) RCH = null; }
+  richDraw();
+}
+async function homePlays2(skipFetch){
+  const show = ()=>{
+    const g = gameStatus; if(!g) return;
+    let left = 0, total = 0;
+    for(const x of GAME_LIST){ const mx = (g.maxRuns && g.maxRuns[x.id]) || g.max; total += mx; left += Math.max(0, mx - ((g.runs && g.runs[x.id]) || 0)); }
+    const el = document.getElementById('homePlays'); if(el) el.textContent = left+'/'+total;
+  };
+  show();
+  if(skipFetch) return;
+  try{ gameStatus = await api('gamesStatus', {}, GAMES_URL); show(); }catch(e){}
+}
 
 // ---- Timed Quiz (general knowledge + maths, 5 attempts per play) ----
 const QZ_BANK = [
@@ -2821,6 +2873,7 @@ async function renderTasks(){
     cnt.textContent = 'Resets every day at 00:00 UTC';
     const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*MINE_ADS,0);
     let h = REVIEW ? '' : '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Ads watched</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
+    await tkPre();
     h += await agRowHtml();
     if(!REVIEW) h += await mtRowHtml();
     if(GIGA_ON && !REVIEW){
@@ -3194,7 +3247,7 @@ function showTab(tab){
   window.scrollTo(0,0);
   if(tab==='profile'){ renderHistory(); if(IS_OWNER) renderAdminWd(); wdPreview(); }
   if(tab==='tasks'){ renderTasks(); }
-  if(tab==='play'){ renderPlay(); }
+  if(tab==='play'){ renderPlay2(); }
   if(tab==='home'){ renderHome(); }
   if(tab==='mine'){ mineGo('pick'); }
 }
@@ -3262,12 +3315,7 @@ async function loginClaim(){
 
 async function renderHome(){
   renderRefInfo(); loginInit();
-  try{
-    const g = await api('gamesStatus', {}, GAMES_URL);
-    let left = 0; for(const k of Object.keys(g.runs||{})) left += Math.max(0, g.max - g.runs[k]);
-    left += Math.max(0, (4 - Object.keys(g.runs||{}).length) * g.max);
-    const el = document.getElementById('homePlays'); if(el) el.textContent = left+'/'+(4*g.max);
-  }catch(e){}
+  homePlays2();
 }
 
 function render(){
@@ -3360,7 +3408,7 @@ function mineApply(){
     '<div class="net-card" onclick="mineGo(\'monetag\')"><div class="net-ic mt">⛏️</div><div class="net-tx"><b>Gold Mining</b><span>'+SLOT_CONFIG.length+' mines • watch '+MINE_ADS+' ads per collect</span></div><div class="earn-go">›</div></div>'
     + '<div class="net-card" onclick="mineGo(\'rich\')"><div class="net-ic rc">🎁</div><div class="net-tx"><b>Treasure Hunt</b><span>Open an offer • coins vary • resets by countdown</span></div><div class="earn-go">›</div></div>';
 }
-function mineGo(v){ MINE_VIEW = v; mineApply(); if(v==='rich') richLoad(); window.scrollTo(0,0); }
+function mineGo(v){ MINE_VIEW = v; mineApply(); if(v==='rich') richLoad2(); window.scrollTo(0,0); }
 /* ===== RichAds slot (Mine tab, own countdown set in Admin) ===== */
 let RCH = null, RCH_BUSY = false, RCH_LOADED = false;
 async function richLoad(){
@@ -3753,7 +3801,7 @@ async function init(){
   try{ const fl = await api('flags', {}, FLAGS_URL); REVIEW = !!fl.review; }catch(e){}
   const joined = REVIEW ? true : await checkMembership();
   if(joined){
-    startApp();
+    startApp(); prefetchAll();
   } else {
     await splashFinish();
     renderGate();
