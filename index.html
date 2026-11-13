@@ -425,7 +425,7 @@ let MTS = null;
 const AG_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/rows-hub';
 let AGS = null;
 const CAT_LABEL = {social:'Social',daily:'Daily Wins',exclusive:'Special',partner:'Featured'};
-const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-pro3';
+const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-pro4';
 const TASK_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/task-hub';
 const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-v2';
 const BOT_APP_LINK = 'https://t.me/mineearnx_bot/mineearn';
@@ -2050,6 +2050,7 @@ async function tkPre(){
   await Promise.all([
     (async()=>{ if(!AGS){ try{ AGS = await api('agStatus', {}, AG_URL); AGS.cdUntil = Date.now()+AGS.cooldownLeft*1000; }catch(e){ AGS = null; } } })(),
     (async()=>{ if(!MTS && !REVIEW){ try{ MTS = await api('mtStatus', {}, MT_URL); MTS.cdUntil = Date.now()+MTS.cooldownLeft*1000; }catch(e){ MTS = null; } } })(),
+    (async()=>{ if(!OCST && !REVIEW){ try{ OCST = await api('ocStatus', {}, OC_URL); OCST.cdUntil = Date.now()+OCST.cooldownLeft*1000; }catch(e){ OCST = null; } } })(),
     (async()=>{ if(GIGA_ON && !REVIEW && !GIGA){ try{ GIGA = await api('gigaStatus', {}, GIGA_URL); }catch(e){ GIGA = null; } } })()
   ]);
 }
@@ -2059,9 +2060,16 @@ async function prefetchAll(){
       if(gameStatus.claimEnabled){ try{ GPEND = (await api('gamePending', {}, GAMES_URL)).pending || null; }catch(e){ GPEND = null; } } }catch(e){} })()
   ];
   if(!REVIEW){
+    ocLoad();
     jobs.push(tkPre());
     jobs.push((async()=>{ try{ const r = await api('richStatus', {}, AG_URL); RCH = { done:r.done, max:r.max, cdUntil: Date.now()+r.cooldownLeft*1000 }; }catch(e){} })());
   }
+  jobs.push(api('taskList', {}, TASK_URL).catch(()=>{}));
+  jobs.push(api('history', {}, WD_URL).catch(()=>{}));
+  jobs.push(api('refInfo', {}, REF_URL).catch(()=>{}));
+  jobs.push(api('loginStatus', {}, LOGIN_URL).catch(()=>{}));
+  jobs.push(api('leaderboard', {}, WD_URL).catch(()=>{}));
+  jobs.push(api('publicPayouts', {}, WD_URL).catch(()=>{}));
   try{ await Promise.all(jobs); }catch(e){}
   try{ homePlays2(true); }catch(e){}
 }
@@ -2094,6 +2102,142 @@ async function homePlays2(skipFetch){
   if(skipFetch) return;
   try{ gameStatus = await api('gamesStatus', {}, GAMES_URL); show(); }catch(e){}
 }
+
+// ---- OnClicka rewarded video row (Daily Wins). The ad is shown by their script; the coins come only after their server confirms the view. ----
+const OC_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/onclicka-hub';
+const OC_SPOT = '6155217';
+let OCST = null;
+const OCS = { show:null, loading:false };
+function ocLoad(){
+  if(OCS.show || OCS.loading || REVIEW) return;
+  OCS.loading = true;
+  const init = ()=>{
+    try{
+      if(!window.initCdTma){ OCS.loading = false; return; }
+      window.initCdTma({ id: OC_SPOT }).then(sh=>{ OCS.show = sh; OCS.loading = false; }).catch(()=>{ OCS.loading = false; });
+    }catch(e){ OCS.loading = false; }
+  };
+  if(window.initCdTma){ init(); return; }
+  if(document.getElementById('ocScript')){ setTimeout(init, 1500); return; }
+  const sc = document.createElement('script');
+  sc.id = 'ocScript'; sc.async = true; sc.src = 'https://js.onclckvd.com/in-stream-ad-admanager/tma.js';
+  sc.onload = ()=>setTimeout(init, 300);
+  sc.onerror = ()=>{ OCS.loading = false; sc.remove(); };
+  document.head.appendChild(sc);
+}
+async function ocRowHtml(){
+  if(!OCST){ try{ OCST = await api('ocStatus', {}, OC_URL); OCST.cdUntil = Date.now()+OCST.cooldownLeft*1000; }catch(e){ OCST = null; } }
+  if(!OCST) return '';
+  const full = OCST.done >= OCST.max;
+  return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:#ffb020;">'+tkRing(OCST.done,OCST.max)+'<div class="tk-main"><div class="tk-title">OnClicka ad</div><div class="tk-meta">'+OCST.per+' coins per ad • '+OCST.done+'/'+OCST.max+' today</div>'
+    + (full ? '<button class="tk-btn d" disabled>'+OKB+'Done today</button>' : '<button class="tk-btn f" id="ocBtn" onclick="ocWatch()">▶ Watch ad '+(OCST.done+1)+'</button>')
+    + '</div></div>';
+}
+async function ocWatch(){
+  if(!OCST) return;
+  const btn = document.getElementById('ocBtn');
+  if(OCST.cooldownLeft > 0 && Date.now() < (OCST.cdUntil||0)){ warnPop('Please wait '+Math.ceil((OCST.cdUntil-Date.now())/1000)+' seconds before the next ad.'); return; }
+  topBubble('Watch the full ad to earn '+OCST.per+' coins');
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  if(!OCS.show){ ocLoad(); for(let i=0;i<8 && !OCS.show;i++) await sleep(500); }
+  if(!OCS.show){ renderTasks(); noAdPop(); return; }
+  let shown = false;
+  try{ await OCS.show(); shown = true; }catch(e){ shown = false; }
+  if(!shown){ renderTasks(); appDialog({title:'Watch the full ad',text:'The ad did not finish or none is available right now. Watch the full ad to earn '+OCST.per+' coins.',icon:'📺'}); return; }
+  if(btn) btn.textContent = 'Confirming…';
+  let res = null, lastErr = '';
+  for(let i=0;i<10;i++){
+    try{ res = await api('ocClaim', {}, OC_URL); break; }
+    catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await sleep(1500); }
+  }
+  if(res){
+    state.balance = res.balance; render();
+    OCST = { done:res.done, max:res.max, per:res.per, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
+    renderTasks();
+    adFinished({ reward:res.amount, progress:'Task progress '+res.done+'/'+res.max });
+  } else {
+    OCST = null; renderTasks();
+    warnPop(lastErr || 'The ad was not confirmed, so no coins were added.');
+  }
+}
+
+// ---- Fewer server calls: remember read-only answers for a short time (and share a request that is already running) ----
+const API_TTL = { gamesStatus:60, gamePending:60, refInfo:180, loginStatus:300, taskList:60, history:60, leaderboard:90, publicPayouts:120, wdConfig:900, flags:600,
+  richStatus:90, agStatus:90, mtStatus:90, gigaStatus:90, ocStatus:90 };
+const API_DROP = {
+  gameStart:['gamesStatus','gamePending'], gameFinish:['gamesStatus','gamePending'], gameClaim:['gamesStatus','gamePending'], gameAttemptAd:['gamePending'], gameAdConfirm:['gamePending'],
+  taskClaim:['taskList'], taskOpen:['taskList'], withdraw:['history','wdConfig'], loginClaim:['loginStatus'], refJoin:['refInfo'],
+  richClaim:['richStatus'], agClaim:['agStatus'], mtClaim:['mtStatus'], gigaClaim:['gigaStatus'], ocClaim:['ocStatus']
+};
+const API_ALL = { adminSet:1, settingsSet:1, adminCreate:1, userAdjust:1, userBan:1 };
+let API_MEM = {};
+const _apiRaw = api;
+function apiForget(name){ for(const k of Object.keys(API_MEM)) if(k.indexOf(name+'|')===0) delete API_MEM[k]; }
+// Show the last known answer at once, then refresh quietly in the background (and redraw the screen if something changed).
+const API_KEEP = { taskList:1, history:1, leaderboard:1, publicPayouts:1, refInfo:1, wdConfig:1 };   // also saved on the phone between visits
+const API_MAXAGE = 6*3600*1000;
+function apiUid(){ try{ return String(window.Telegram.WebApp.initDataUnsafe.user.id); }catch(e){ return ''; } }
+function apiLoadSaved(){
+  try{ const raw = localStorage.getItem('me_cache_'+apiUid()); if(!raw) return; const o = JSON.parse(raw);
+    for(const k in o){ if(o[k] && o[k].s) API_MEM[k] = { t:o[k].t||0, s:o[k].s, p:null }; } }catch(e){}
+}
+let API_SAVE_T = 0;
+function apiSave(){
+  clearTimeout(API_SAVE_T);
+  API_SAVE_T = setTimeout(()=>{ try{ const o = {}; for(const k in API_MEM){ if(API_KEEP[k.split('|')[0]] && API_MEM[k].s) o[k] = { t:API_MEM[k].t, s:API_MEM[k].s }; }
+    localStorage.setItem('me_cache_'+apiUid(), JSON.stringify(o)); }catch(e){} }, 600);
+}
+function apiChanged(action){
+  setTimeout(()=>{
+    try{
+      const on = id => { const el = document.getElementById(id); return !!el && el.classList.contains('active'); };
+      if(action==='taskList' && on('tab-tasks')) renderTasks();
+      else if(action==='history' && on('tab-profile')) renderHistory();
+      else if(action==='refInfo' && on('tab-home')) renderRefInfo();
+      else if(action==='loginStatus' && on('tab-home')) loginInit();
+      else if((action==='gamesStatus' || action==='gamePending') && on('tab-play')) renderPlay2();
+      else if(action==='gamesStatus' && on('tab-home')) homePlays2();
+      else if((action==='leaderboard' || action==='publicPayouts') && COM && document.getElementById('comScreen') && document.getElementById('comScreen').classList.contains('open')
+              && ((action==='leaderboard' && COM.tab==='board') || (action==='publicPayouts' && COM.tab==='payouts'))) comTab(COM.tab);
+    }catch(e){}
+  }, 30);
+}
+function apiRefresh(action, payload, url, e, ttl){
+  e.p = _apiRaw(action, payload, url).then(r=>{
+    const str = JSON.stringify(r); const changed = str !== e.s;
+    e.s = str; e.t = Date.now(); e.p = null; apiSave();
+    if(changed) apiChanged(action);
+  }, ()=>{ e.p = null; e.t = Date.now() - Math.max(0, ttl*1000 - 15000); });   // failed: try again in about 15 seconds
+}
+async function apiCache(action, payload, url){
+  const ttl = API_TTL[action];
+  if(!ttl){
+    const drop = API_DROP[action];
+    if(API_ALL[action]) API_MEM = {}; else if(drop) drop.forEach(apiForget);
+    try{ return await _apiRaw(action, payload, url); }
+    finally{ if(API_ALL[action]) API_MEM = {}; else if(drop) drop.forEach(apiForget); apiSave(); }
+  }
+  const key = action+'|'+(url||'')+'|'+JSON.stringify(payload||{});
+  const e = API_MEM[key];
+  const now = Date.now();
+  const out = (str, t)=>{
+    const r = JSON.parse(str);
+    if(typeof r.cooldownLeft === 'number') r.cooldownLeft = Math.max(0, r.cooldownLeft - Math.floor((Date.now()-t)/1000));
+    return r;
+  };
+  if(e && e.s && now - e.t < API_MAXAGE){
+    if(now - e.t >= ttl*1000 && !e.p) apiRefresh(action, payload, url, e, ttl);
+    return out(e.s, e.t);
+  }
+  if(e && e.p) return e.p.then(()=>out(API_MEM[key].s, API_MEM[key].t));
+  const entry = { t:0, s:null, p:null };
+  entry.p = _apiRaw(action, payload, url).then(r=>{ entry.s = JSON.stringify(r); entry.t = Date.now(); entry.p = null; apiSave(); return JSON.parse(entry.s); },
+    err=>{ if(API_MEM[key]===entry) delete API_MEM[key]; throw err; });
+  API_MEM[key] = entry;
+  return entry.p;
+}
+api = apiCache;
+apiLoadSaved();
 
 // ---- Timed Quiz (general knowledge + maths, 5 attempts per play) ----
 const QZ_BANK = [
@@ -2876,6 +3020,7 @@ async function renderTasks(){
     await tkPre();
     h += await agRowHtml();
     if(!REVIEW) h += await mtRowHtml();
+    if(!REVIEW) h += await ocRowHtml();
     if(GIGA_ON && !REVIEW){
       if(!GIGA){ try{ GIGA = await api('gigaStatus', {}, GIGA_URL); }catch(e){ GIGA = null; } }
       if(GIGA){
@@ -3196,6 +3341,7 @@ const ADM_FIELDS = [
  ['AdsGram row',[['agCoins','Coins per ad (1-100)'],['agMax','Ads per day'],['agCd','Wait between ads (seconds)']]],
  ['Monetag row',[['mtCoins','Coins per ad (1-100)'],['mtMax','Ads per day'],['mtCd','Wait between ads (seconds)']]],
  ['GigaPub row',[['gigaCoins','Coins per ad (1-100)'],['gigaMax','Ads per day'],['gigaCd','Wait between ads (seconds)']]],
+ ['OnClicka row',[['ocCoins','Coins per ad (1-100)'],['ocMax','Ads per day'],['ocCd','Wait between ads (seconds)']]],
  ['RichAds slot (Mine tab)',[['richMax','Collects per day'],['richCd','Countdown in seconds (1800 = 30 min)'],['richShare','Our coin share percent (5-90)']]],
  ['Snake',[['playsSnake','New plays per day (1-50)'],['maxSnake','Max coins per play (1-250)']]],
  ['Endless Runner',[['playsRunner','New plays per day (1-50)'],['maxRunner','Max coins per play (1-250)']]],
