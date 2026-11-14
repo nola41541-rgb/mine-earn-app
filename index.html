@@ -2051,6 +2051,7 @@ async function tkPre(){
     (async()=>{ if(!AGS){ try{ AGS = await api('agStatus', {}, AG_URL); AGS.cdUntil = Date.now()+AGS.cooldownLeft*1000; }catch(e){ AGS = null; } } })(),
     (async()=>{ if(!MTS && !REVIEW){ try{ MTS = await api('mtStatus', {}, MT_URL); MTS.cdUntil = Date.now()+MTS.cooldownLeft*1000; }catch(e){ MTS = null; } } })(),
     (async()=>{ if(!OCST && !REVIEW){ try{ OCST = await api('ocStatus', {}, OC_URL); OCST.cdUntil = Date.now()+OCST.cooldownLeft*1000; }catch(e){ OCST = null; } } })(),
+    (async()=>{ if(!AXST && !REVIEW){ try{ AXST = await api('axStatus', {}, AX_URL); AXST.cdUntil = Date.now()+AXST.cooldownLeft*1000; }catch(e){ AXST = null; } } })(),
     (async()=>{ if(GIGA_ON && !REVIEW && !GIGA){ try{ GIGA = await api('gigaStatus', {}, GIGA_URL); }catch(e){ GIGA = null; } } })()
   ]);
 }
@@ -2060,7 +2061,7 @@ async function prefetchAll(){
       if(gameStatus.claimEnabled){ try{ GPEND = (await api('gamePending', {}, GAMES_URL)).pending || null; }catch(e){ GPEND = null; } } }catch(e){} })()
   ];
   if(!REVIEW){
-    ocLoad();
+    ocLoad(); axLoad();
     jobs.push(tkPre());
     jobs.push((async()=>{ try{ const r = await api('richStatus', {}, AG_URL); RCH = { done:r.done, max:r.max, cdUntil: Date.now()+r.cooldownLeft*1000 }; }catch(e){} })());
   }
@@ -2161,13 +2162,93 @@ async function ocWatch(){
   }
 }
 
+// ---- Adexium interstitial row (Daily Wins). The server asks Adexium whether the ad was really completed before paying. ----
+const AX_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/adexium-hub';
+const AX_WID = '1a65be7c-16b5-4d3d-9c51-3373e0199e35';
+let AXST = null;
+const AXS = { w:null, loading:null, cb:null };
+function axLoad(){
+  if(AXS.w) return Promise.resolve(AXS.w);
+  if(AXS.loading) return AXS.loading;
+  AXS.loading = new Promise(resolve=>{
+    const fin = ()=>{ AXS.loading = null; resolve(AXS.w); };
+    const init = ()=>{
+      try{
+        if(!window.AdexiumWidget){ fin(); return; }
+        const w = new window.AdexiumWidget({ wid: AX_WID, adFormat: 'interstitial' });
+        w.on('adReceived', ad=>{ const c = AXS.cb; if(c) c.rec(ad); });
+        w.on('noAdFound', ()=>{ const c = AXS.cb; if(c) c.none(); });
+        w.on('adPlaybackCompleted', ()=>{ const c = AXS.cb; if(c) c.comp(); });
+        w.on('adClosed', ()=>{ const c = AXS.cb; if(c) c.closed(); });
+        AXS.w = w; fin();
+      }catch(e){ fin(); }
+    };
+    if(window.AdexiumWidget){ init(); return; }
+    const sc = document.createElement('script');
+    sc.id = 'axScript'; sc.async = true; sc.src = 'https://cdn.tgads.space/assets/js/adexium-widget.min.js';
+    sc.onload = ()=>setTimeout(init, 200);
+    sc.onerror = ()=>{ sc.remove(); fin(); };
+    document.head.appendChild(sc);
+  });
+  return AXS.loading;
+}
+// shows one ad; resolves { id } (id = Adexium impression id, or null when no ad was shown)
+function axShowAd(){
+  return new Promise(async resolve=>{
+    const w = await axLoad();
+    if(!w){ resolve({ id:null }); return; }
+    let tid = null, over = false, shown = false, timer = null;
+    const end = (r)=>{ if(over) return; over = true; clearTimeout(timer); AXS.cb = null; resolve(r); };
+    AXS.cb = {
+      rec: ad=>{ try{ tid = ad && ad.id ? String(ad.id) : null; shown = true; w.displayAd(ad); }catch(e){ end({ id:null }); } },
+      none: ()=>end({ id:null }),
+      comp: ()=>end({ id:tid }),
+      closed: ()=>setTimeout(()=>end({ id:tid }), 600)
+    };
+    timer = setTimeout(()=>end({ id: shown ? tid : null }), 90000);
+    try{ w.requestAd('interstitial'); }catch(e){ end({ id:null }); }
+  });
+}
+async function axRowHtml(){
+  if(!AXST){ try{ AXST = await api('axStatus', {}, AX_URL); AXST.cdUntil = Date.now()+AXST.cooldownLeft*1000; }catch(e){ AXST = null; } }
+  if(!AXST) return '';
+  const full = AXST.done >= AXST.max;
+  return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:#e0457b;">'+tkRing(AXST.done,AXST.max)+'<div class="tk-main"><div class="tk-title">Adexium ad</div><div class="tk-meta">'+AXST.per+' coins per ad • '+AXST.done+'/'+AXST.max+' today</div>'
+    + (full ? '<button class="tk-btn d" disabled>'+OKB+'Done today</button>' : '<button class="tk-btn f" id="axBtn" onclick="axWatch()">▶ Watch ad '+(AXST.done+1)+'</button>')
+    + '</div></div>';
+}
+async function axWatch(){
+  if(!AXST) return;
+  const btn = document.getElementById('axBtn');
+  if(AXST.cooldownLeft > 0 && Date.now() < (AXST.cdUntil||0)){ warnPop('Please wait '+Math.ceil((AXST.cdUntil-Date.now())/1000)+' seconds before the next ad.'); return; }
+  topBubble('Watch the full ad to earn '+AXST.per+' coins');
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  const r = await axShowAd();
+  if(!r.id){ renderTasks(); noAdPop(); return; }
+  if(btn) btn.textContent = 'Confirming…';
+  let res = null, lastErr = '';
+  for(let i=0;i<6;i++){
+    try{ res = await api('axClaim', { taskId:r.id }, AX_URL); break; }
+    catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await sleep(1500); }
+  }
+  if(res){
+    state.balance = res.balance; render();
+    AXST = { done:res.done, max:res.max, per:res.per, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
+    renderTasks();
+    adFinished({ reward:res.amount, progress:'Task progress '+res.done+'/'+res.max });
+  } else {
+    AXST = null; renderTasks();
+    warnPop(lastErr || 'The ad was not confirmed, so no coins were added.');
+  }
+}
+
 // ---- Fewer server calls: remember read-only answers for a short time (and share a request that is already running) ----
 const API_TTL = { gamesStatus:60, gamePending:60, refInfo:180, loginStatus:300, taskList:60, history:60, leaderboard:90, publicPayouts:120, wdConfig:900, flags:600,
-  richStatus:90, agStatus:90, mtStatus:90, gigaStatus:90, ocStatus:90 };
+  richStatus:90, agStatus:90, mtStatus:90, gigaStatus:90, ocStatus:90, axStatus:90 };
 const API_DROP = {
   gameStart:['gamesStatus','gamePending'], gameFinish:['gamesStatus','gamePending'], gameClaim:['gamesStatus','gamePending'], gameAttemptAd:['gamePending'], gameAdConfirm:['gamePending'],
   taskClaim:['taskList'], taskOpen:['taskList'], withdraw:['history','wdConfig'], loginClaim:['loginStatus'], refJoin:['refInfo'],
-  richClaim:['richStatus'], agClaim:['agStatus'], mtClaim:['mtStatus'], gigaClaim:['gigaStatus'], ocClaim:['ocStatus']
+  richClaim:['richStatus'], agClaim:['agStatus'], mtClaim:['mtStatus'], gigaClaim:['gigaStatus'], ocClaim:['ocStatus'], axClaim:['axStatus']
 };
 const API_ALL = { adminSet:1, settingsSet:1, adminCreate:1, userAdjust:1, userBan:1 };
 let API_MEM = {};
@@ -3016,11 +3097,12 @@ async function renderTasks(){
   if(TK.cat==='daily' && TK.view==='all'){
     cnt.textContent = 'Resets every day at 00:00 UTC';
     const adsDone = state.slots.reduce((n,sl)=>n+sl.sessions*MINE_ADS,0);
-    let h = REVIEW ? '' : '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Ads watched</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
+    let h = REVIEW ? '' : '<div class="tk-card" style="border-left-color:#2f7bff;">'+tkRing(adsDone,50)+'<div class="tk-main"><div class="tk-title">Mine rewards</div><div class="tk-meta">'+AD_PAY+' coins per ad • 50 ads a day</div><div class="tk-actions"><button class="tk-btn f" onclick="showTab(\'mine\')">Go to Mine</button></div></div></div>';
     await tkPre();
     h += await agRowHtml();
     if(!REVIEW) h += await mtRowHtml();
     if(!REVIEW) h += await ocRowHtml();
+    if(!REVIEW) h += await axRowHtml();
     if(GIGA_ON && !REVIEW){
       if(!GIGA){ try{ GIGA = await api('gigaStatus', {}, GIGA_URL); }catch(e){ GIGA = null; } }
       if(GIGA){
@@ -3243,8 +3325,8 @@ async function admStats(){
       + box(admNum(s.bannedUsers),'Suspended')
       + box(admNum(s.coinsInApp),'Coins in all balances')
       + box(admNum(s.earnedToday),'Coins earned today')
-      + box(admNum(s.adsToday),'Ads watched today')
-      + box(admNum(s.adsTotal),'Ads watched, total')
+      + box(admNum(s.adsToday),'Mine rewards today')
+      + box(admNum(s.adsTotal),'Mine rewards, total')
       + box(admNum(s.pending),'Open withdrawals')
       + box(admNum(s.paidCount),'Paid withdrawals')
       + box(admUsd(s.paidCoins),'Total paid out')
@@ -3336,8 +3418,8 @@ async function admGames(){
   }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
 }
 const ADM_FIELDS = [
- ['Money & withdrawals',[['adReward','Coins per mining ad (1-500)'],['wdMin','Minimum withdrawal in coins'],['wdFee','Withdrawal fee percent (0-30)']]],
- ['Mining',[['mineAds','Ads per collect (1-5)'],['mineSessions','Collects per slot per day (1-20)'],['mineAdMax','Mining ads per day (1-500)'],['mineMin','Slot countdown minutes (1-240)']]],
+ ['Money & withdrawals',[['adReward','Coins per Mine reward (1-500)'],['wdMin','Minimum withdrawal in coins'],['wdFee','Withdrawal fee percent (0-30)']]],
+ ['Mining',[['mineAds','Ads per collect (1-5)'],['mineSessions','Collects per slot per day (1-20)'],['mineAdMax','Mine rewards per day (1-500)'],['mineMin','Slot countdown minutes (1-240)']]],
  ['AdsGram row',[['agCoins','Coins per ad (1-100)'],['agMax','Ads per day'],['agCd','Wait between ads (seconds)']]],
  ['Monetag row',[['mtCoins','Coins per ad (1-100)'],['mtMax','Ads per day'],['mtCd','Wait between ads (seconds)']]],
  ['GigaPub row',[['gigaCoins','Coins per ad (1-100)'],['gigaMax','Ads per day'],['gigaCd','Wait between ads (seconds)']]],
@@ -3552,9 +3634,9 @@ function mineApply(){
   g('dailyAds').style.display = MINE_VIEW==='monetag' ? '' : 'none';
   g('minePick').innerHTML =
     '<div class="net-card" onclick="mineGo(\'monetag\')"><div class="net-ic mt">⛏️</div><div class="net-tx"><b>Gold Mining</b><span>'+SLOT_CONFIG.length+' mines • watch '+MINE_ADS+' ads per collect</span></div><div class="earn-go">›</div></div>'
-    + '<div class="net-card" onclick="mineGo(\'rich\')"><div class="net-ic rc">🎁</div><div class="net-tx"><b>Treasure Hunt</b><span>Open an offer • coins vary • resets by countdown</span></div><div class="earn-go">›</div></div>';
+    + '<div class="net-card" style="opacity:.6;cursor:default;"><div class="net-ic rc">🎁</div><div class="net-tx"><b>Treasure Hunt</b><span>Coming soon</span></div><div class="earn-go" style="font-size:11px;font-weight:700;letter-spacing:.3px;">SOON</div></div>';
 }
-function mineGo(v){ MINE_VIEW = v; mineApply(); if(v==='rich') richLoad2(); window.scrollTo(0,0); }
+function mineGo(v){ if(v==='rich') return; MINE_VIEW = v; mineApply(); if(v==='rich') richLoad2(); window.scrollTo(0,0); }
 /* ===== RichAds slot (Mine tab, own countdown set in Admin) ===== */
 let RCH = null, RCH_BUSY = false, RCH_LOADED = false;
 async function richLoad(){
@@ -3795,7 +3877,7 @@ async function startApp(){
       </div>
       <div class="section-title">Today</div>
       <div class="tile-row">
-        <div class="tile"><div class="tile-num" id="homeAds">0/50</div><div class="tile-lbl">Ads watched</div></div>
+        <div class="tile"><div class="tile-num" id="homeAds">0/50</div><div class="tile-lbl">Mine rewards</div></div>
         <div class="tile"><div class="tile-num" id="homePlays">–</div><div class="tile-lbl">Game plays left</div></div>
         <div class="tile"><div class="tile-num" id="homeRefs">0</div><div class="tile-lbl">Referrals</div></div>
       </div>
