@@ -419,10 +419,10 @@ const TG_USER = getTelegramUser();
 const STATS_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-stats';
 const ADMIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-hub';
 const LOGIN_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/login-hub';
-const GIGA_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/rows-hub';
-const MT_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/rows-hub';
+const GIGA_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/rows-hub2';
+const MT_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/rows-hub2';
 let MTS = null;
-const AG_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/rows-hub';
+const AG_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/rows-hub2';
 let AGS = null;
 const CAT_LABEL = {social:'Social',daily:'Daily Wins',exclusive:'Special',partner:'Featured'};
 const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-pro4';
@@ -2062,8 +2062,9 @@ async function prefetchAll(){
   ];
   if(!REVIEW){
     ocLoad(); axLoad();
-    jobs.push(tkPre());
-    jobs.push((async()=>{ try{ const r = await api('richStatus', {}, AG_URL); RCH = { done:r.done, max:r.max, cdUntil: Date.now()+r.cooldownLeft*1000 }; }catch(e){} })());
+    const seeded = rowsSeed().catch(()=>{});
+    jobs.push(seeded.then(()=>tkPre()));
+    jobs.push(seeded.then(async()=>{ try{ const r = await api('richStatus', {}, AG_URL); RCH = { done:r.done, max:r.max, cdUntil: Date.now()+r.cooldownLeft*1000 }; }catch(e){} }));
   }
   jobs.push(api('taskList', {}, TASK_URL).catch(()=>{}));
   jobs.push(api('history', {}, WD_URL).catch(()=>{}));
@@ -2297,6 +2298,7 @@ function apiChanged(action){
   }, 30);
 }
 function apiRefresh(action, payload, url, e, ttl){
+  if(ROW_ACT[action]){ e.p = rowsSeed().then(()=>{ e.p = null; }, ()=>{ e.p = null; e.t = Date.now() - Math.max(0, ttl*1000 - 15000); }); return; }
   e.p = _apiRaw(action, payload, url).then(r=>{
     const str = JSON.stringify(r); const changed = str !== e.s;
     e.s = str; e.t = Date.now(); e.p = null; apiSave();
@@ -2332,6 +2334,25 @@ async function apiCache(action, payload, url){
 }
 api = apiCache;
 apiLoadSaved();
+// One call answers all the ad rows (AdsGram, GigaPub, RichAds, Monetag, OnClicka, Adexium) and fills the cache for each of them.
+const ROW_ACT = { agStatus:1, gigaStatus:1, richStatus:1, mtStatus:1, ocStatus:1, axStatus:1 };
+let ROWS_P = null;
+function rowsSeed(){
+  if(ROWS_P) return ROWS_P;
+  ROWS_P = _apiRaw('allStatus', {}, AG_URL).then(r=>{
+    const map = { agStatus:[r.ag,AG_URL], gigaStatus:[r.giga,GIGA_URL], richStatus:[r.rich,AG_URL], mtStatus:[r.mt,MT_URL], ocStatus:[r.oc,OC_URL], axStatus:[r.ax,AX_URL] };
+    let changed = false;
+    for(const a in map){
+      const v = map[a][0]; if(!v) continue;
+      const key = a+'|'+map[a][1]+'|{}'; const str = JSON.stringify(Object.assign({ ok:true }, v)); const old = API_MEM[key];
+      if(old && old.s && old.s !== str) changed = true;
+      API_MEM[key] = { t:Date.now(), s:str, p:null };
+    }
+    ROWS_P = null;
+    if(changed) setTimeout(()=>{ try{ const el = document.getElementById('tab-tasks'); if(el && el.classList.contains('active')) renderTasks(); }catch(e){} }, 30);
+  }, err=>{ ROWS_P = null; throw err; });
+  return ROWS_P;
+}
 
 // ---- Timed Quiz (general knowledge + maths, 5 attempts per play) ----
 const QZ_BANK = [
