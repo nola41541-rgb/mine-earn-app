@@ -2166,7 +2166,14 @@ async function ocWatch(){
 const AX_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/adexium-hub';
 const AX_WID = '1a65be7c-16b5-4d3d-9c51-3373e0199e35';
 let AXST = null;
-const AXS = { w:null, loading:null, cb:null };
+const AXS = { w:null, loading:null, cb:null, lastAd:null, lastEv:null };
+function axIdOf(ad){
+  if(!ad || typeof ad!=='object') return null;
+  const k = ['id','taskId','task_id','adId','ad_id','impressionId','impression_id','impId','imp_id'];
+  for(const n of k){ if(ad[n]!==undefined && ad[n]!==null && String(ad[n]).length>=6) return String(ad[n]); }
+  for(const u of [ad.notificationUrl, ad.clickUrl]){ try{ const q = new URL(u).searchParams; const v = q.get('imp_id') || q.get('click_id'); if(v) return String(v); }catch(e){} }
+  return null;
+}
 function axLoad(){
   if(AXS.w) return Promise.resolve(AXS.w);
   if(AXS.loading) return AXS.loading;
@@ -2178,7 +2185,8 @@ function axLoad(){
         const w = new window.AdexiumWidget({ wid: AX_WID, adFormat: 'interstitial' });
         w.on('adReceived', ad=>{ const c = AXS.cb; if(c) c.rec(ad); });
         w.on('noAdFound', ()=>{ const c = AXS.cb; if(c) c.none(); });
-        w.on('adPlaybackCompleted', ()=>{ const c = AXS.cb; if(c) c.comp(); });
+        w.on('adPlaybackCompleted', (ev)=>{ AXS.lastEv = ev; const c = AXS.cb; if(c) c.comp(ev); });
+        w.on('adDisplayed', (ev)=>{ if(ev) AXS.lastEv = AXS.lastEv || ev; });
         w.on('adClosed', ()=>{ const c = AXS.cb; if(c) c.closed(); });
         AXS.w = w; fin();
       }catch(e){ fin(); }
@@ -2200,9 +2208,9 @@ function axShowAd(){
     let tid = null, over = false, shown = false, timer = null;
     const end = (r)=>{ if(over) return; over = true; clearTimeout(timer); AXS.cb = null; resolve(r); };
     AXS.cb = {
-      rec: ad=>{ try{ tid = ad && ad.id ? String(ad.id) : null; shown = true; w.displayAd(ad); }catch(e){ end({ id:null }); } },
+      rec: ad=>{ try{ AXS.lastAd = ad; tid = axIdOf(ad); shown = true; w.displayAd(ad); }catch(e){ end({ id:null }); } },
       none: ()=>end({ id:null }),
-      comp: ()=>end({ id:tid }),
+      comp: (ev)=>{ if(!tid) tid = axIdOf(ev); end({ id:tid }); },
       closed: ()=>setTimeout(()=>end({ id:tid }), 600)
     };
     timer = setTimeout(()=>end({ id: shown ? tid : null }), 90000);
@@ -2224,7 +2232,12 @@ async function axWatch(){
   topBubble('Watch the full ad to earn '+AXST.per+' coins');
   if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
   const r = await axShowAd();
-  if(!r.id){ renderTasks(); noAdPop(); return; }
+  if(!r.id){
+    renderTasks();
+    if(AXS.lastAd){ let d = ''; try{ d = JSON.stringify(AXS.lastAd, (k,v)=>typeof v==='string'&&v.length>90 ? v.slice(0,90)+'…' : v).slice(0,700); }catch(e){ d = String(AXS.lastAd); } appDialog({title:'Adexium test info',text:'Please send a screenshot of this: '+d,icon:'🛠️'}); }
+    else noAdPop();
+    return;
+  }
   if(btn) btn.textContent = 'Confirming…';
   let res = null, lastErr = '';
   for(let i=0;i<6;i++){
