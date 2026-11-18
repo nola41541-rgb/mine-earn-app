@@ -456,6 +456,18 @@
   body::before{content:"";position:fixed;left:0;top:0;right:0;bottom:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 50% -12%,rgba(40,100,255,.14),transparent 48%),radial-gradient(circle at 100% 8%,rgba(255,190,60,.05),transparent 40%);transform:translateZ(0);}
   .tabbar{filter:none!important;will-change:transform;transform:translateZ(0);}
   .tk-card,.net-card,.balance,.tile,.day,.gf,.banner,.profile-card,.wd-item{contain:layout paint;}
+
+  /* ===== lite painting: no glow filters, animations pause while scrolling ===== */
+  .balance .coins,.ch-crown,.ch-title,.tab-btn.active .nav-ic,.tk-art,.net-art,.earn-ic.has-art img,.home-logo{filter:none!important;}
+  .tk-card,.net-card,.balance,.tile,.day,.gf,.banner,.profile-card,.wd-item{contain:none!important;}
+  html.scr *,html.scr *::before,html.scr *::after{animation-play-state:paused!important;}
+
+  /* ===== lite paint: lighter drawing so scrolling never goes blank ===== */
+  .ch-crown,.tk-art,.net-art,.home-logo,.nav-ic,.tab-btn.active .nav-ic,.earn-ic.has-art img,.dlg{filter:none!important;}
+  .tk-card,.net-card,.balance,.tile,.day,.gf,.banner,.profile-card,.wd-item{contain:none!important;}
+  .tk-card,.net-card,.slot,.earn-card,.invite-card,.balance,.profile-card,.task-item,.wd-item,.adm-box,.modal-box,.dlg,.gpend,.wallet-box,.stat-row,.sheet,.gcard,.tile,.day,.chip,.support-btn,.action:not(.btn-collect),.tk-new,.invite-link{box-shadow:inset 0 0 0 2px #051a66!important;}
+  .btn-collect,.dlg-ok,.btn-claim,.tk-btn.f,.gfplay,.gpbtn,.gate-verify-btn{box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 3px 0 #a05113!important;text-shadow:none!important;}
+  html.scr *,html.scr *::before,html.scr *::after{animation-play-state:paused!important;}
 </style>
 <script>
 /* images -> small blob URLs once at start (keeps scrolling smooth) */
@@ -4294,6 +4306,32 @@ function rdDecorate(){
   }catch(e){}
 }
 new MutationObserver(()=>{ if(!window.__rdT){ window.__rdT=setTimeout(()=>{window.__rdT=0;rdDecorate();},60); } }).observe(document.body,{childList:true,subtree:true});
+
+/* pause looping animations while the page is scrolling (smoother on phones) */
+(function(){ let t=0; document.addEventListener('scroll',function(){ const h=document.documentElement; if(!h.classList.contains('scr')) h.classList.add('scr'); clearTimeout(t); t=setTimeout(function(){ h.classList.remove('scr'); },180); },{passive:true,capture:true}); })();
+
+/* pause animations while scrolling (smooth drawing on slow phones) */
+(function(){ let t=0; const root=document.documentElement;
+  document.addEventListener('scroll',()=>{ if(!root.classList.contains('scr')) root.classList.add('scr'); clearTimeout(t); t=setTimeout(()=>root.classList.remove('scr'),160); },{passive:true,capture:true});
+  document.addEventListener('touchmove',()=>{ if(!root.classList.contains('scr')) root.classList.add('scr'); clearTimeout(t); t=setTimeout(()=>root.classList.remove('scr'),200); },{passive:true,capture:true});
+})();
+
+/* game-picture animations: run only when visible and not scrolling */
+function rdAnim(){
+  try{
+    const sc=document.documentElement.classList.contains('scr');
+    document.querySelectorAll('.gfbg svg,.gicc svg').forEach(v=>{
+      let run=!sc && v.offsetParent!==null;
+      if(run){ const r=v.getBoundingClientRect(); run=r.bottom>0 && r.top<(window.innerHeight||800); }
+      const paused=(v.animationsPaused&&v.animationsPaused());
+      if(run){ if(paused) v.unpauseAnimations(); } else { if(!paused) v.pauseAnimations(); }
+    });
+  }catch(e){}
+}
+['scroll','touchmove'].forEach(ev=>document.addEventListener(ev,()=>{ rdAnim(); clearTimeout(window.__rdA); window.__rdA=setTimeout(rdAnim,260); },{passive:true,capture:true}));
+setInterval(rdAnim,800);
+new MutationObserver(()=>{ clearTimeout(window.__rdB); window.__rdB=setTimeout(rdAnim,80); }).observe(document.body,{childList:true,subtree:true});
+setTimeout(rdAnim,300);
 </script>
 </body>
 </html>
