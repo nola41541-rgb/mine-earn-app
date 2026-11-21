@@ -461,6 +461,8 @@
   .balance .coins,.ch-crown,.ch-title,.tab-btn.active .nav-ic,.tk-art,.net-art,.earn-ic.has-art img,.home-logo{filter:none!important;}
   .tk-card,.net-card,.balance,.tile,.day,.gf,.banner,.profile-card,.wd-item{contain:none!important;}
   html.scr *,html.scr *::before,html.scr *::after{animation-play-state:paused!important;}
+  html.gp #app,html.gp #app *{animation-play-state:paused!important;}
+  html.gp #app{visibility:hidden;}
 
   /* ===== lite paint: lighter drawing so scrolling never goes blank ===== */
   .ch-crown,.tk-art,.net-art,.home-logo,.nav-ic,.tab-btn.active .nav-ic,.earn-ic.has-art img,.dlg{filter:none!important;}
@@ -779,7 +781,7 @@ async function handleCollect(i){
 }
 
 // ===================== GAMES =====================
-const GAMES_URL = SUPABASE_URL + '/functions/v1/games-v8';
+const GAMES_URL = SUPABASE_URL + '/functions/v1/games-v9';
 const GAME_THUMBS = {
 snake:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><pattern id="ckS" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#1f7a4c"/><rect width="16" height="16" fill="#26925a"/><rect x="16" y="16" width="16" height="16" fill="#26925a"/></pattern></defs><rect width="160" height="124" fill="url(#ckS)"/><g fill="#7ee85a" stroke="#2f9d3e" stroke-width="1.5"><circle cx="24" cy="84" r="9"/><circle cx="42" cy="84" r="9"/><circle cx="60" cy="84" r="9"/><circle cx="60" cy="66" r="9"/><circle cx="78" cy="66" r="9"/><circle cx="96" cy="66" r="9"/></g><circle cx="114" cy="66" r="11" fill="#9bf26c" stroke="#2f9d3e" stroke-width="1.5"/><circle cx="117" cy="61" r="3.5" fill="#fff"/><circle cx="117" cy="71" r="3.5" fill="#fff"/><circle cx="118" cy="61" r="1.6" fill="#111"/><circle cx="118" cy="71" r="1.6" fill="#111"/><path d="M125 66h10m0 0l4-3m-4 3l4 3" stroke="#ff4d4d" stroke-width="2" fill="none"/><circle cx="118" cy="26" r="11" fill="#ff4d4d"/><circle cx="114" cy="23" r="3" fill="rgba(255,255,255,0.5)"/><path d="M118 15c2-6 7-8 10-7-1 5-5 8-10 7z" fill="#9be36b"/></svg>',
 runner:'<svg viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="skR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4aa8ff"/><stop offset="1" stop-color="#cfeaff"/></linearGradient></defs><rect width="160" height="124" fill="#2f9a5b"/><rect width="160" height="38" fill="url(#skR)"/><polygon points="72,38 88,38 158,124 2,124" fill="#4b4f63"/><path d="M76 38L50 124M84 38L110 124" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/><rect x="92" y="70" width="22" height="9" rx="2" fill="#ff9f1a"/><rect x="40" y="58" width="16" height="22" rx="2" fill="#c0392b"/><rect x="43" y="63" width="10" height="5" fill="#ffd86b"/><ellipse cx="80" cy="116" rx="12" ry="3.5" fill="rgba(0,0,0,0.3)"/><path d="M75 108v7M85 108v7" stroke="#2b3a67" stroke-width="5" stroke-linecap="round"/><rect x="69" y="86" width="22" height="24" rx="7" fill="#e24b4b"/><rect x="73" y="90" width="14" height="14" rx="3" fill="#2f6fe0"/><path d="M68 90l-3 14M92 90l3 14" stroke="#e24b4b" stroke-width="5" stroke-linecap="round"/><circle cx="80" cy="79" r="8" fill="#2a1b14"/></svg>',
@@ -837,12 +839,14 @@ const GAME_LIST = [
 ];
 let gameStatus = null;
 let GP_SEL = null;
-let GPEND = null;
+let GPEND = null, GPENDS = [];
+function gpSet(r){ GPENDS = (r && r.all) || (r && r.pending ? [r.pending] : []); GPEND = GPENDS[0] || null; }
+function gpPendFor(id){ return GPENDS.find(x=>x.game===id) || null; }
 function gpDay(){ return GAME_LIST[Math.floor(Date.now()/86400000) % GAME_LIST.length]; }
 function gpLeft(g){ const used = (gameStatus.runs && gameStatus.runs[g.id]) || 0; return Math.max(0, gpMax(g) - used); }
 function gpMax(g){ return (gameStatus.maxRuns && gameStatus.maxRuns[g.id]) || gameStatus.max; }
 function gpCoins(g){ return (gameStatus.maxCoins && gameStatus.maxCoins[g.id]) || 250; }
-function gpClick(g){ if(GPEND) return 'collectPending()'; return gpLeft(g)>0 ? 'startGame(\''+g.id+'\')' : 'alert(\'No plays left for this game today. It resets at 00:00 UTC.\')'; }
+function gpClick(g){ if(gpPendFor(g.id)) return 'collectPending(\''+g.id+'\')'; return gpLeft(g)>0 ? 'startGame(\''+g.id+'\')' : 'alert(\'No plays left for this game today. It resets at 00:00 UTC.\')'; }
 function gpPick(id){ GP_SEL = id; drawPicker(); }
 function drawPicker(){
   const box = document.getElementById('playList');
@@ -855,10 +859,10 @@ function drawPicker(){
     + '<div class="gftag">'+(sel.id===day.id ? '⭐ GAME OF THE DAY' : sel.cat)+'</div>'
     + '<div class="gfin"><div class="gfn">'+sel.name+'</div><div class="gfm"><b>'+left+'/'+gpMax(sel)+'</b> plays left • Up to <b>'+gpCoins(sel)+'</b> coins</div>'
     + '<button class="gfplay" onclick="'+gpClick(sel)+'">▶ Play</button></div></div>';
-  const pend = GPEND ? '<div class="gpend"><div class="gpt">🎁 <b>'+GPEND.coins+' coins</b> are waiting from your last game ('+(GAME_LIST.find(g=>g.id===GPEND.game)||{name:GPEND.game}).name+').<br><span>Collect them before your next play.</span></div><button class="gpbtn" onclick="collectPending()">🎬 Collect coins</button></div>' : '';
+  const pend = GPENDS.map(P=>'<div class="gpend"><div class="gpt">🎁 <b>'+P.coins+' coins</b> are waiting from your last '+(GAME_LIST.find(g=>g.id===P.game)||{name:P.game}).name+' game.<br><span>Collect them before you play this game again. Other games are free to play.</span></div><button class="gpbtn" onclick="collectPending(\''+P.game+'\')">🎬 Collect coins</button></div>').join('');
   box.innerHTML = pend + banner
     + '<div class="gmore">All games</div><div class="grow2">'
-    + GAME_LIST.map(g=>'<div class="gic'+(gpLeft(g)<=0?' gdim':'')+(g.id===sel.id?' sel':'')+'" onclick="gpPick(\''+g.id+'\')"><div class="gicc">'+GAME_THUMBS[g.id]+'</div><div class="gicn">'+g.name+'</div></div>').join('')
+    + GAME_LIST.map(g=>'<div class="gic'+(gpLeft(g)<=0?' gdim':'')+(g.id===sel.id?' sel':'')+'" onclick="'+gpClick(g).replace(/"/g,'&quot;')+'"><div class="gicc">'+GAME_THUMBS[g.id]+'</div><div class="gicn">'+g.name+'</div></div>').join('')
     + '</div>';
 }
 async function renderPlay(){
@@ -866,8 +870,8 @@ async function renderPlay(){
   if(!box) return;
   const bal = document.getElementById('playBal'); if(bal) bal.textContent = state.balance.toLocaleString();
   try{ gameStatus = await api('gamesStatus', {}, GAMES_URL); }catch(e){ box.textContent = e.message; return; }
-  GPEND = null;
-  if(gameStatus.claimEnabled){ try{ GPEND = (await api('gamePending', {}, GAMES_URL)).pending || null; }catch(e){ GPEND = null; } }
+  gpSet(null);
+  if(gameStatus.claimEnabled){ try{ gpSet(await api('gamePending', {}, GAMES_URL)); }catch(e){ gpSet(null); } }
   drawPicker();
 }
 
@@ -917,7 +921,7 @@ async function startGame(id){
   ensureGameOverlay();
   G = { id, token:r.token, over:false, timer:null, capped:false };
   gEl('gQuitBtn').textContent = '✕ Quit';
-  gEl('gameOverlay').style.display = 'flex';
+  gEl('gameOverlay').style.display = 'flex'; document.documentElement.classList.add('gp');
   gEl('gResult').style.display = 'none';
   gEl('gPad').style.display = 'none'; gEl('gPad2').style.display = 'none'; gEl('gPad3').style.display = 'none'; gEl('gQuiz').style.display = 'none';
   { const cv = gEl('gCanvas'); cv.style.display = 'block'; cv.ontouchstart = cv.ontouchmove = cv.ontouchend = cv.onmousedown = null; }
@@ -933,7 +937,7 @@ async function startGame(id){
 function closeGameOverlay(){
   musicStop(); if(G && G.raf) cancelAnimationFrame(G.raf); try{ gHideExtras(); }catch(e){} window.onkeydown = window.onkeyup = null;
   if(G && G.timer) clearTimeout(G.timer);
-  const o = gEl('gameOverlay'); if(o) o.style.display = 'none';
+  const o = gEl('gameOverlay'); if(o) o.style.display = 'none'; document.documentElement.classList.remove('gp');
   lockSwipes(false);
   G = null;
   renderPlay();
@@ -1015,7 +1019,8 @@ function gameResultDraw(){
     + '<button class="action btn-start" style="margin-top:12px;" onclick="gameLeave(\'again\')">▶️ Play again</button>'
     + '<button class="action" style="margin-top:8px;" onclick="gameLeave(\'back\')">Back</button>';
 }
-function collectPending(){
+function collectPending(gid){
+  if(gid){ const x = gpPendFor(gid); if(x) GPEND = x; }
   if(!GPEND || (G && !G.over)) return;
   ensureGameOverlay();
   G = { id:GPEND.game, token:GPEND.token, over:true, timer:null, capped:false, valid:true, score:GPEND.score, coins:GPEND.coins, need:GPEND.adsNeeded, done:GPEND.adsDone, collected:false, busy:false };
@@ -2260,8 +2265,8 @@ async function tkPre(){
 }
 async function prefetchAll(){
   const jobs = [
-    (async()=>{ try{ gameStatus = await api('gamesStatus', {}, GAMES_URL); GPEND = null;
-      if(gameStatus.claimEnabled){ try{ GPEND = (await api('gamePending', {}, GAMES_URL)).pending || null; }catch(e){ GPEND = null; } } }catch(e){} })()
+    (async()=>{ try{ gameStatus = await api('gamesStatus', {}, GAMES_URL); gpSet(null);
+      if(gameStatus.claimEnabled){ try{ gpSet(await api('gamePending', {}, GAMES_URL)); }catch(e){ gpSet(null); } } }catch(e){} })()
   ];
   if(!REVIEW){
     ocLoad(); axLoad();
@@ -2286,8 +2291,8 @@ async function renderPlay2(){
   try{
     const gs = await api('gamesStatus', {}, GAMES_URL);
     let pend = null;
-    if(gs.claimEnabled){ try{ pend = (await api('gamePending', {}, GAMES_URL)).pending || null; }catch(e){ pend = null; } }
-    gameStatus = gs; GPEND = pend;
+    if(gs.claimEnabled){ try{ pend = await api('gamePending', {}, GAMES_URL); }catch(e){ pend = null; } }
+    gameStatus = gs; gpSet(pend);
     drawPicker();
   }catch(e){ if(!gameStatus) box.textContent = e.message; }
 }
@@ -3868,12 +3873,14 @@ function mineApply(){
   g('mineBack').style.display = MINE_VIEW==='pick' ? 'none' : '';
   g('slots').style.display = MINE_VIEW==='monetag' ? '' : 'none';
   g('richSlot').style.display = MINE_VIEW==='rich' ? '' : 'none';
+  if(g('agmSlots')) g('agmSlots').style.display = MINE_VIEW==='ag' ? '' : 'none';
   g('dailyAds').style.display = MINE_VIEW==='monetag' ? '' : 'none';
   g('minePick').innerHTML =
     '<div class="net-card" onclick="mineGo(\'monetag\')"><div class="net-ic mt">⛏️</div><div class="net-tx"><b>Gold Mining</b><span>'+SLOT_CONFIG.length+' mines • watch '+MINE_ADS+' ads per collect</span></div><div class="earn-go">›</div></div>'
-    + '<div class="net-card" style="opacity:.6;cursor:default;"><div class="net-ic rc">🎁</div><div class="net-tx"><b>Treasure Hunt</b><span>Coming soon</span></div><div class="earn-go" style="font-size:11px;font-weight:700;letter-spacing:.3px;">SOON</div></div>';
+    + '<div class="net-card" onclick="mineGo(\'rich\')"><div class="net-ic rc">🎁</div><div class="net-tx"><b>Treasure Hunt</b><span>tap an offer • collect coins</span></div><div class="earn-go">›</div></div>'
+    + '<div class="net-card" onclick="mineGo(\'ag\')"><div class="net-ic rc">💎</div><div class="net-tx"><b>Chest Rush</b><span>5 chests • watch '+((AGM&&AGM.L&&AGM.L.ads)||2)+' ads per collect</span></div><div class="earn-go">›</div></div>';
 }
-function mineGo(v){ if(v==='rich') return; MINE_VIEW = v; mineApply(); if(v==='rich') richLoad2(); window.scrollTo(0,0); }
+function mineGo(v){ MINE_VIEW = v; mineApply(); if(v==='ag') agmOpen(); if(v==='rich') richLoad(); window.scrollTo(0,0); }
 /* ===== RichAds slot (Mine tab, own countdown set in Admin) ===== */
 let RCH = null, RCH_BUSY = false, RCH_LOADED = false;
 async function richLoad(){
@@ -3917,6 +3924,70 @@ async function richWatch(){
     adFinished({ reward:res.amount, progress:'Collects today '+res.done+'/'+res.max });
   } else { richDraw(); warnPop('We did not get a click on the offer, so no coins were added. Open the offer and tap it to earn.'); }
 }
+
+
+/* ===== Treasure Hunt: chests that work like Gold Mining, paid with AdsGram ads (server: mine-ag) ===== */
+const AGM_URL = SUPABASE_URL + '/functions/v1/mine-ag';
+const AGM_NAMES = ['Wooden Chest','Iron Chest','Silver Chest','Golden Chest','Royal Chest'];
+let AGM = null, AGM_BUSY = -1, AGM_ERR = '';
+async function agmLoad(){
+  const r = await api('load', {}, AGM_URL);
+  AGM = { slots: r.state.slots, L: r.limits };
+  AGM_ERR = '';
+  if(state && r.state.balance!=null){ state.balance = r.state.balance; try{ render(); }catch(e){} }
+}
+async function agmOpen(){
+  const box = document.getElementById('agmSlots'); if(!box) return;
+  if(!AGM){ box.innerHTML = '<div class="slot"><div class="slot-progress">Loading chests…</div></div>'; try{ await agmLoad(); }catch(e){ AGM_ERR = e.message; } }
+  agmDraw(); mineApply();
+}
+function agmDraw(){
+  const box = document.getElementById('agmSlots'); if(!box || MINE_VIEW!=='ag') return;
+  if(!AGM){ box.innerHTML = '<div class="slot"><div class="slot-progress">'+(AGM_ERR?esc(AGM_ERR):'Loading chests…')+'</div><button class="action btn-start" onclick="agmOpen()">Try again</button></div>'; return; }
+  const L = AGM.L;
+  const per = L.coins, ads = L.ads;
+  let html = '<div class="task-sub" style="text-align:center;margin-bottom:10px;">+'+per+' coins per ad • '+ads+' ads per collect</div>';
+  AGM.slots.forEach((sl,i)=>{
+    const pct = Math.min(100, (sl.sessions/L.sessions)*100);
+    let btn = '';
+    const remain = sl.endTime ? Number(sl.endTime) - nowMs() : 0;
+    if(sl.state==='completed') btn = '<button class="action btn-done" disabled><span class="okb"></span>Done for today (resets 00:00 UTC)</button>';
+    else if(sl.state==='idle') btn = '<button class="action btn-start" onclick="agmStart('+i+')">▶️ Open chest</button>';
+    else if(AGM_BUSY===i) btn = '<button class="action btn-wait" disabled>Loading ad…</button>';
+    else if(remain>0) btn = '<button class="action btn-wait" disabled><span class="mcoin">$</span> '+fmtTime(remain)+'</button>';
+    else btn = '<button class="action btn-collect" onclick="agmWatch('+i+')">🎬 Watch ad '+((sl.adsWatched||0)+1)+' of '+ads+(sl.adsWatched?'':' to Collect')+'</button>';
+    html += '<div class="slot"><div class="slot-top"><div class="slot-name"><span class="slot-badge">'+(i+1)+'</span>'+AGM_NAMES[i]+'</div><div class="slot-rate">+'+(per*ads)+' coins / '+ads+' ads</div></div>'
+      + '<div class="slot-progress">'+sl.sessions+'/'+L.sessions+' collects today</div><div class="bar"><div class="bar-fill" style="width:'+pct+'%"></div></div>'+btn+'</div>';
+  });
+  box.innerHTML = html;
+}
+async function agmStart(i){
+  if(!AGM) return;
+  try{ const r = await api('start', { i }, AGM_URL); AGM.slots = r.state.slots; const sl = AGM.slots[i]; if(sl && sl.endTime){ const off = (Number(sl.endTime) - ((AGM.L.sessionMin||30)*60000)) - Date.now(); if(Math.abs(off) < 12*3600*1000) CLOCK_OFFSET = off; } }
+  catch(e){ warnPop(e.message); }
+  agmDraw();
+}
+async function agmWatch(i){
+  if(!AGM || AGM_BUSY>=0) return;
+  AGM_BUSY = i; agmDraw();
+  const r = await agShowRaw();
+  if(r==='none'){ AGM_BUSY=-1; agmDraw(); noAdPop(); return; }
+  if(r==='skipped'){ AGM_BUSY=-1; agmDraw(); warnPop('Watch the full ad to earn your coins.'); return; }
+  let res = null, lastErr = '';
+  for(let t=0;t<12;t++){
+    try{ res = await api('adConfirm', { i }, AGM_URL); break; }
+    catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await sleep(2500); }
+  }
+  AGM_BUSY = -1;
+  if(res){
+    AGM.slots = res.state.slots; if(res.limits) AGM.L = res.limits;
+    state.balance = res.state.balance; try{ render(); }catch(e){}
+    agmDraw();
+    const L = AGM.L;
+    adFinished({ reward:res.amount, progress: res.finished ? 'Chest collected! The next one is already counting down.' : 'Ad done. Watch the next ad to finish this collect.' });
+  } else { agmDraw(); warnPop(lastErr || 'The ad was not confirmed, so no coins were added.'); }
+}
+setInterval(()=>{ if(MINE_VIEW==='ag' && AGM && AGM_BUSY<0 && !document.hidden) agmDraw(); }, 1000);
 
 // Shows one AdsGram ad. Resolves 'done' (watched fully), 'skipped' or 'none' (no ad available)
 function agShowRaw(){
@@ -4157,6 +4228,7 @@ async function startApp(){
       <div id="mineBack" style="display:none;"><button class="mine-back" onclick="mineGo('pick')">‹ Back</button></div>
       <div id="slots" style="display:none;"></div>
       <div id="richSlot" style="display:none;"></div>
+      <div id="agmSlots" style="display:none;"></div>
     </div>
     <div class="tab-content" id="tab-play">
       <div class="banner" style="background-image:var(--i-ban_play)"><h1>Play &amp; Earn</h1><p>Win coins with games</p></div>
@@ -4258,7 +4330,7 @@ async function startApp(){
   `;
   document.getElementById('tabbar').style.display='flex';
   refJoinOnce().then(()=>{ renderHome(); });
-  setInterval(render, 1000);
+  setInterval(function(){ if(document.documentElement.classList.contains('gp')) return; render(); }, 1000);
   render();
   renderTasks();
   if(REVIEW){ document.body.classList.add('rv'); TK.cat = 'social'; TK.view = 'all'; showTab('play'); }
@@ -4295,7 +4367,7 @@ function rdDecorate(){
     });
     document.querySelectorAll('.net-card:not([data-rd])').forEach(c=>{
       c.setAttribute('data-rd','1'); const b=c.querySelector('b'); if(!b) return;
-      const ic={'Gold Mining':'ic_rock','Treasure Hunt':'ic_chest'}[b.textContent.trim()]; if(!ic) return;
+      const ic={'Gold Mining':'ic_rock','Treasure Hunt':'ic_chest','Chest Rush':'ic_gems'}[b.textContent.trim()]; if(!ic) return;
       const im=document.createElement('img'); im.className='net-art'; im.src=rdSrc(ic); im.alt=''; c.appendChild(im);
     });
     document.querySelectorAll('.earn-ic:not([data-rd])').forEach(e=>{
@@ -4321,7 +4393,7 @@ function rdAnim(){
   try{
     const sc=document.documentElement.classList.contains('scr');
     document.querySelectorAll('.gfbg svg,.gicc svg').forEach(v=>{
-      let run=!sc && v.offsetParent!==null;
+      let run=!sc && v.offsetParent!==null && !document.documentElement.classList.contains('gp');
       if(run){ const r=v.getBoundingClientRect(); run=r.bottom>0 && r.top<(window.innerHeight||800); }
       const paused=(v.animationsPaused&&v.animationsPaused());
       if(run){ if(paused) v.unpauseAnimations(); } else { if(!paused) v.pauseAnimations(); }
