@@ -1141,7 +1141,7 @@ function musicStartQuiz(id){
     if(!G) return;
     let sc = 0, dead = false;
     try{ sc = curScore(); dead = G.id==='snake' ? !!SN.dead : G.id==='runner' ? !!RN.dead : G.id==='shooter' ? !!SH.dead : false; }catch(e){}
-    if(sc > SND.lastScore) sfx('coin');
+    if(sc > SND.lastScore && G.id!=='runner') sfx('coin');
     if(dead && !SND.lastDead) sfx('hit');
     SND.lastScore = sc; SND.lastDead = dead;
   }, 150);
@@ -1222,7 +1222,7 @@ function sfx(n){
     case 'whoosh': nburst(0.2,'bandpass',500,1900,1.4,0.16); break;
     case 'step': nburst(0.07,'lowpass',500,180,1,0.28); glide(90,55,0.07,'sine',0.22); break;
     case 'jump': nburst(0.28,'bandpass',400,1800,1.2,0.2); glide(260,520,0.2,'sine',0.1); break;
-    case 'dodge': nburst(0.22,'bandpass',1800,500,1.2,0.2); tone(1320,0.12,'sine',0.1,0.08); tone(1760,0.16,'sine',0.09,0.14); break;
+    case 'dodge': nburst(0.22,'bandpass',1800,500,1.2,0.12); break;
     case 'crash': nburst(0.6,'lowpass',1500,100,0.8,0.55); glide(130,40,0.5,'sawtooth',0.3); break;
     case 'chomp': nburst(0.07,'bandpass',1200,500,3,0.35); glide(420,160,0.1,'square',0.12); glide(300,120,0.09,'square',0.1,0.07); break;
     case 'slither': nburst(0.06,'bandpass',3500,2500,2,0.045); break;
@@ -1446,7 +1446,7 @@ function runnerInit(){
   RN.W = Math.min(window.innerWidth-20, 400); RN.H = RN.W;
   cv.width = RN.W; cv.height = RN.H;
   RN.hy = RN.W*0.352; RN.py = RN.W*0.731; RN.laneW = RN.W*0.326; raLoad();
-  RN.score = 0; RN.att = 1; RN.speed = 14; RN.dist = 0;
+  RN.score = 0; RN.att = 1; RN.speed = 14; RN.dist = 0; RN.bonus = 0; RN.coins = [];
   let sx=0, sy=0;
   cv.ontouchstart = e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; e.preventDefault(); };
   cv.ontouchend = e=>{
@@ -1462,7 +1462,7 @@ function runnerInit(){
 function runnerLabel(){ gEl('gScore').textContent = 'Score '+RN.score+' • Attempt '+RN.att+'/'+RN.maxAtt;  checkCap(RN.score); }
 function runnerSpawn(){
   RN.lane = 0; RN.x = 0; RN.h = 0; RN.vy = 0; RN.slide = 0;
-  RN.obs = []; RN.nextZ = 45; RN.parts = []; RN.shake = 0; RN.dust = 0;
+  RN.obs = []; RN.coins = []; RN.nextZ = 45; RN.parts = []; RN.shake = 0; RN.dust = 0;
   RN.started = false; RN.dead = false; RN.last = 0;
   gEl('gResult').style.display = 'none';
   gEl('gPad').style.display = 'none';
@@ -1487,7 +1487,7 @@ function runnerLoop(){
   if(dt > 0.05) dt = 0.05;
   RN.speed = Math.min(30, RN.speed + 0.25*dt);
   RN.dist += RN.speed*dt;
-  const sc = Math.floor(RN.dist*0.6);
+  const sc = Math.floor(RN.dist*0.6) + (RN.bonus||0);
   if(sc !== RN.score){ RN.score = sc; runnerLabel(); }
   // player
   RN.x += (RN.lane - RN.x)*Math.min(1, dt*14);
@@ -1500,6 +1500,7 @@ function runnerLoop(){
   // obstacles
   for(const o of RN.obs) o.z -= RN.speed*dt;
   RN.obs = RN.obs.filter(o=>o.z > -3);
+  RN.coins = (RN.coins||[]).filter(k=>k.z > -3 && !k.got); for(const k of RN.coins) k.z -= RN.speed*dt;
   RN.nextZ -= RN.speed*dt;
   if(RN.nextZ <= 0){
     // a row: never block every lane with something that can't be jumped or slid
@@ -1512,7 +1513,11 @@ function runnerLoop(){
       RN.obs.push({z:60, lane:lanes[i], type});
     }
     RN.nextZ = RN.speed*0.95 + 9 + Math.random()*6;
+    // a short trail of coins in a lane with no obstacle
+    if(Math.random()<0.55){ const used = RN.obs.filter(o=>o.z>=59).map(o=>o.lane); const free = [-1,0,1].filter(l=>used.indexOf(l)<0);
+      if(free.length){ const l = free[Math.floor(Math.random()*free.length)]; const zc = 60 + RN.speed*0.45 + 4; for(let i=0;i<4;i++) RN.coins.push({z:zc+i*3.2, lane:l, got:false}); } }
   }
+  for(const k of RN.coins){ if(k.got || k.z>0.9 || k.z<-0.9) continue; if(Math.abs(RN.x-k.lane)>0.6) continue; k.got = true; RN.bonus = (RN.bonus||0) + 2; try{ sfx('coin'); }catch(e){} }
   // collision
   for(const o of RN.obs){
     if(o.z > 0.8 || o.z < -0.9) continue;
@@ -1554,7 +1559,7 @@ async function runnerContinue(){
   if(!G || G.over) return;
   RN.att++;
   RN.dead = false; RN.started = false;
-  RN.obs = []; RN.parts = []; RN.nextZ = 40; RN.h = 0; RN.vy = 0; RN.slide = 0;   // clear the path, keep score and speed
+  RN.obs = []; RN.coins = []; RN.parts = []; RN.nextZ = 40; RN.h = 0; RN.vy = 0; RN.slide = 0;   // clear the path, keep score and speed
   gEl('gResult').style.display = 'none';
   gEl('gPad2').style.display = 'grid';
   runnerLabel();
@@ -2122,7 +2127,13 @@ function runnerDrawArt(){
   c.save();
   c.fillStyle = '#2a2f55'; c.fillRect(-20,-20,W+40,H+40);
   if(RN.shake) c.translate((Math.random()-0.5)*RN.shake*10, (Math.random()-0.5)*RN.shake*8);
-  c.drawImage(RA.bg, 0,0,720,720, 0,0,W,H);
+  { const k = W/720, vx = 360*k, vy = 253*k;
+    // the road stays still; houses, trees, lamps and banners on both sides rush towards you
+    c.save(); c.beginPath(); c.moveTo(vx,vy); c.lineTo(1055*k,H); c.lineTo(-349*k,H); c.closePath(); c.clip();
+    c.drawImage(RA.bg, 0,0,720,720, 0,0,W,H); c.restore();
+    c.save(); c.beginPath(); c.rect(-20,-20,W+40,H+40); c.moveTo(vx,vy); c.lineTo(1055*k,H); c.lineTo(-349*k,H); c.closePath(); c.clip('evenodd');
+    const p = (RN.dist*0.011) % 1, q = (p+0.5) % 1, zoom = (ph)=>{ const sc = 1+ph*0.55; c.save(); c.translate(vx,vy); c.scale(sc,sc); c.translate(-vx,-vy); c.drawImage(RA.bg, 0,0,720,720, 0,0,W,H); c.restore(); };
+    zoom(p); c.globalAlpha = 1 - Math.abs(2*q-1); zoom(q); c.globalAlpha = 1; c.restore(); }
   // moving road shine and dashed lane lines (the picture itself has no dashes)
   const bz = 6, bo = RN.dist % bz, bi = Math.floor(RN.dist/bz);
   for(let k=-1;k<16;k++){
@@ -2150,6 +2161,15 @@ function runnerDrawArt(){
     const wd = {truck:0.95, barrier:0.95, hurdle:1.0, bar:1.12}[k];
     c.fillStyle = 'rgba(0,0,0,0.28)'; c.beginPath(); c.ellipse(x,y+1,u*wd*0.5,u*0.1,0,0,7); c.fill();
     raSpr(c,k,x,y+u*0.03,u*wd);
+  }
+  for(const k of (RN.coins||[]).slice().sort((a,b)=>b.z-a.z)){
+    if(k.got || k.z>80) continue; const f = fxOf(k.z); if(f<0.02) continue;
+    const x = cx + k.lane*L*f, y = yOf(k.z), u = L*f, r = u*0.2, sp = Math.abs(Math.cos(Date.now()/180 + k.z*0.5));
+    const yy = y - u*0.42 - Math.sin(Date.now()/220 + k.z)*u*0.03;
+    c.fillStyle = 'rgba(0,0,0,0.22)'; c.beginPath(); c.ellipse(x,y,r*0.9,r*0.28,0,0,7); c.fill();
+    c.fillStyle = '#b8860b'; c.beginPath(); c.ellipse(x,yy,r*(0.25+0.75*sp)+1,r+1,0,0,7); c.fill();
+    c.fillStyle = '#ffd34d'; c.beginPath(); c.ellipse(x,yy,r*(0.25+0.75*sp),r,0,0,7); c.fill();
+    c.fillStyle = '#fff2a8'; c.beginPath(); c.ellipse(x-r*0.15*sp,yy-r*0.25,r*0.4*sp,r*0.35,0,0,7); c.fill();
   }
   // dust and crash particles
   for(const p of RN.parts){ const a = 1 - p.t/p.life; c.globalAlpha = Math.max(0,a)*0.8; c.fillStyle = p.c; c.beginPath(); c.arc(p.x,p.y,p.r*(p.dust?(1+p.t*3):1),0,7); c.fill(); }
@@ -3877,7 +3897,7 @@ function mineApply(){
   g('dailyAds').style.display = MINE_VIEW==='monetag' ? '' : 'none';
   g('minePick').innerHTML =
     '<div class="net-card" onclick="mineGo(\'monetag\')"><div class="net-ic mt">⛏️</div><div class="net-tx"><b>Gold Mining</b><span>'+SLOT_CONFIG.length+' mines • watch '+MINE_ADS+' ads per collect</span></div><div class="earn-go">›</div></div>'
-    + '<div class="net-card" onclick="mineGo(\'rich\')"><div class="net-ic rc">🎁</div><div class="net-tx"><b>Treasure Hunt</b><span>tap an offer • collect coins</span></div><div class="earn-go">›</div></div>'
+    + '<div class="net-card" style="opacity:.6;cursor:default;"><div class="net-ic rc">🎁</div><div class="net-tx"><b>Treasure Hunt</b><span>Coming soon</span></div><div class="earn-go" style="font-size:11px;font-weight:700;letter-spacing:.3px;">SOON</div></div>'
     + '<div class="net-card" onclick="mineGo(\'ag\')"><div class="net-ic rc">💎</div><div class="net-tx"><b>Chest Rush</b><span>5 chests • watch '+((AGM&&AGM.L&&AGM.L.ads)||2)+' ads per collect</span></div><div class="earn-go">›</div></div>';
 }
 function mineGo(v){ MINE_VIEW = v; mineApply(); if(v==='ag') agmOpen(); if(v==='rich') richLoad(); window.scrollTo(0,0); }
