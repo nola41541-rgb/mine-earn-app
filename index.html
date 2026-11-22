@@ -470,6 +470,13 @@
   .tk-card,.net-card,.slot,.earn-card,.invite-card,.balance,.profile-card,.task-item,.wd-item,.adm-box,.modal-box,.dlg,.gpend,.wallet-box,.stat-row,.sheet,.gcard,.tile,.day,.chip,.support-btn,.action:not(.btn-collect),.tk-new,.invite-link{box-shadow:inset 0 0 0 2px #051a66!important;}
   .btn-collect,.dlg-ok,.btn-claim,.tk-btn.f,.gfplay,.gpbtn,.gate-verify-btn{box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 3px 0 #a05113!important;text-shadow:none!important;}
   html.scr *,html.scr *::before,html.scr *::after{animation-play-state:paused!important;}
+
+  .gpend.gpw{padding:10px 12px!important;margin:0 0 12px!important;}
+  .gpw .gpwh{font-size:13px;font-weight:800;color:#ffd34d;margin:4px 14px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .gpw .gpwh span{font-weight:500;color:var(--muted);font-size:11px;}
+  .gpw .gpr{display:flex;align-items:center;gap:10px;padding:6px 2px;border-top:1px solid rgba(255,210,77,.18);}
+  .gpw .gpe{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:rgba(255,255,255,.07);border:2px solid rgba(255,210,77,.5);flex:none;}
+  .gpw .gpn{flex:1;min-width:0;line-height:1.2;} .gpw .gpn b{display:block;font-size:14px;color:#fff;} .gpw .gpn span{font-size:12px;color:#ffd34d;font-weight:800;}
+  .gpw .gpbtn{width:auto!important;margin:0!important;padding:8px 16px!important;font-size:13px!important;border-radius:12px!important;flex:none;}
 </style>
 <script>
 /* images -> small blob URLs once at start (keeps scrolling smooth) */
@@ -859,7 +866,10 @@ function drawPicker(){
     + '<div class="gftag">'+(sel.id===day.id ? '⭐ GAME OF THE DAY' : sel.cat)+'</div>'
     + '<div class="gfin"><div class="gfn">'+sel.name+'</div><div class="gfm"><b>'+left+'/'+gpMax(sel)+'</b> plays left • Up to <b>'+gpCoins(sel)+'</b> coins</div>'
     + '<button class="gfplay" onclick="'+gpClick(sel)+'">▶ Play</button></div></div>';
-  const pend = GPENDS.map(P=>'<div class="gpend"><div class="gpt">🎁 <b>'+P.coins+' coins</b> are waiting from your last '+(GAME_LIST.find(g=>g.id===P.game)||{name:P.game}).name+' game.<br><span>Collect them before you play this game again. Other games are free to play.</span></div><button class="gpbtn" onclick="collectPending(\''+P.game+'\')">🎬 Collect coins</button></div>').join('');
+  const GEM = {snake:'🐍',runner:'🏃',shooter:'🚀',quiz:'❓',zombie:'🧟',boxing:'🥊'};
+  const pend = GPENDS.length ? '<div class="gpend gpw"><div class="gpwh">🎁 Coins waiting <span>• collect to replay that game</span></div>'
+    + GPENDS.map(P=>'<div class="gpr"><div class="gpe">'+(GEM[P.game]||'🎮')+'</div><div class="gpn"><b>'+((GAME_LIST.find(g=>g.id===P.game)||{name:P.game}).name)+'</b><span>'+P.coins+' coins</span></div><button class="gpbtn" onclick="collectPending(\''+P.game+'\')">Collect</button></div>').join('')
+    + '</div>' : '';
   box.innerHTML = pend + banner
     + '<div class="gmore">All games</div><div class="grow2">'
     + GAME_LIST.map(g=>'<div class="gic'+(gpLeft(g)<=0?' gdim':'')+(g.id===sel.id?' sel':'')+'" onclick="'+gpClick(g).replace(/"/g,'&quot;')+'"><div class="gicc">'+GAME_THUMBS[g.id]+'</div><div class="gicn">'+g.name+'</div></div>').join('')
