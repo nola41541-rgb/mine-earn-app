@@ -477,6 +477,15 @@
   .gpw .gpe{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:rgba(255,255,255,.07);border:2px solid rgba(255,210,77,.5);flex:none;}
   .gpw .gpn{flex:1;min-width:0;line-height:1.2;} .gpw .gpn b{display:block;font-size:14px;color:#fff;} .gpw .gpn span{font-size:12px;color:#ffd34d;font-weight:800;}
   .gpw .gpbtn{width:auto!important;margin:0!important;padding:8px 16px!important;font-size:13px!important;border-radius:12px!important;flex:none;}
+
+  .erow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,210,77,.14);}
+  .erow:last-child{border-bottom:none;} .erow b{display:block;font-size:14px;color:#fff;} .erow span{font-size:11px;color:var(--muted);} .erow i{font-style:normal;font-weight:800;color:#4cc38a;font-size:15px;}
+
+  #earnSheet{position:fixed;inset:0;z-index:9000;background:rgba(2,6,30,.78);display:flex;align-items:flex-end;justify-content:center;}
+  #earnSheet .esh{width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;background:#06155e;border:2px solid #ffb81c;border-radius:22px 22px 0 0;padding:14px 16px 18px;}
+  #earnSheet .esh-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;} #earnSheet .esh-top b{font-size:17px;color:#ffd34d;}
+  #earnSheet .esh-top button{width:36px;height:36px;border-radius:50%;border:2px solid #ffb81c;background:#0a2d9b;color:#ffd34d;font-size:16px;font-weight:800;}
+  #earnSheet .esh-body{overflow-y:auto;-webkit-overflow-scrolling:touch;}
 </style>
 <script>
 /* images -> small blob URLs once at start (keeps scrolling smooth) */
@@ -2495,7 +2504,7 @@ async function axWatch(){
 }
 
 // ---- Fewer server calls: remember read-only answers for a short time (and share a request that is already running) ----
-const API_TTL = { gamesStatus:60, gamePending:60, refInfo:180, loginStatus:300, taskList:60, history:60, leaderboard:90, publicPayouts:120, wdConfig:900, flags:600,
+const API_TTL = { myHistory:60, gamesStatus:60, gamePending:60, refInfo:180, loginStatus:300, taskList:60, history:60, leaderboard:90, publicPayouts:120, wdConfig:900, flags:600,
   richStatus:90, agStatus:90, mtStatus:90, gigaStatus:90, ocStatus:90, axStatus:90 };
 const API_DROP = {
   gameStart:['gamesStatus','gamePending'], gameFinish:['gamesStatus','gamePending'], gameClaim:['gamesStatus','gamePending'], gameAttemptAd:['gamePending'], gameAdConfirm:['gamePending'],
@@ -3166,6 +3175,24 @@ async function loadHistory(){
   try{ const r = await api('history', {}, WD_URL); return r.rows || []; }catch(e){ return []; }
 }
 
+const EARN_LABELS = { game:'🎮 Game reward', ad_reward:'⛏️ Gold Mining', agmine_ad:'💎 Chest Rush', rich_ad:'🎁 Treasure Hunt', ag_ad:'🎬 AdsGram ad', mt_ad:'🎬 Monetag ad', giga_ad:'🎬 GigaPub ad', oc_ad:'🎬 OnClicka ad', adx_ad:'🎬 Adexium ad', task:'✅ Task', login_bonus:'📅 Daily login', ref_join:'👥 Friend joined', ref_paid:'👥 Referral bonus', ref_withdraw:'💸 Referral withdrew', welcome:'🎁 Welcome bonus', mining:'⛏️ Mining', admin_adjust:'🎁 Bonus' };
+function closeEarnHist(){ const o = document.getElementById('earnSheet'); if(o) o.remove(); }
+async function openEarnHist(){
+  closeEarnHist();
+  const o = document.createElement('div'); o.id = 'earnSheet';
+  o.innerHTML = '<div class="esh"><div class="esh-top"><b>📜 Earning history</b><button onclick="closeEarnHist()">✕</button></div><div class="esh-body" id="earnHist"><div style="color:var(--muted);text-align:center;padding:20px;">Loading...</div></div></div>';
+  o.addEventListener('click', e=>{ if(e.target===o) closeEarnHist(); });
+  document.body.appendChild(o);
+  const box = document.getElementById('earnHist');
+  let rows = [];
+  try{ const r = await api('myHistory', {}, WD_URL); rows = r.rows || []; }catch(e){ box.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">Could not load. Try again later.</div>'; return; }
+  if(!rows.length){ box.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">No earnings yet. Play, mine or finish tasks to start.</div>'; return; }
+  const lab = k => EARN_LABELS[k] || ('✨ ' + String(k||'Reward').replace(/_/g,' '));
+  box.innerHTML = rows.map(r=>{
+    const d = new Date(r.at); const when = isNaN(d) ? '' : d.toLocaleDateString(undefined,{day:'numeric',month:'short'}) + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    return '<div class="erow"><div><b>'+esc(lab(r.kind))+'</b><span>'+esc(when)+'</span></div><i>+'+Number(r.amount).toLocaleString()+'</i></div>';
+  }).join('') + '<div class="wd-sub" style="text-align:center;margin:8px 0 2px;">Your last '+rows.length+' earnings</div>';
+}
 async function renderHistory(){
   const rows = await loadHistory();
   const container = document.getElementById('wdHistory');
@@ -3570,7 +3597,7 @@ function admClose(){ admEnsure().classList.remove('open'); }
 function admShell(inner){
   const t = (k,l)=>'<button class="'+(ADM.tab===k?'on':'')+'" onclick="admTab(\''+k+'\')">'+l+'</button>';
   admEnsure().innerHTML = '<div class="adm-head"><h1>Admin panel</h1><button class="tk-btn o" onclick="admClose()">✕ Close</button></div>'
-    + '<div class="adm-tabs">'+t('stats','Stats')+t('users','Users')+t('announce','Announce')+t('games','Games')+t('settings','Settings')+t('log','Log')+'</div>'
+    + '<div class="adm-tabs">'+t('stats','Stats')+t('users','Users')+t('announce','Announce')+t('games','Games')+t('ips','IPs')+t('settings','Settings')+t('log','Log')+'</div>'
     + '<div id="admBody">'+inner+'</div>';
 }
 function admTab(k){
@@ -3579,6 +3606,7 @@ function admTab(k){
   else if(k==='users') admUsers('');
   else if(k==='announce') admAnnounce();
   else if(k==='games') admGames();
+  else if(k==='ips') admIps();
   else if(k==='settings') admSettings();
   else admLog();
 }
@@ -3677,6 +3705,16 @@ async function admSend(test){
   }catch(e){ res.textContent = e.message; }
 }
 
+async function admIps(){
+  admShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('ipList', {}, ADMIN2_URL);
+    let h = '<div class="wallet-box" style="line-height:1.5;margin-bottom:10px;">IP addresses used by 2 or more accounts. Many accounts on one IP can be one person with several accounts, but mobile networks also share IPs between real people, so check before you ban. Tracking started when this update went live.</div>'
+      + '<div class="tk-meta" style="margin-bottom:8px;">'+admNum(r.totalIps)+' IPs recorded</div>';
+    h += r.list.length ? r.list.map(g=>'<div class="adm-user"><div class="adm-row"><b>'+esc(g.ip)+'</b><b>'+g.count+' accounts</b></div><div class="tk-meta" style="word-break:break-all;">IDs: '+g.ids.map(esc).join(', ')+(g.count>g.ids.length?' …':'')+'</div><div class="tk-meta">Last seen: '+esc(String(g.last||'').slice(0,16).replace('T',' '))+' UTC</div></div>').join('') : '<div class="tk-empty">No IP is shared by 2 or more accounts yet.</div>';
+    document.getElementById('admBody').innerHTML = h + '<button class="action" style="margin-top:6px;" onclick="admIps()">↻ Refresh</button>';
+  }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
 async function admGames(){
   admShell('<div class="tk-empty">Loading...</div>');
   try{
@@ -3691,7 +3729,9 @@ async function admGames(){
 }
 const ADM_FIELDS = [
  ['Money & withdrawals',[['adReward','Coins per Mine reward (1-500)'],['wdMin','Minimum withdrawal in coins'],['wdFee','Withdrawal fee percent (0-30)']]],
- ['Mining',[['mineAds','Ads per collect (1-5)'],['mineSessions','Collects per slot per day (1-20)'],['mineAdMax','Mine rewards per day (1-500)'],['mineMin','Slot countdown minutes (1-240)']]],
+ ['Mining',[['mineAds','Ads per collect (1-5)'],['mineSessions','Collects per slot per day (1-20)'],['mineAdMax','Mining ads per day, all mines together (1-500)'],['mineMin','Slot countdown minutes (1-240)']]],
+ ['Chest Rush (Mine tab)',[['agmCoins','Coins per ad (1-100)'],['agmAds','Ads per collect (1-5)'],['agmSessions','Collects per chest per day (1-20)'],['agmAdMax','Ads per day, all chests together (1-500)'],['agmMin','Chest countdown minutes (1-240)']]],
+ ['Bonuses',[['welcome','Welcome bonus for new users, coins (0 = off)'],['refWd','Referral withdrawal bonus, coins (0 = off)']]],
  ['AdsGram row',[['agCoins','Coins per ad (1-100)'],['agMax','Ads per day'],['agCd','Wait between ads (seconds)']]],
  ['Monetag row',[['mtCoins','Coins per ad (1-100)'],['mtMax','Ads per day'],['mtCd','Wait between ads (seconds)']]],
  ['GigaPub row',[['gigaCoins','Coins per ad (1-100)'],['gigaMax','Ads per day'],['gigaCd','Wait between ads (seconds)']]],
@@ -4355,6 +4395,7 @@ async function startApp(){
       <button class="action btn-start" onclick="handleWithdraw()">Request Withdrawal</button>
       <div class="section-title">History</div>
       <div id="wdHistory"></div>
+      <button class="action" style="margin-top:14px;" onclick="openEarnHist()">📜 Earning history</button>
       ${IS_OWNER ? '<div class="section-title">Admin: withdrawal requests</div><div id="adminWd"></div>' : ''}
     </div>
   `;
