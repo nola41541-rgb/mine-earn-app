@@ -491,6 +491,17 @@
   .linkrows{margin:4px 0 12px;border:1px solid rgba(255,210,77,.35);border-radius:16px;background:rgba(8,26,102,.55);overflow:hidden;}
   .linkrow{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;font-size:15px;font-weight:700;color:#fff;border-bottom:1px solid rgba(255,210,77,.16);}
   .linkrow:last-child{border-bottom:none;} .linkrow i{font-style:normal;font-size:22px;color:#ffd34d;} .linkrow:active{background:rgba(255,210,77,.1);}
+
+.invgold{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;margin:6px 0 14px;padding:15px 16px;border:2px solid #fff1a8;border-radius:16px;cursor:pointer;color:#3a2200;text-align:left;font-family:inherit;background:linear-gradient(180deg,#ffe36b 0%,#ffc21a 48%,#e69500 100%);box-shadow:0 0 0 1px #b07000,0 6px 18px rgba(255,190,30,.55),inset 0 2px 0 rgba(255,255,255,.75);animation:invPulse 1.8s ease-in-out infinite}
+.invgold::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.75),transparent);transform:skewX(-20deg);animation:invShine 2.6s ease-in-out infinite}
+.invgold:active{transform:scale(.98)}
+.invg-ic{font-size:30px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.invg-t{flex:1;display:flex;flex-direction:column;line-height:1.2}
+.invg-t b{font-size:17px;font-weight:900;letter-spacing:.2px}
+.invg-t small{font-size:12px;font-weight:600;opacity:.8}
+.invg-ar{font-size:28px;font-weight:900}
+@keyframes invShine{0%{left:-60%}55%,100%{left:130%}}
+@keyframes invPulse{0%,100%{box-shadow:0 0 0 1px #b07000,0 6px 18px rgba(255,190,30,.45),inset 0 2px 0 rgba(255,255,255,.75)}50%{box-shadow:0 0 0 1px #b07000,0 6px 28px rgba(255,210,60,.95),inset 0 2px 0 rgba(255,255,255,.75)}}
 </style>
 <script>
 /* images -> small blob URLs once at start (keeps scrolling smooth) */
@@ -1707,6 +1718,7 @@ function rnSkyline(c, color, hMax, off, seed, W, hy, windows){
 }
 function runnerDraw(){
   if(RA.ok){ runnerDrawArt(); return; }
+  if(!RA.failed){ const cv0 = gEl('gCanvas'), c0 = cv0.getContext('2d'); c0.fillStyle = '#0c1440'; c0.fillRect(0,0,cv0.width,cv0.height); c0.fillStyle = '#ffd34d'; c0.font = 'bold 18px system-ui'; c0.textAlign = 'center'; c0.fillText('Getting the street ready...', cv0.width/2, cv0.height/2); return; }
   const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const W = RN.W, H = RN.H, hy = RN.hy, py = RN.py, cx = W/2, L = RN.laneW;
   const f80 = rnProj(80);
   const yOf = z => hy + (py-hy)*(rnProj(Math.max(z,0))-f80)/(1-f80);
@@ -2073,6 +2085,7 @@ function shEnemy(c, e){
 }
 function shooterDraw(){
   const cv = gEl('gCanvas'); const c = cv.getContext('2d'); const W = SH.W, H = SH.H;
+  if(!GA.ok && !GA.failed){ c.fillStyle = '#050a28'; c.fillRect(0,0,W,H); c.fillStyle = '#ffd34d'; c.font = 'bold 18px system-ui'; c.textAlign = 'center'; c.fillText('Getting the sky ready...', W/2, H/2); return; }
   c.save();
   if(SH.shake>0){ c.translate((Math.random()-0.5)*SH.shake*14,(Math.random()-0.5)*SH.shake*10); }
   const bg = c.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#04030f'); bg.addColorStop(0.6,'#0d0a30'); bg.addColorStop(1,'#071742');
@@ -2135,7 +2148,7 @@ const RA = { ok:false, n:0, img:new Image(), bg:new Image(), M:{"run1":[0,0,122,
 function raLoad(){
   if(RA.started) return; RA.started = true;
   const done = ()=>{ if(++RA.n===2){ RA.ok = true; try{ if(G && !G.over && G.id==='runner' && !RN.started && !RN.dead) runnerDraw(); }catch(e){} } };
-  RA.img.onload = done; RA.bg.onload = done;
+  RA.img.onload = done; RA.bg.onload = done; RA.img.onerror = RA.bg.onerror = ()=>{ RA.failed = true; };
   RA.img.src = 'run.png'; RA.bg.src = 'run_bg.jpg';
 }
 function raSpr(c, k, x, y, w){
@@ -2229,7 +2242,7 @@ const GA = { ok:false, n:0, img:new Image(), bg:new Image(), M:{"scout":[0,0,80,
 function gaLoad(){
   if(GA.started) return; GA.started = true;
   const done = ()=>{ if(++GA.n===2){ GA.ok = true; try{ if(G && !G.over && G.id==='shooter' && !SH.started && !SH.dead) shooterDraw(); }catch(e){} } };
-  GA.img.onload = done; GA.bg.onload = done;
+  GA.img.onload = done; GA.bg.onload = done; GA.img.onerror = GA.bg.onerror = ()=>{ GA.failed = true; };
   GA.img.src = 'gal.png'; GA.bg.src = 'gal_bg.jpg';
 }
 function gaSpr(c, k, x, y, w, rot){
@@ -2903,6 +2916,11 @@ function zombieDraw(){
 // ---------------- Boxing Champion (free movement in the ring) ----------------
 const BX = { W:360, H:430 };
 function bxMap(x,z){ const y0 = BX.H*0.56, y1 = BX.H*0.82; return { sx: BX.W/2 + x*(0.95+0.1*z), sy: y0+(y1-y0)*z, sc: 0.74+0.2*z }; }
+function bxPreload(){
+  if(!BX.SP){ BX.SP = { cw:295, ch:248, ax:124, ay:245, idleh:242, img:new Image(), ok:false }; BX.SP.img.onload = ()=>{ BX.SP.ok = true; }; BX.SP.img.src = 'fighters.png'; }
+  if(!BX.bg){ BX.bg = new Image(); BX.bg.onload = ()=>{ BX.bgOk = true; }; BX.bg.src = 'bg.jpg'; }
+}
+setTimeout(bxPreload, 1200); setTimeout(()=>{ try{ raLoad(); }catch(e){} }, 2200); setTimeout(()=>{ try{ gaLoad(); }catch(e){} }, 3200);
 function boxingInit(){
   const cv = gEl('gCanvas'); BX.W = Math.min(window.innerWidth-20, 400); BX.H = 430; cv.width = BX.W; cv.height = BX.H; cv.style.background = '#0c0a1c';
   gHideExtras(); gamePauseShow(true);
@@ -2915,8 +2933,7 @@ function boxingInit(){
   p.style.display = 'grid';
   Object.assign(BX, { score:0, rounds:0, won:0, round:1, started:false, ended:false, paused:false, t:0, guard:0, last:performance.now(), parts:[], pops:[], shake:0, freeze:0, state:'fight', rT:0, brk:0, res:'', jx:0, jy:0, keys:{}, lostMatch:false, matchWin:false });
   boxingRound(true);
-  if(!BX.SP){ BX.SP = { cw:295, ch:248, ax:124, ay:245, idleh:242, img:new Image(), ok:false }; BX.SP.img.onload = ()=>{ BX.SP.ok = true; }; BX.SP.img.src = 'fighters.png'; }
-  if(!BX.bg){ BX.bg = new Image(); BX.bg.onload = ()=>{ BX.bgOk = true; }; BX.bg.src = 'bg.jpg'; }
+  bxPreload();
   let tx=0, ty=0, on=false;
   cv.ontouchstart = e=>{ const t = e.touches[0]; tx = t.clientX; ty = t.clientY; on = true; boxingBegin(); e.preventDefault(); };
   cv.ontouchmove = e=>{ if(!on) return; const t = e.touches[0]; const dx = t.clientX-tx, dy = t.clientY-ty, L = Math.hypot(dx,dy); if(L>6){ BX.jx = dx/Math.max(L,34); BX.jy = dy/Math.max(L,34); if(L>34){ BX.jx = dx/L; BX.jy = dy/L; } } e.preventDefault(); };
@@ -3117,6 +3134,7 @@ function boxAvatar(c,x,y,r,pal){ c.save(); c.beginPath(); c.arc(x,y,r,0,7); c.cl
   c.restore(); c.strokeStyle = '#ffb80b'; c.lineWidth = 3; c.beginPath(); c.arc(x,y,r,0,7); c.stroke(); }
 function boxingDraw(){
   const cv = gEl('gCanvas'); if(!cv || !G || G.id!=='boxing') return; const c = cv.getContext('2d'), W = BX.W, H = BX.H, P = BX.P, O = BX.O;
+  if(!(BX.bgOk && BX.SP && BX.SP.ok)){ c.fillStyle = '#0c0a1c'; c.fillRect(0,0,W,H); c.fillStyle = '#ffd34d'; c.font = 'bold 18px system-ui'; c.textAlign = 'center'; c.fillText('Getting the ring ready...', W/2, H/2); return; }
   c.save(); if(BX.shake>0) c.translate((Math.random()-.5)*9*BX.shake,(Math.random()-.5)*9*BX.shake);
   if(BX.bgOk){ const k = Math.max(W/BX.bg.width,H/BX.bg.height), iw = BX.bg.width*k, ih = BX.bg.height*k; c.drawImage(BX.bg,(W-iw)/2,(H-ih)/2+H*0.02,iw,ih); }
   else {
@@ -4356,7 +4374,7 @@ async function startApp(){
     </div>
     <div class="tab-content" id="tab-profile">
       <h1>Profile</h1>
-      <div class="linkrows" style="margin:6px 0 12px;"><div class="linkrow" onclick="openSh('shInvite')"><span>👥 Invite &amp; earn</span><i>›</i></div></div>
+      <button class="invgold" onclick="openSh('shInvite')"><span class="invg-ic">🎁</span><span class="invg-t"><b>Invite &amp; earn</b><small>Get coins for every friend you bring</small></span><span class="invg-ar">›</span></button>
       <div class="profile-card">
         <div class="profile-avatar">${photo}</div>
         <div class="profile-name">${name}</div>
