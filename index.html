@@ -478,14 +478,19 @@
   .gpw .gpn{flex:1;min-width:0;line-height:1.2;} .gpw .gpn b{display:block;font-size:14px;color:#fff;} .gpw .gpn span{font-size:12px;color:#ffd34d;font-weight:800;}
   .gpw .gpbtn{width:auto!important;margin:0!important;padding:8px 16px!important;font-size:13px!important;border-radius:12px!important;flex:none;}
 
+  .shsrc{display:none;} .shsrc.open{display:flex;}
   .erow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,210,77,.14);}
   .erow:last-child{border-bottom:none;} .erow b{display:block;font-size:14px;color:#fff;} .erow span{font-size:11px;color:var(--muted);} .erow i{font-style:normal;font-weight:800;color:#4cc38a;font-size:15px;}
 
-  #earnSheet{position:fixed;inset:0;z-index:9000;background:rgba(2,6,30,.78);display:flex;align-items:flex-end;justify-content:center;}
-  #earnSheet .esh{width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;background:#06155e;border:2px solid #ffb81c;border-radius:22px 22px 0 0;padding:14px 16px 18px;}
-  #earnSheet .esh-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;} #earnSheet .esh-top b{font-size:17px;color:#ffd34d;}
-  #earnSheet .esh-top button{width:36px;height:36px;border-radius:50%;border:2px solid #ffb81c;background:#0a2d9b;color:#ffd34d;font-size:16px;font-weight:800;}
-  #earnSheet .esh-body{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #earnSheet,.shs.open{position:fixed;inset:0;z-index:9000;background:rgba(2,6,30,.78);display:flex;align-items:flex-end;justify-content:center;}
+  #earnSheet .esh,.shs .esh{width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;background:#06155e;border:2px solid #ffb81c;border-radius:22px 22px 0 0;padding:14px 16px 18px;}
+  #earnSheet .esh-top,.shs .esh-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;} #earnSheet .esh-top b,.shs .esh-top b{font-size:17px;color:#ffd34d;}
+  #earnSheet .esh-top button,.shs .esh-top button{width:36px;height:36px;border-radius:50%;border:2px solid #ffb81c;background:#0a2d9b;color:#ffd34d;font-size:16px;font-weight:800;}
+  #earnSheet .esh-body,.shs .esh-body{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+
+  .linkrows{margin:4px 0 12px;border:1px solid rgba(255,210,77,.35);border-radius:16px;background:rgba(8,26,102,.55);overflow:hidden;}
+  .linkrow{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;font-size:15px;font-weight:700;color:#fff;border-bottom:1px solid rgba(255,210,77,.16);}
+  .linkrow:last-child{border-bottom:none;} .linkrow i{font-style:normal;font-size:22px;color:#ffd34d;} .linkrow:active{background:rgba(255,210,77,.1);}
 </style>
 <script>
 /* images -> small blob URLs once at start (keeps scrolling smooth) */
@@ -3176,6 +3181,9 @@ async function loadHistory(){
 }
 
 const EARN_LABELS = { game:'🎮 Game reward', ad_reward:'⛏️ Gold Mining', agmine_ad:'💎 Chest Rush', rich_ad:'🎁 Treasure Hunt', ag_ad:'🎬 AdsGram ad', mt_ad:'🎬 Monetag ad', giga_ad:'🎬 GigaPub ad', oc_ad:'🎬 OnClicka ad', adx_ad:'🎬 Adexium ad', task:'✅ Task', login_bonus:'📅 Daily login', ref_join:'👥 Friend joined', ref_paid:'👥 Referral bonus', ref_withdraw:'💸 Referral withdrew', welcome:'🎁 Welcome bonus', mining:'⛏️ Mining', admin_adjust:'🎁 Bonus' };
+function openSh(id){ const e = document.getElementById(id); if(e) e.classList.add('open'); }
+function closeSh(id){ const e = document.getElementById(id); if(e) e.classList.remove('open'); }
+function shBg(ev, el){ if(ev.target===el || (ev.target.closest && ev.target.closest('.earn-card'))) el.classList.remove('open'); }
 function closeEarnHist(){ const o = document.getElementById('earnSheet'); if(o) o.remove(); }
 async function openEarnHist(){
   closeEarnHist();
@@ -4272,17 +4280,6 @@ async function startApp(){
       <div class="earn-card" onclick="showTab('tasks')"><div class="earn-ic ic-tasks"><svg viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="17" rx="3"/><path d="M9 4.5V3.6c0-.5.4-.9.9-.9h4.2c.5 0 .9.4.9.9v.9"/><path d="M8.8 13.2l2.2 2.2 4.4-4.6"/></svg></div><div class="earn-tx"><b>Tasks</b><span>Join channels and follow pages for coins</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="comOpen('payouts')"><div class="earn-ic">🏆</div><div class="earn-tx"><b>Payouts &amp; leaderboard</b><span>See real payments and the top earners</span></div><div class="earn-go">›</div></div>
       <div class="earn-card" onclick="howOpen(0)"><div class="earn-ic">📖</div><div class="earn-tx"><b>How it works</b><span>Earning, coins and withdrawals explained</span></div><div class="earn-go">›</div></div>
-      <div class="section-title">Invite &amp; earn</div>
-      <div class="invite-card">
-        <div class="invite-top"><div class="earn-ic">👥</div><div class="earn-tx"><b>Invite friends</b><span>500 coins when a friend joins + 3,000 coins when their first withdrawal is paid</span></div></div>
-        <div class="invite-link" id="refLink"></div>
-        <div style="display:flex;gap:8px;"><button class="action" style="flex:1;" onclick="copyRef()" id="refCopyBtn">📋 Copy link</button><button class="action btn-collect" style="flex:1;" onclick="shareRef()">📤 Share</button></div>
-        <div class="tile-row" style="margin-top:12px;margin-bottom:0;">
-          <div class="tile"><div class="tile-num" id="refInvited">0</div><div class="tile-lbl">Friends joined</div></div>
-          <div class="tile"><div class="tile-num" id="refPaid">0</div><div class="tile-lbl">First withdrawals paid</div></div>
-          <div class="tile"><div class="tile-num" id="refEarned">0</div><div class="tile-lbl">Coins earned</div></div>
-        </div>
-      </div>
       <a class="support-btn" href="${SUPPORT_LINK}" target="_blank">💬 Contact Support</a>
       <div class="legal-row"><a onclick="comOpen('about')">About</a><a onclick="comOpen('terms')">Terms</a><a onclick="comOpen('privacy')">Privacy</a></div>
         ${IS_OWNER ? '<button class="action btn-collect" style="margin-top:10px;" onclick="admOpen()">🛠 Admin panel</button>' : ''}
@@ -4359,6 +4356,7 @@ async function startApp(){
     </div>
     <div class="tab-content" id="tab-profile">
       <h1>Profile</h1>
+      <div class="linkrows" style="margin:6px 0 12px;"><div class="linkrow" onclick="openSh('shInvite')"><span>👥 Invite &amp; earn</span><i>›</i></div></div>
       <div class="profile-card">
         <div class="profile-avatar">${photo}</div>
         <div class="profile-name">${name}</div>
@@ -4392,10 +4390,24 @@ async function startApp(){
         <input type="text" id="wdWallet" class="form-input" placeholder="Paste your wallet address">
       </div>
       <div class="error-msg" id="wdMessage"></div>
-      <button class="action btn-start" onclick="handleWithdraw()">Request Withdrawal</button>
-      <div class="section-title">History</div>
-      <div id="wdHistory"></div>
-      <button class="action" style="margin-top:14px;" onclick="openEarnHist()">📜 Earning history</button>
+      <button class="action btn-collect" style="margin-bottom:14px;" onclick="handleWithdraw()">💸 Request Withdrawal</button>
+      <div class="linkrows">
+        <div class="linkrow" onclick="openSh('shWd')"><span>💸 Withdrawal history</span><i>›</i></div>
+        <div class="linkrow" onclick="openEarnHist()"><span>📜 Earning history</span><i>›</i></div>
+      </div>
+      <div class="shs shsrc" id="shWd" onclick="shBg(event,this)"><div class="esh"><div class="esh-top"><b>💸 Withdrawal history</b><button onclick="closeSh('shWd')">✕</button></div><div class="esh-body"><div id="wdHistory"></div></div></div></div>
+      <div class="shs shsrc" id="shInvite" onclick="shBg(event,this)"><div class="esh"><div class="esh-top"><b>👥 Invite &amp; earn</b><button onclick="closeSh('shInvite')">✕</button></div><div class="esh-body">
+      <div class="invite-card">
+        <div class="invite-top"><div class="earn-ic">👥</div><div class="earn-tx"><b>Invite friends</b><span>500 coins when a friend joins + 3,000 coins when their first withdrawal is paid</span></div></div>
+        <div class="invite-link" id="refLink"></div>
+        <div style="display:flex;gap:8px;"><button class="action" style="flex:1;" onclick="copyRef()" id="refCopyBtn">📋 Copy link</button><button class="action btn-collect" style="flex:1;" onclick="shareRef()">📤 Share</button></div>
+        <div class="tile-row" style="margin-top:12px;margin-bottom:0;">
+          <div class="tile"><div class="tile-num" id="refInvited">0</div><div class="tile-lbl">Friends joined</div></div>
+          <div class="tile"><div class="tile-num" id="refPaid">0</div><div class="tile-lbl">First withdrawals paid</div></div>
+          <div class="tile"><div class="tile-num" id="refEarned">0</div><div class="tile-lbl">Coins earned</div></div>
+        </div>
+      </div>
+      </div></div></div>
       ${IS_OWNER ? '<div class="section-title">Admin: withdrawal requests</div><div id="adminWd"></div>' : ''}
     </div>
   `;
