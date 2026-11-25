@@ -304,6 +304,35 @@
   .adm-stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;}
   .adm-stat b{display:block;font-size:20px;color:var(--gold);margin-bottom:2px;}
   .adm-stat span{font-size:12px;color:var(--muted);}
+  .au-search{display:flex;align-items:center;gap:10px;background:#071a66;border:2px solid #ffc21a;border-radius:14px;padding:11px 14px;box-shadow:0 0 14px rgba(255,194,26,.3);margin-bottom:10px;}
+  .au-search input{flex:1;background:transparent;border:0;outline:0;color:#fff;font-size:15px;min-width:0;}
+  .au-chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;}
+  .au-chip{padding:7px 12px;border-radius:99px;background:#0a2276;border:1px solid #2a4acb;font-size:13px;color:#fff;cursor:pointer;}
+  .au-chip.on{background:#ffd700;color:#3a2200;font-weight:800;border-color:#ffd700;}
+  .au-cnt{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin:0 2px 8px;}
+  .au-cnt select{background:#0a2276;color:#fff;border:1px solid #2a4acb;border-radius:8px;padding:5px;font-size:12px;}
+  .au-card{background:linear-gradient(#0c2fa6,#0a2480);border:1.5px solid rgba(255,194,26,.55);border-radius:16px;padding:12px;margin-bottom:9px;cursor:pointer;}
+  .au-r1{display:flex;gap:10px;align-items:center;}
+  .au-av{width:42px;height:42px;flex:none;border-radius:50%;background:#071a66;border:2px solid #ffd700;display:grid;place-items:center;font-weight:800;color:#ffd700;}
+  .au-av.big{width:64px;height:64px;margin:0 auto 8px;font-size:24px;}
+  .au-nm{flex:1;min-width:0;line-height:1.25;}.au-nm b{font-size:15px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.au-nm small{display:block;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .au-st{font-size:11px;font-weight:800;padding:4px 9px;border-radius:99px;white-space:nowrap;}
+  .au-st.ok{background:#12391f;color:#7ee08f;}.au-st.in{background:#3a3210;color:#ffd34d;}.au-st.sp{background:#431212;color:#ff8a8a;}
+  .au-r2{display:flex;gap:8px;margin-top:10px;}
+  .au-m{flex:1;background:#06185f;border-radius:10px;padding:7px 9px;}.au-m small{display:block;color:var(--muted);font-size:10.5px;}.au-m b{font-size:14px;color:#ffd700;}
+  .au-pg{display:flex;justify-content:center;align-items:center;gap:6px;margin:12px 0;flex-wrap:wrap;}
+  .au-pg span{min-width:38px;text-align:center;padding:10px 6px;border-radius:10px;background:#0a2276;border:1px solid #2a4acb;font-size:14px;cursor:pointer;color:#fff;}
+  .au-pg span.on{background:#ffd700;color:#3a2200;font-weight:800;border-color:#ffd700;}.au-pg span.dots{background:none;border:0;cursor:default;min-width:16px;}
+  .au-back{color:#ffd700;font-size:14px;margin-bottom:10px;cursor:pointer;}
+  .au-hero{text-align:center;background:linear-gradient(#0c2fa6,#0a2480);border:2px solid #ffc21a;border-radius:18px;padding:16px;margin-bottom:10px;}
+  .au-hero h2{margin:0;font-size:19px;}.au-hero small{color:var(--muted);}
+  .au-bal{font-size:28px;font-weight:900;color:#ffd700;margin-top:8px;}.au-usd{color:var(--muted);font-size:12px;}
+  .au-acts{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;}.au-acts button{flex:1 1 30%;padding:12px 4px;border-radius:12px;font-weight:800;font-size:13px;border:1px solid #ffc21a;background:#0a2276;color:#ffd700;}
+  .au-acts .g{background:linear-gradient(#ffe36b,#e69500);color:#3a2200;border:0;}.au-acts .rd{background:#431212;border-color:#ff8a8a;color:#ff8a8a;}
+  .au-sec{background:#071a66;border:1px solid #2a4acb;border-radius:14px;padding:12px;margin-bottom:10px;}.au-sec h3{margin:0 0 8px;font-size:14px;color:#ffd700;}
+  .au-ip{background:rgba(67,18,18,.7);border:1px solid rgba(255,138,138,.4);border-radius:12px;padding:10px;margin-bottom:8px;}
+  .au-acc{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid rgba(255,255,255,.08);font-size:13px;}.au-acc>div{flex:1;min-width:0;}.au-acc small{display:block;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .au-acc button{padding:8px 12px;border-radius:9px;font-size:12px;font-weight:800;border:0;color:#fff;}.au-acc .sus{background:#ff5a5a;}.au-acc .re{background:#0a2276;border:1px solid #ffc21a;color:#ffd700;}
   .adm-user{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:8px;}
   .adm-row{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin:3px 0;}
   .adm-row span{color:var(--muted);}
@@ -624,8 +653,10 @@ const AG_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/rows-hub2'
 let AGS = null;
 const CAT_LABEL = {social:'Social',daily:'Daily Wins',exclusive:'Special',partner:'Featured'};
 const ADMIN2_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-pro4';
+const ADMIN3_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-users';
+const ADMIN4_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/admin-refs';
 const TASK_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/task-hub';
-const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-v2';
+const REF_URL = 'https://wtaqrahiqjfkdfcrbetn.supabase.co/functions/v1/refer-v3';
 const BOT_APP_LINK = 'https://t.me/mineearnx_bot/mineearn';
 function myRefLink(){ return BOT_APP_LINK + '?startapp=' + TG_ID; }
 const IS_OWNER = TG_ID === OWNER_TG_ID;
@@ -3369,10 +3400,15 @@ async function gigaWatch(){
   const alertMsg = m => { try{ window.alert(m); }catch(e){ alert(m); } };
   if(GIGA && GIGA.cooldownLeft > 0 && Date.now() < (GIGA.cdUntil||0)){ alertMsg('Please wait '+Math.ceil(((GIGA.cdUntil)-Date.now())/1000)+' seconds before the next ad.'); return; }
   if(typeof window.showGiga !== 'function'){ alertMsg('Ads are not ready yet. Please try again in a moment.'); return; }
+  const gTapOn = !!(GIGA && GIGA.base < GIGA.per);
+  if(gTapOn) await tapIntro(GIGA.per, GIGA.base);
   if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  const tk = tapTrack();
   try{
     await window.showGiga();
+    tk.stop();
   }catch(e){
+    tk.stop();
     if(btn){ btn.disabled = false; btn.textContent = '▶ Watch ad'; }
     alertMsg('No ad available right now. Please try again later.');
     return;
@@ -3380,13 +3416,13 @@ async function gigaWatch(){
   if(btn) btn.textContent = 'Confirming...';
   let res = null, lastErr = '';
   for(let i=0;i<8;i++){
-    try{ res = await api('gigaClaim', {}, GIGA_URL); break; }
+    try{ res = await api('gigaClaim', { tapped: tk.left }, GIGA_URL); break; }
     catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await new Promise(r=>setTimeout(r,1500)); }
   }
   if(res){
     state.balance = res.balance; render();
-    GIGA = { done:res.done, max:res.max, per:res.per, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
-    adFinished({ reward:res.amount, progress:'Task progress '+res.done+'/'+res.max });
+    GIGA = { done:res.done, max:res.max, per:res.per, base:res.base, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
+    adFinished({ title:(gTapOn && res.tapped)?'Ad tapped! Full reward':'Ad finished', reward:res.amount, progress:tapSummary(res, 'Task progress '+res.done+'/'+res.max) });
   } else {
     alertMsg(lastErr || 'The ad was not confirmed, so no coins were added.');
     GIGA = null;
@@ -3432,7 +3468,7 @@ async function renderTasks(){
       if(!GIGA){ try{ GIGA = await api('gigaStatus', {}, GIGA_URL); }catch(e){ GIGA = null; } }
       if(GIGA){
         const gfull = GIGA.done >= GIGA.max;
-        h += '<div class="tk-card'+(gfull?' done':'')+'" style="border-left-color:#3ad17c;">'+tkRing(GIGA.done,GIGA.max)+'<div class="tk-main"><div class="tk-title">GigaPub</div><div class="tk-meta">'+GIGA.per+' coins per ad • '+GIGA.done+'/'+GIGA.max+' today • paid after the ad is confirmed</div><div class="tk-actions">'
+        h += '<div class="tk-card'+(gfull?' done':'')+'" style="border-left-color:#3ad17c;">'+tkRing(GIGA.done,GIGA.max)+'<div class="tk-main"><div class="tk-title">GigaPub</div><div class="tk-meta">'+(GIGA.base<GIGA.per ? GIGA.per+' coins if you tap the ad ('+GIGA.base+' without a tap)' : GIGA.per+' coins per ad')+' • '+GIGA.done+'/'+GIGA.max+' today</div><div class="tk-actions">'
           + (gfull ? '<button class="tk-btn d" disabled>'+OKB+'Done today</button>' : '<button class="tk-btn f" id="gigaBtn" onclick="gigaWatch()">▶ Watch ad '+(GIGA.done+1)+'</button>')
           + '</div></div></div>';
       }
@@ -3623,16 +3659,17 @@ function admClose(){ admEnsure().classList.remove('open'); }
 function admShell(inner){
   const t = (k,l)=>'<button class="'+(ADM.tab===k?'on':'')+'" onclick="admTab(\''+k+'\')">'+l+'</button>';
   admEnsure().innerHTML = '<div class="adm-head"><h1>Admin panel</h1><button class="tk-btn o" onclick="admClose()">✕ Close</button></div>'
-    + '<div class="adm-tabs">'+t('stats','Stats')+t('users','Users')+t('announce','Announce')+t('games','Games')+t('ips','IPs')+t('settings','Settings')+t('log','Log')+'</div>'
+    + '<div class="adm-tabs">'+t('stats','Stats')+t('users','Users')+t('announce','Announce')+t('games','Games')+t('ips','IPs')+t('refs','Referrals')+t('settings','Settings')+t('log','Log')+'</div>'
     + '<div id="admBody">'+inner+'</div>';
 }
 function admTab(k){
   ADM.tab = k;
   if(k==='stats') admStats();
-  else if(k==='users') admUsers('');
+  else if(k==='users') admUsers();
   else if(k==='announce') admAnnounce();
   else if(k==='games') admGames();
   else if(k==='ips') admIps();
+  else if(k==='refs') admRefs();
   else if(k==='settings') admSettings();
   else admLog();
 }
@@ -3660,21 +3697,130 @@ async function admStats(){
       + '</div><button class="action" style="margin-top:6px;" onclick="admStats()">↻ Refresh</button>';
   }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
 }
-async function admUsers(q){
-  admShell('<div style="display:flex;gap:8px;margin-bottom:10px;"><input id="admQ" class="form-input" inputmode="numeric" placeholder="Telegram ID" value="'+esc(q)+'"><button class="tk-btn f" onclick="admUsers(document.getElementById(\'admQ\').value)">Find</button></div><div id="admList"><div class="tk-empty">Loading...</div></div>');
+const ADM_UQ = { q:'', filter:'all', sort:'today', page:1 };
+function admWho(u){ return esc(u.name || (u.username ? '@'+u.username : 'Name not seen yet')); }
+function admSub(u){ return esc((u.username ? '@'+u.username : 'no username')+' · ID '+u.id); }
+function admAgo(ms){
+  if(!ms) return 'never';
+  const m = Math.floor((Date.now()-ms)/60000);
+  if(m < 2) return 'just now'; if(m < 60) return m+'m ago';
+  const h = Math.floor(m/60); if(h < 48) return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}
+function admStatus(u){
+  if(u.banned) return '<span class="au-st sp">Suspended</span>';
+  return u.active ? '<span class="au-st ok">Active</span>' : '<span class="au-st in">Inactive · '+admAgo(u.seenMs)+'</span>';
+}
+let ADM_UT = null;
+function admSearchInput(el){ ADM_UQ.q = el.value; ADM_UQ.page = 1; clearTimeout(ADM_UT); ADM_UT = setTimeout(()=>admUsers(true), 450); }
+function admFilter(f){ ADM_UQ.filter = f; ADM_UQ.page = 1; admUsers(); }
+function admSort(v){ ADM_UQ.sort = v; ADM_UQ.page = 1; admUsers(); }
+function admPage(n){ ADM_UQ.page = n; admUsers(); }
+async function admUsers(keepFocus){
+  if(typeof keepFocus !== 'boolean') keepFocus = false;
+  if(!document.getElementById('admList')){
+    admShell('<div class="au-search"><i>🔍</i><input id="admQ" placeholder="Search ID, @username or name" value="'+esc(ADM_UQ.q)+'" oninput="admSearchInput(this)"></div><div id="admChips"></div><div id="admList"><div class="tk-empty">Loading...</div></div>');
+  }
   try{
-    const r = await api('userFind', { q }, ADMIN_URL);
-    ADM.rows = r.rows;
+    const r = await api('userSearch', { q:ADM_UQ.q, filter:ADM_UQ.filter, sort:ADM_UQ.sort, page:ADM_UQ.page }, ADMIN3_URL);
+    ADM_UQ.page = r.page;
+    const c = r.counts, F = (k,l,n)=>'<span class="au-chip'+(ADM_UQ.filter===k?' on':'')+'" onclick="admFilter(\''+k+'\')">'+l+' '+n+'</span>';
+    document.getElementById('admChips').innerHTML = '<div class="au-chips">'+F('all','All',c.all)+F('active','Active',c.active)+F('inactive','Inactive',c.inactive)+F('suspended','Suspended',c.suspended)+F('new','New today',c.fresh)+'</div>'
+      + '<div class="au-cnt"><span>'+(r.total?('Showing '+((r.page-1)*10+1)+'–'+Math.min(r.total,r.page*10)+' of '+r.total):'No users')+'</span><select onchange="admSort(this.value)"><option value="today"'+(ADM_UQ.sort==='today'?' selected':'')+'>Most earned today</option><option value="balance"'+(ADM_UQ.sort==='balance'?' selected':'')+'>Highest balance</option><option value="joined"'+(ADM_UQ.sort==='joined'?' selected':'')+'>Newest</option><option value="seen"'+(ADM_UQ.sort==='seen'?' selected':'')+'>Last seen</option></select></div>';
     const list = document.getElementById('admList');
-    if(!r.rows.length){ list.innerHTML = '<div class="tk-empty">'+esc(r.note||'No users.')+'</div>'; return; }
-    list.innerHTML = (r.note?'<div class="tk-meta" style="margin-bottom:8px;">'+esc(r.note)+'</div>':'')
-      + r.rows.map((u,i)=>'<div class="adm-user"><div class="adm-row"><b>ID '+esc(u.id)+'</b><b style="color:'+(u.banned?'#ff8a8a':'#7ecb7e')+'">'+(u.banned?'Suspended':'Active')+'</b></div>'
-      + '<div class="adm-row"><span>Balance</span><b>'+admNum(u.balance)+' coins</b></div>'
-      + '<div class="adm-row"><span>Referrals</span>'+u.referrals+'</div>'
-      + '<div class="adm-row"><span>Tasks done</span>'+u.tasks+'</div>'
-      + '<div class="adm-row"><span>Invited by</span>'+esc(u.referredBy||'-')+'</div>'
-      + '<div style="display:flex;gap:8px;margin-top:8px;"><button class="tk-btn f" style="flex:1;" onclick="admCoins('+i+')">± Coins</button><button class="tk-btn o" style="flex:1;" onclick="admBan('+i+')">'+(u.banned?'Unsuspend':'Suspend')+'</button></div><button class="tk-btn o" style="width:100%;margin-top:8px;" onclick="admActivity('+i+')">📅 Daily activity</button></div>').join('');
-  }catch(e){ document.getElementById('admList').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+    if(!r.rows.length){ list.innerHTML = '<div class="tk-empty">No users found.</div>'; return; }
+    let pg = '';
+    if(r.pages > 1){
+      const nums = []; for(let i=1;i<=r.pages;i++){ if(i===1||i===r.pages||Math.abs(i-r.page)<=1) nums.push(i); else if(nums[nums.length-1]!=='…') nums.push('…'); }
+      pg = '<div class="au-pg"><span onclick="admPage('+Math.max(1,r.page-1)+')">‹</span>'+nums.map(n=>n==='…'?'<span class="dots">…</span>':'<span class="'+(n===r.page?'on':'')+'" onclick="admPage('+n+')">'+n+'</span>').join('')+'<span onclick="admPage('+Math.min(r.pages,r.page+1)+')">›</span></div>';
+    }
+    list.innerHTML = r.rows.map(u=>'<div class="au-card" onclick="admProfile(\''+u.id+'\')"><div class="au-r1"><div class="au-av">'+esc((u.name||u.username||'?').slice(0,1).toUpperCase())+'</div><div class="au-nm"><b>'+admWho(u)+'</b><small>'+admSub(u)+'</small></div>'+admStatus(u)+'</div>'
+      + '<div class="au-r2"><div class="au-m"><small>Balance</small><b>'+admNum(u.balance)+'</b></div><div class="au-m"><small>Today</small><b>'+(u.today?'+':'')+admNum(u.today)+'</b></div><div class="au-m"><small>Friends</small><b>'+u.friends+'</b></div></div></div>').join('') + pg;
+    if(keepFocus){ const el = document.getElementById('admQ'); if(el){ el.focus(); const n = el.value.length; try{ el.setSelectionRange(n,n); }catch(e){} } }
+  }catch(e){ const l = document.getElementById('admList'); if(l) l.innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+const ADM_GAMES = { snake:'Snake', runner:'Endless Runner', shooter:'Star Patrol', galaxy:'Star Patrol', quiz:'Timed Quiz', zombie:'Zombie Survival', boxing:'Boxing Champion' };
+async function admProfile(id){
+  admShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('userProfile', { id }, ADMIN3_URL);
+    ADM.prof = r;
+    const nm = esc(r.name || (r.username ? '@'+r.username : 'Name not seen yet'));
+    const seenMs = r.seen ? new Date(r.seen).getTime() : 0;
+    const st = r.banned ? '<span class="au-st sp">Suspended</span>' : (r.active ? '<span class="au-st ok">Active · seen '+admAgo(seenMs)+'</span>' : '<span class="au-st in">Inactive · seen '+admAgo(seenMs)+'</span>');
+    const person = p=>p ? esc((p.name||'')+(p.username?' @'+p.username:'')||'ID '+p.id)+' · ID '+esc(p.id) : '-';
+    let h = '<div class="au-back" onclick="admUsers()">‹ Back to users</div>'
+      + '<div class="au-hero"><div class="au-av big">'+esc((r.name||r.username||'?').slice(0,1).toUpperCase())+'</div><h2>'+nm+'</h2><small>'+(r.username?'@'+esc(r.username):'no username')+' · ID '+esc(r.id)+'</small><div style="margin-top:6px;">'+st+'</div>'
+      + '<div class="au-bal">'+admNum(r.balance)+' coins</div><div class="au-usd">≈ '+admUsd(r.balance)+' · Joined '+esc(String(r.joined||'').slice(0,10))+'</div></div>'
+      + '<div class="au-acts"><button class="g" onclick="admAddCoins(1)">＋ Add coins</button><button class="o" onclick="admAddCoins(-1)">－ Deduct</button><button class="o" onclick="admMsgUser()">✉️ Message</button><button class="'+(r.banned?'o':'rd')+'" onclick="admToggleBan(\''+r.id+'\','+(!r.banned)+',\'profile\')">'+(r.banned?'✅ Reactivate':'🚫 Suspend')+'</button></div>'
+      + '<div class="au-sec"><h3>Account</h3><div class="adm-row"><span>Invited by</span><b style="text-align:right;">'+person(r.inviter)+'</b></div><div class="adm-row"><span>Referrals</span><b>'+r.friendsCount+' friends</b></div><div class="adm-row"><span>Tasks completed</span><b>'+r.tasks+'</b></div><div class="adm-row"><span>Earned today</span><b>+'+admNum(r.todayNet)+' coins</b></div>'
+      + (r.ips&&r.ips.length?'<div class="adm-row"><span>Recent IP</span><b>'+esc(r.ips[0].ip)+'</b></div>':'')+'</div>';
+    h += '<div class="au-sec"><h3>Friends invited (need '+(r.friends[0]?r.friends[0].need:10)+' AdsGram ads)</h3>'+(r.friends.length ? r.friends.slice(0,30).map(f=>'<div class="adm-row" onclick="admProfile(\''+f.id+'\')" style="cursor:pointer;"><span>'+esc(f.username?'@'+f.username:(f.name||'ID '+f.id))+'</span><b style="color:'+(f.ads>=f.need?'#7ecb7e':'#ffd34d')+'">'+Math.min(f.ads,f.need)+'/'+f.need+(f.ads>=f.need?' ✓':' waiting')+'</b></div>').join('') : '<div class="tk-meta">No friends invited.</div>')+'</div>';
+    const gk = Object.keys(r.games||{});
+    h += '<div class="au-sec"><h3>Games played</h3>'+(gk.length ? gk.map(k=>'<div class="adm-row"><span>'+esc(ADM_GAMES[k]||k)+'</span><b>'+r.games[k].runs+' runs · '+admNum(r.games[k].coins)+' coins</b></div>').join('') : '<div class="tk-meta">No games played yet.</div>')+'</div>';
+    const tk = Object.keys(r.todayKinds||{});
+    h += '<div class="au-sec"><h3>Today by source</h3>'+(tk.length ? tk.map(k=>'<div class="adm-row"><span>'+esc(KIND_NAMES[k]||k)+' ('+r.todayKinds[k].count+')</span><b style="color:'+(r.todayKinds[k].coins>=0?'#7ecb7e':'#ff8a8a')+'">'+(r.todayKinds[k].coins>0?'+':'')+admNum(r.todayKinds[k].coins)+'</b></div>').join('') : '<div class="tk-meta">No activity today.</div>')+'</div>';
+    h += '<div class="au-sec"><h3>Activity history</h3><div id="admLedger"><div class="tk-meta">Loading...</div></div></div>';
+    document.getElementById('admBody').innerHTML = h;
+    admLedgerPage(1);
+  }catch(e){ document.getElementById('admBody').innerHTML = '<div class="au-back" onclick="admUsers()">‹ Back to users</div><div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function admLedgerPage(n){
+  const r0 = ADM.prof; if(!r0) return;
+  try{
+    const r = await api('userLedger', { id:r0.id, page:n }, ADMIN3_URL);
+    const box = document.getElementById('admLedger'); if(!box) return;
+    box.innerHTML = (r.rows.length ? r.rows.map(x=>'<div class="adm-row"><span>'+esc(String(x.at||'').slice(5,16).replace('T',' '))+' · '+esc(KIND_NAMES[x.kind]||x.kind)+'</span><b style="color:'+(x.amount>=0?'#7ecb7e':'#ff8a8a')+'">'+(x.amount>0?'+':'')+admNum(x.amount)+'</b></div>').join('') : '<div class="tk-meta">No history yet.</div>')
+      + (r.pages>1 ? '<div class="au-pg" style="margin-top:8px;"><span onclick="admLedgerPage('+Math.max(1,r.page-1)+')">‹</span><span class="on">'+r.page+'/'+r.pages+'</span><span onclick="admLedgerPage('+Math.min(r.pages,r.page+1)+')">›</span></div>' : '');
+  }catch(e){ const box = document.getElementById('admLedger'); if(box) box.innerHTML = '<div class="tk-meta">'+esc(e.message)+'</div>'; }
+}
+async function admAddCoins(sign){
+  const u = ADM.prof; if(!u) return;
+  const a = await appPrompt('Balance: '+admNum(u.balance)+' coins\n\nHow many coins to '+(sign>0?'ADD':'DEDUCT')+'?',(sign>0?'Add':'Deduct')+' coins','e.g. 500');
+  if(a===null) return;
+  const n = Number(String(a).replace(/[, ]/g,''));
+  if(!Number.isInteger(n) || n<=0){ alert('Enter a whole number above 0.'); return; }
+  const reason = await appPrompt('Short reason (saved in the Log)','Reason','Reason','');
+  if(reason===null) return;
+  if(!(await appConfirm((sign>0?'Add ':'Remove ')+admNum(n)+' coins '+(sign>0?'to ':'from ')+(u.name||u.username||u.id)+'?','Yes','Cancel','Confirm','🪙'))) return;
+  try{ const r = await api('userAdjust', { id:u.id, amount:sign*n, reason }, ADMIN3_URL); appDialog({title:'Done',text:'New balance: '+admNum(r.balance)+' coins',icon:OKBIG}); }catch(e){ alert(e.message); }
+  admProfile(u.id);
+}
+async function admMsgUser(){
+  const u = ADM.prof; if(!u) return;
+  const t = await appPrompt('Message for '+(u.name||u.username||u.id)+' (sent from the bot, up to 1000 characters)','Message user','Write your message');
+  if(t===null || !String(t).trim()) return;
+  if(!(await appConfirm('Send this message?\n\n'+String(t).trim(),'Send','Cancel','Send message','✉️'))) return;
+  try{ await api('userMessage', { id:u.id, text:String(t).trim() }, ADMIN3_URL); appDialog({title:'Sent',text:'Your message was delivered.',icon:OKBIG}); }catch(e){ alert(e.message); }
+}
+async function admToggleBan(id, ban, from){
+  if(!(await appConfirm((ban?'Suspend':'Reactivate')+' user '+id+'?'+(ban?'\n\nA suspended user cannot earn coins or request withdrawals.':''),'Yes','Cancel','Confirm','🚫'))) return;
+  try{ await api('userBan', { id, banned:ban }, ADMIN3_URL); }catch(e){ alert(e.message); return; }
+  if(from==='ips') admIps(); else admProfile(id);
+}
+async function admRefs(){
+  admShell('<div class="tk-empty">Loading...</div>');
+  try{
+    const r = await api('refWaiting', {}, ADMIN4_URL);
+    let h = '<div class="wallet-box" style="line-height:1.5;margin-bottom:10px;">A friend counts only after watching '+r.need+' AdsGram ads in Daily Wins. Friends below have not reached that yet.</div>'
+      + '<button class="action btn-collect" style="margin-bottom:12px;" onclick="admCleanup()">🧹 Clean up old referrals</button>'
+      + '<div class="tk-meta" style="margin-bottom:8px;">Waiting friends: '+admNum(r.total)+(r.total>r.rows.length?' (showing '+r.rows.length+')':'')+'</div>';
+    h += r.rows.length ? r.rows.map(w=>'<div class="au-sec" onclick="admProfile(\''+w.friend+'\')" style="cursor:pointer;"><div class="adm-row"><b>'+esc(w.friendName||('ID '+w.friend))+'</b><b style="color:#ffd34d">'+w.ads+'/'+r.need+'</b></div><div class="tk-meta">Invited by '+esc(w.inviterName||('ID '+w.inviter))+(w.paid>0?' · already paid '+w.paid+' coins':'')+'</div></div>').join('') : '<div class="tk-empty">No friends are waiting.</div>';
+    document.getElementById('admBody').innerHTML = h;
+  }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
+}
+async function admCleanup(){
+  try{
+    const r = await api('refCleanupPreview', {}, ADMIN4_URL);
+    if(!r.friends){ appDialog({title:'Nothing to clean',text:'Every paid referral has watched '+r.need+' ads.',icon:OKBIG}); return; }
+    const top = r.rows.slice(0,8).map(x=>(x.name||x.inviter)+': '+x.friends+' friends, take '+admNum(x.take)).join('\n');
+    const ok = await appConfirm(r.friends+' friends of '+r.inviters+' inviters have not watched '+r.need+' ads.\n\nCoins to take back: '+admNum(r.totalTake)+' (owed '+admNum(r.totalOwed)+'; never below 0 balance).\n\n'+top+'\n\nTake the coins back now?','Take back','Cancel','Clean up referrals','🧹');
+    if(!ok) return;
+    let done = 0, taken = 0, rem = 1;
+    for(let i=0;i<10 && rem>0;i++){ const x = await api('refCleanupApply', {}, ADMIN4_URL); done += x.done; taken += x.taken; rem = x.remaining; if(!x.done) break; }
+    appDialog({title:'Done',text:'Referrals cleaned: '+done+'. Coins taken back: '+admNum(taken)+'.',icon:OKBIG});
+  }catch(e){ alert(e.message); }
+  admRefs();
 }
 async function admCoins(i){
   const u = ADM.rows[i]; if(!u) return;
@@ -3688,7 +3834,7 @@ async function admCoins(i){
   try{ const r = await api('userAdjust', { id:u.id, amount, reason }, ADMIN_URL); alert('Done. New balance: '+r.balance); }catch(e){ alert(e.message); }
   admUsers(u.id);
 }
-const KIND_NAMES = {mt_ad:'Monetag ads',mining:'Mining',ad_reward:'Ad rewards',giga_ad:'GigaPub ads',ag_ad:'AdsGram ads',rich_ad:'RichAds',login_bonus:'Login bonus',game:'Games',task:'Tasks',ref_join:'Referral (join)',admin_adjust:'Owner adjustment',withdraw:'Withdrawal',withdraw_refund:'Withdrawal refund'};
+const KIND_NAMES = {mt_ad:'Monetag ads',mining:'Mining',ad_reward:'Ad rewards',giga_ad:'GigaPub ads',ag_ad:'AdsGram ads',rich_ad:'RichAds',login_bonus:'Login bonus',game:'Games',task:'Tasks',ref_join:'Referral (join)',admin_adjust:'Owner adjustment',withdraw:'Withdrawal',withdraw_refund:'Withdrawal refund',ref_clawback:'Referral taken back',ref_withdraw:'Referral withdrawal bonus',welcome:'Welcome bonus',agmine_ad:'Chest Rush ads',mt_row:'Monetag ads'};
 async function admActivity(i){
   const u = ADM.rows[i]; if(!u) return;
   const today = new Date().toISOString().slice(0,10);
@@ -3737,7 +3883,10 @@ async function admIps(){
     const r = await api('ipList', {}, ADMIN2_URL);
     let h = '<div class="wallet-box" style="line-height:1.5;margin-bottom:10px;">IP addresses used by 2 or more accounts. Many accounts on one IP can be one person with several accounts, but mobile networks also share IPs between real people, so check before you ban. Tracking started when this update went live.</div>'
       + '<div class="tk-meta" style="margin-bottom:8px;">'+admNum(r.totalIps)+' IPs recorded</div>';
-    h += r.list.length ? r.list.map(g=>'<div class="adm-user"><div class="adm-row"><b>'+esc(g.ip)+'</b><b>'+g.count+' accounts</b></div><div class="tk-meta" style="word-break:break-all;">IDs: '+g.ids.map(esc).join(', ')+(g.count>g.ids.length?' …':'')+'</div><div class="tk-meta">Last seen: '+esc(String(g.last||'').slice(0,16).replace('T',' '))+' UTC</div></div>').join('') : '<div class="tk-empty">No IP is shared by 2 or more accounts yet.</div>';
+    h += r.list.length ? r.list.map(g=>'<div class="au-ip"><div class="adm-row"><b>'+esc(g.ip)+'</b><b style="color:#ff8a8a">'+g.count+' accounts</b></div>'
+      + (g.accounts||[]).map(a=>'<div class="au-acc"><div onclick="admProfile(\''+a.id+'\')" style="cursor:pointer;"><b>'+esc(a.name||(a.username?'@'+a.username:'Name not seen yet'))+'</b><small>'+esc(a.username?'@'+a.username+' · ':'')+'ID '+esc(a.id)+' · '+admNum(a.balance)+' coins</small></div>'
+        + '<button class="'+(a.banned?'re':'sus')+'" onclick="admToggleBan(\''+a.id+'\','+(!a.banned)+',\'ips\')">'+(a.banned?'Reactivate':'Suspend')+'</button></div>').join('')
+      + (g.count>(g.accounts||[]).length?'<div class="tk-meta">+ more accounts</div>':'')+'<div class="tk-meta">Last seen: '+esc(String(g.last||'').slice(0,16).replace('T',' '))+' UTC</div></div>').join('') : '<div class="tk-empty">No IP is shared by 2 or more accounts yet.</div>';
     document.getElementById('admBody').innerHTML = h + '<button class="action" style="margin-top:6px;" onclick="admIps()">↻ Refresh</button>';
   }catch(e){ document.getElementById('admBody').innerHTML = '<div class="tk-empty">'+esc(e.message)+'</div>'; }
 }
@@ -3758,9 +3907,9 @@ const ADM_FIELDS = [
  ['Mining',[['mineAds','Ads per collect (1-5)'],['mineSessions','Collects per slot per day (1-20)'],['mineAdMax','Mining ads per day, all mines together (1-500)'],['mineMin','Slot countdown minutes (1-240)']]],
  ['Chest Rush (Mine tab)',[['agmCoins','Coins per ad (1-100)'],['agmAds','Ads per collect (1-5)'],['agmSessions','Collects per chest per day (1-20)'],['agmAdMax','Ads per day, all chests together (1-500)'],['agmMin','Chest countdown minutes (1-240)']]],
  ['Bonuses',[['welcome','Welcome bonus for new users, coins (0 = off)'],['refWd','Referral withdrawal bonus, coins (0 = off)']]],
- ['AdsGram row',[['agCoins','Coins per ad (1-100)'],['agMax','Ads per day'],['agCd','Wait between ads (seconds)']]],
+ ['AdsGram row',[['agCoins','Full reward when the ad is tapped (coins, 1-100)'],['agBase','Reward without a tap (coins, 0 = same as full)'],['agMax','Ads per day'],['agCd','Wait between ads (seconds)']]],
  ['Monetag row',[['mtCoins','Coins per ad (1-100)'],['mtMax','Ads per day'],['mtCd','Wait between ads (seconds)']]],
- ['GigaPub row',[['gigaCoins','Coins per ad (1-100)'],['gigaMax','Ads per day'],['gigaCd','Wait between ads (seconds)']]],
+ ['GigaPub row',[['gigaCoins','Full reward when the ad is tapped (coins, 1-100)'],['gigaBase','Reward without a tap (coins, 0 = same as full)'],['gigaMax','Ads per day'],['gigaCd','Wait between ads (seconds)']]],
  ['OnClicka row',[['ocCoins','Coins per ad (1-100)'],['ocMax','Ads per day'],['ocCd','Wait between ads (seconds)']]],
  ['RichAds slot (Mine tab)',[['richMax','Collects per day'],['richCd','Countdown in seconds (1800 = 30 min)'],['richShare','Our coin share percent (5-90)']]],
  ['Snake',[['playsSnake','New plays per day (1-50)'],['maxSnake','Max coins per play (1-250)']]],
@@ -3769,6 +3918,7 @@ const ADM_FIELDS = [
  ['Quiz',[['playsQuiz','New plays per day (1-50)'],['maxQuiz','Max coins per play (1-250)']]],
  ['Zombie Survival',[['playsZombie','New plays per day (1-50)'],['maxZombie','Max coins per play (1-250)']]],
  ['Boxing Champion',[['playsBoxing','New plays per day (1-50)'],['maxBoxing','Max coins per play (1-250)']]],
+ ['Referrals & activity',[['refAds','AdsGram ads a friend must watch before you are paid (1-100)'],['refBonus','Referral bonus for the inviter (coins)'],['inactiveDays','Days without activity before a user shows Inactive (1-30)']]],
 ];
 async function admSettings(){
   admShell('<div class="tk-empty">Loading...</div>');
@@ -3849,6 +3999,9 @@ async function renderRefInfo(){
     document.getElementById('refInvited').textContent = r.invited;
     document.getElementById('refPaid').textContent = r.paid;
     document.getElementById('refEarned').textContent = Number(r.earned).toLocaleString();
+    const tx = document.getElementById('refTxt'); if(tx && r.need) tx.textContent = Number(r.bonus).toLocaleString()+' coins when a friend watches '+r.need+' AdsGram ads in Daily Wins + 3,000 coins when their first withdrawal is paid';
+    const rl = document.getElementById('refList');
+    if(rl) rl.innerHTML = (r.friends||[]).length ? '<div class="tk-meta" style="margin-bottom:6px;">Your friends</div>' + r.friends.slice(0,20).map(f=>'<div class="adm-row"><span>'+esc(f.name)+'</span><b style="color:'+(f.done?'#7ecb7e':'#ffd34d')+'">'+(f.done?'Active ✓':f.ads+'/'+r.need+' ads')+'</b></div>').join('') : '';
   }catch(e){}
 }
 
@@ -4137,30 +4290,56 @@ async function agRowHtml(){
   if(!AGS){ try{ AGS = await api('agStatus', {}, AG_URL); AGS.cdUntil = Date.now()+AGS.cooldownLeft*1000; }catch(e){ AGS = null; } }
   if(!AGS) return '';
   const full = AGS.done >= AGS.max;
-  return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:#d97a05;">'+tkRing(AGS.done,AGS.max)+'<div class="tk-main"><div class="tk-title">AdsGram ad</div><div class="tk-meta">'+AGS.per+' coins per ad • '+AGS.done+'/'+AGS.max+' today • watch the full ad</div><div class="tk-actions">'
+  return '<div class="tk-card'+(full?' done':'')+'" style="border-left-color:#d97a05;">'+tkRing(AGS.done,AGS.max)+'<div class="tk-main"><div class="tk-title">AdsGram ad</div><div class="tk-meta">'+(AGS.base<AGS.per ? AGS.per+' coins if you tap the ad ('+AGS.base+' without a tap)' : AGS.per+' coins per ad')+' • '+AGS.done+'/'+AGS.max+' today</div><div class="tk-actions">'
     + (full ? '<button class="tk-btn d" disabled>'+OKB+'Done today</button>' : '<button class="tk-btn f" id="agBtn" onclick="agWatch()">▶ Watch ad '+(AGS.done+1)+'</button>')
     + '</div></div></div>';
+}
+// Detects whether the player left the mini app while an ad was on screen (what happens when the ad is tapped)
+function tapTrack(){
+  const t = { left:false, since:0, stop:null };
+  const hide = ()=>{ if(!t.since) t.since = Date.now(); };
+  const show = ()=>{ if(t.since){ if(Date.now()-t.since >= 1200) t.left = true; t.since = 0; } };
+  const vc = ()=>{ if(document.hidden) hide(); else show(); };
+  document.addEventListener('visibilitychange', vc);
+  let w = null; try{ w = window.Telegram.WebApp; w.onEvent('deactivated', hide); w.onEvent('activated', show); }catch(e){ w = null; }
+  t.stop = ()=>{ document.removeEventListener('visibilitychange', vc); try{ if(w){ w.offEvent('deactivated', hide); w.offEvent('activated', show); } }catch(e){} show(); };
+  return t;
+}
+let TAP_INFO_SEEN = false;
+async function tapIntro(per, base){
+  if(!(base < per)) return;
+  if(!TAP_INFO_SEEN){
+    TAP_INFO_SEEN = true;
+    await appDialog({ title:'Tap the ad for the full reward', text:'Tap the ad to earn your complete reward of '+per+' coins. If you only watch, you get '+base+' coins.', ok:'Watch ad', icon:'👆' });
+  } else topBubble('Tap the ad to earn the full '+per+' coins');
+}
+function tapSummary(res, extra){
+  const full = res.full || res.per;
+  return (extra||'') + (res.tapped || !(res.base < full) ? '' : ' • No tap detected. Tap the next ad for the full '+full+' coins');
 }
 async function agWatch(){
   if(!AGS) return;
   const btn = document.getElementById('agBtn');
   if(AGS.cooldownLeft > 0 && Date.now() < (AGS.cdUntil||0)){ warnPop('Please wait '+Math.ceil((AGS.cdUntil-Date.now())/1000)+' seconds before the next ad.'); return; }
-  topBubble('Watch the full ad to earn '+AGS.per+' coins');
+  const tapOn = AGS.base < AGS.per;
+  if(tapOn) await tapIntro(AGS.per, AGS.base); else topBubble('Watch the full ad to earn '+AGS.per+' coins');
   if(btn){ btn.disabled = true; btn.textContent = 'Loading ad…'; }
+  const tk = tapTrack();
   const r = await agShowRaw();
+  tk.stop();
   if(r==='none'){ renderTasks(); noAdPop(); return; }
-  if(r==='skipped'){ renderTasks(); appDialog({title:'Watch the full ad',text:'Watch the full ad to earn '+AGS.per+' coins.',icon:'📺'}); return; }
+  if(r==='skipped'){ renderTasks(); appDialog({title:'Watch the full ad',text:'Watch the full ad to earn '+(tapOn?AGS.base:AGS.per)+' coins.',icon:'📺'}); return; }
   if(btn) btn.textContent = 'Confirming…';
   let res = null, lastErr = '';
   for(let i=0;i<10;i++){
-    try{ res = await api('agClaim', {}, AG_URL); break; }
+    try{ res = await api('agClaim', { tapped: tk.left }, AG_URL); break; }
     catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await sleep(1500); }
   }
   if(res){
     state.balance = res.balance; render();
-    AGS = { done:res.done, max:res.max, per:res.per, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
+    AGS = { done:res.done, max:res.max, per:res.per, base:res.base, cooldownLeft:res.cooldownLeft, cdUntil: Date.now()+res.cooldownLeft*1000 };
     renderTasks();
-    adFinished({ reward:res.amount, progress:'Task progress '+res.done+'/'+res.max });
+    adFinished({ title:(tapOn && res.tapped)?'Ad tapped! Full reward':'Ad finished', reward:res.amount, progress:tapSummary(res, 'Task progress '+res.done+'/'+res.max) });
   } else {
     AGS = null; renderTasks();
     warnPop(lastErr || 'The ad was not confirmed, so no coins were added.');
@@ -4416,14 +4595,15 @@ async function startApp(){
       <div class="shs shsrc" id="shWd" onclick="shBg(event,this)"><div class="esh"><div class="esh-top"><b>💸 Withdrawal history</b><button onclick="closeSh('shWd')">✕</button></div><div class="esh-body"><div id="wdHistory"></div></div></div></div>
       <div class="shs shsrc" id="shInvite" onclick="shBg(event,this)"><div class="esh"><div class="esh-top"><b>👥 Invite &amp; earn</b><button onclick="closeSh('shInvite')">✕</button></div><div class="esh-body">
       <div class="invite-card">
-        <div class="invite-top"><div class="earn-ic">👥</div><div class="earn-tx"><b>Invite friends</b><span>500 coins when a friend joins + 3,000 coins when their first withdrawal is paid</span></div></div>
+        <div class="invite-top"><div class="earn-ic">👥</div><div class="earn-tx"><b>Invite friends</b><span id="refTxt">500 coins when a friend watches 10 AdsGram ads in Daily Wins + 3,000 coins when their first withdrawal is paid</span></div></div>
         <div class="invite-link" id="refLink"></div>
         <div style="display:flex;gap:8px;"><button class="action" style="flex:1;" onclick="copyRef()" id="refCopyBtn">📋 Copy link</button><button class="action btn-collect" style="flex:1;" onclick="shareRef()">📤 Share</button></div>
         <div class="tile-row" style="margin-top:12px;margin-bottom:0;">
           <div class="tile"><div class="tile-num" id="refInvited">0</div><div class="tile-lbl">Friends joined</div></div>
-          <div class="tile"><div class="tile-num" id="refPaid">0</div><div class="tile-lbl">First withdrawals paid</div></div>
+          <div class="tile"><div class="tile-num" id="refPaid">0</div><div class="tile-lbl">Friends active</div></div>
           <div class="tile"><div class="tile-num" id="refEarned">0</div><div class="tile-lbl">Coins earned</div></div>
         </div>
+        <div id="refList" style="margin-top:10px;"></div>
       </div>
       </div></div></div>
       ${IS_OWNER ? '<div class="section-title">Admin: withdrawal requests</div><div id="adminWd"></div>' : ''}
