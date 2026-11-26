@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MineEarn</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-<script src='//libtl.com/sdk.js' data-zone='12030270' data-sdk='show_12030270'></script>
+<script async src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<script async src='//libtl.com/sdk.js' data-zone='12030270' data-sdk='show_12030270'></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 
@@ -541,7 +541,7 @@
 }catch(e){} })();
 </script>
 
-<script src="https://ad.gigapub.tech/script?id=8939"></script>
+<script async src="https://ad.gigapub.tech/script?id=8939"></script>
 </head>
 <body>
 <div id="app"><div class="splash" id="splash">
@@ -3905,7 +3905,7 @@ async function admGames(){
 const ADM_FIELDS = [
  ['Money & withdrawals',[['adReward','Coins per Mine reward (1-500)'],['wdMin','Minimum withdrawal in coins'],['wdFee','Withdrawal fee percent (0-30)']]],
  ['Mining',[['mineAds','Ads per collect (1-5)'],['mineSessions','Collects per slot per day (1-20)'],['mineAdMax','Mining ads per day, all mines together (1-500)'],['mineMin','Slot countdown minutes (1-240)']]],
- ['Chest Rush (Mine tab)',[['agmCoins','Coins per ad (1-100)'],['agmAds','Ads per collect (1-5)'],['agmSessions','Collects per chest per day (1-20)'],['agmAdMax','Ads per day, all chests together (1-500)'],['agmMin','Chest countdown minutes (1-240)']]],
+ ['Chest Rush (Mine tab)',[['agmCoins','Full reward when the ad is tapped (coins, 1-100)'],['agmBase','Reward without a tap (coins, 0 = same as full)'],['agmAds','Ads per collect (1-5)'],['agmSessions','Collects per chest per day (1-20)'],['agmAdMax','Ads per day, all chests together (1-500)'],['agmMin','Chest countdown minutes (1-240)']]],
  ['Bonuses',[['welcome','Welcome bonus for new users, coins (0 = off)'],['refWd','Referral withdrawal bonus, coins (0 = off)']]],
  ['AdsGram row',[['agCoins','Full reward when the ad is tapped (coins, 1-100)'],['agBase','Reward without a tap (coins, 0 = same as full)'],['agMax','Ads per day'],['agCd','Wait between ads (seconds)']]],
  ['Monetag row',[['mtCoins','Coins per ad (1-100)'],['mtMax','Ads per day'],['mtCd','Wait between ads (seconds)']]],
@@ -4218,13 +4218,17 @@ async function agmStart(i){
 }
 async function agmWatch(i){
   if(!AGM || AGM_BUSY>=0) return;
+  const mTap = AGM.L && AGM.L.base < AGM.L.coins;
+  if(mTap) await tapIntro(AGM.L.coins, AGM.L.base);
   AGM_BUSY = i; agmDraw();
+  const tk = tapTrack();
   const r = await agShowRaw();
+  tk.stop();
   if(r==='none'){ AGM_BUSY=-1; agmDraw(); noAdPop(); return; }
   if(r==='skipped'){ AGM_BUSY=-1; agmDraw(); warnPop('Watch the full ad to earn your coins.'); return; }
   let res = null, lastErr = '';
   for(let t=0;t<12;t++){
-    try{ res = await api('adConfirm', { i }, AGM_URL); break; }
+    try{ res = await api('adConfirm', { i, tapped: tk.left }, AGM_URL); break; }
     catch(e){ lastErr = e.message; if(!/not confirmed/i.test(lastErr)) break; await sleep(2500); }
   }
   AGM_BUSY = -1;
@@ -4233,7 +4237,7 @@ async function agmWatch(i){
     state.balance = res.state.balance; try{ render(); }catch(e){}
     agmDraw();
     const L = AGM.L;
-    adFinished({ reward:res.amount, progress: res.finished ? 'Chest collected! The next one is already counting down.' : 'Ad done. Watch the next ad to finish this collect.' });
+    adFinished({ title:(mTap && res.tapped)?'Ad tapped! Full reward':'Ad finished', reward:res.amount, progress: (res.finished ? 'Chest collected! The next one is already counting down.' : 'Ad done. Watch the next ad to finish this collect.') + (mTap && !res.tapped ? ' • No tap detected. Tap the next ad for the full '+L.coins+' coins' : '') });
   } else { agmDraw(); warnPop(lastErr || 'The ad was not confirmed, so no coins were added.'); }
 }
 setInterval(()=>{ if(MINE_VIEW==='ag' && AGM && AGM_BUSY<0 && !document.hidden) agmDraw(); }, 1000);
